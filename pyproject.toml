@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bigdbm"
+version = "0.1.0"
+dependencies = [
+  "requests",
+  "pandas",
+  "pydantic",
+]
+requires-python = ">=3.12"
+authors = [
+  {name = "Prerit Das", email = "prerit@standarddao.finance"},
+]
+maintainers = [
+  {name = "Prerit Das", email = "prerit@standarddao.finance"},
+]
+description = "Standard Labs internal SDK for BigDBM's API."
+readme = "README.md"
+classifiers = [
+  "Programming Language :: Python"
+]
+
+[project.urls]
+Homepage = "https://standarddao.finance"
+Repository = "https://github.com/Standard-Labs/bigdbm-python.git"
