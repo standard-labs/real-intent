@@ -2,6 +2,7 @@
 from pydantic import BaseModel, Field, field_validator
 
 from typing import Any, Self
+from enum import Enum
 
 from bigdbm.taxonomy import code_to_category
 
@@ -69,6 +70,13 @@ class MobilePhone(BaseModel):
     do_not_call: bool
 
 
+class Gender(str, Enum):
+    """Classifications of genders."""
+    MALE = "Male"
+    FEMALE = "Female"
+    UNKNOWN = ""
+
+
 class PII(BaseModel):
     """
     PII in output code 10008 as returned by BigDBM API directly. 
@@ -87,7 +95,7 @@ class PII(BaseModel):
     state: str = Field(..., alias="State")
     zip_code: str = Field(..., alias="Zip")
     emails: list[str] = Field(..., alias="Email_Array")
-    gender: str = Field(..., alias="Gender")
+    gender: Gender = Field(..., alias="Gender")
     age: str = Field(..., alias="Age")
     n_household_children: str = Field(
         ..., alias="Children_HH", description="String number of children in the household"
@@ -167,6 +175,9 @@ class PII(BaseModel):
         
         del export_dict["mobile_phones"]
 
+        # Convert gender to string
+        export_dict["gender"] = export_dict["gender"].value
+
         return export_dict
 
 
@@ -180,16 +191,3 @@ class MD5WithPII(UniqueMD5):
     valudation.
     """
     pii: PII
-
-    def is_valid(self, zip_codes: list[str]) -> bool:
-        """
-        Determine if it's valid according to a zip code and minimum communication 
-        requirement of at least (1 email or 1 phone).
-        """
-        if zip_codes and self.pii.zip_code not in zip_codes:
-            return False
-
-        if not self.pii.emails and not self.pii.mobile_phones:
-            return False
-
-        return True

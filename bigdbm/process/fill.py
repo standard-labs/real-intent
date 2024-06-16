@@ -2,6 +2,7 @@
 from bigdbm.process.base import BaseProcessor
 from bigdbm.client import BigDBMClient
 from bigdbm.schemas import IABJob, UniqueMD5, IntentEvent, MD5WithPII
+from bigdbm.validate.base import BaseValidator
 
 
 class FillProcessor(BaseProcessor):
@@ -51,8 +52,15 @@ class FillProcessor(BaseProcessor):
 
             n_delta: int = n_hems - len(return_md5s)
             md5s_job: list[UniqueMD5] = md5s_bank[:n_delta]
-            pii_response: list[MD5WithPII] = self.client.pii_for_unique_md5s(md5s_job)
-            return_md5s.extend([md5 for md5 in pii_response if md5.is_valid(iab_job.zips)])
+            md5s_with_pii: list[MD5WithPII] = self.client.pii_for_unique_md5s(md5s_job)
+
+            # Utilize all registered validators to filter leads
+            validator: BaseValidator
+            for validator in self.validators:
+                md5s_with_pii = validator.validate(md5s_with_pii)
+
+            # Add post-validated (remaining) leads
+            return_md5s.extend(md5s_with_pii)
 
             # Update tracking
             del md5s_bank[:n_delta]
