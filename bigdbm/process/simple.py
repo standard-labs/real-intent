@@ -1,6 +1,7 @@
 """Simple linear pipeline processor. Nothing special, just follow the methods."""
 from bigdbm.process.base import BaseProcessor
 from bigdbm.schemas import IABJob, MD5WithPII, IntentEvent, UniqueMD5
+from bigdbm.validate.base import BaseValidator
 
 
 class SimpleProcessor(BaseProcessor):
@@ -11,7 +12,10 @@ class SimpleProcessor(BaseProcessor):
         list_queue_id: int = self.client.create_and_wait(iab_job)
         intent_events: list[IntentEvent] = self.client.retrieve_md5s(list_queue_id)
         unique_md5s: list[UniqueMD5] = self.client.uniquify_md5s(intent_events)
-        return [
-            md5 for md5 in self.client.pii_for_unique_md5s(unique_md5s)
-            if md5.is_valid(iab_job.zips)
-        ]
+        md5s_with_pii: list[MD5WithPII] = self.client.pii_for_unique_md5s(unique_md5s)
+
+        validator: BaseValidator
+        for validator in self.validators:
+            md5s_with_pii = validator.validate(md5s_with_pii)
+
+        return md5s_with_pii
