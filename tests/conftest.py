@@ -2,8 +2,13 @@
 import pytest
 
 import os
+from dotenv import load_dotenv
 
 from bigdbm.client import BigDBMClient
+
+
+# Load env
+load_dotenv()
 
 
 @pytest.fixture(scope="session")
