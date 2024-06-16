@@ -15,3 +15,13 @@ class ZipCodeValidator(BaseValidator):
         return [
             md5 for md5 in md5s if md5.pii.zip_code in self.zip_codes
         ]
+
+
+class ContactableValidator(BaseValidator):
+    """Remove hems that don't have at least one mode of contact."""
+
+    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove hems that don't have at least one mode of contact."""
+        return [
+            md5 for md5 in md5s if any([md5.pii.mobile_phones, md5.pii.emails])
+        ]
