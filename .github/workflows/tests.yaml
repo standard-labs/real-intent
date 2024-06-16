@@ -1,0 +1,25 @@
+name: tests
+
+on:
+  push:
+    paths-ignore:
+      - README.md
+      - .devcontainer/**/*.*
+  pull_request:
+    types:  # avoid double runs in open pr
+      - opened
+      - reopened
+  workflow_dispatch:
+  
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Build Docker container
+        run: docker build -t bigdbm-python .
+        
+      - name: Run tests inside container
+        run: docker run bigdbm-python sh -c "pip install --no-cache-dir -r tests/requirements.txt && pytest"
