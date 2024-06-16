@@ -2,6 +2,7 @@
 from pydantic import BaseModel, Field, field_validator
 
 from typing import Any, Self
+from enum import Enum
 
 from bigdbm.taxonomy import code_to_category
 
@@ -67,6 +68,13 @@ class MobilePhone(BaseModel):
     """An individual's phone number."""
     phone: str
     do_not_call: bool
+
+
+class Gender(str, Enum):
+    """Classifications of genders."""
+    MALE = "Male"
+    FEMALE = "Fale"
+    UNKNOWN = ""
 
 
 class PII(BaseModel):
