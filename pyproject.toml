@@ -23,9 +23,6 @@ classifiers = [
   "Programming Language :: Python"
 ]
 
-[tool.setuptools]
-packages = ["bigdbm"]
-
 [tool.setuptools.package-data]
 "bigdbm" = ["*.tsv"]
 
