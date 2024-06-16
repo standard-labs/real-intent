@@ -74,7 +74,8 @@ class Gender(str, Enum):
     """Classifications of genders."""
     MALE = "Male"
     FEMALE = "Female"
-    UNKNOWN = ""
+    UNKNOWN = "Unknown"
+    EMPTY = ""
 
 
 class PII(BaseModel):
