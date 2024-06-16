@@ -191,16 +191,3 @@ class MD5WithPII(UniqueMD5):
     valudation.
     """
     pii: PII
-
-    def is_valid(self, zip_codes: list[str]) -> bool:
-        """
-        Determine if it's valid according to a zip code and minimum communication 
-        requirement of at least (1 email or 1 phone).
-        """
-        if zip_codes and self.pii.zip_code not in zip_codes:
-            return False
-
-        if not self.pii.emails and not self.pii.mobile_phones:
-            return False
-
-        return True
