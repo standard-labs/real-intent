@@ -95,7 +95,7 @@ class PII(BaseModel):
     state: str = Field(..., alias="State")
     zip_code: str = Field(..., alias="Zip")
     emails: list[str] = Field(..., alias="Email_Array")
-    gender: str = Field(..., alias="Gender")
+    gender: Gender = Field(..., alias="Gender")
     age: str = Field(..., alias="Age")
     n_household_children: str = Field(
         ..., alias="Children_HH", description="String number of children in the household"
@@ -174,6 +174,9 @@ class PII(BaseModel):
             export_dict[f"phone_{pos}_dnc"] = phone.do_not_call
         
         del export_dict["mobile_phones"]
+
+        # Convert gender to string
+        export_dict["gender"] = export_dict["gender"].value
 
         return export_dict
 
