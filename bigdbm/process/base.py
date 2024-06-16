@@ -1,5 +1,6 @@
 """Base processor."""
 from abc import ABC, abstractmethod
+from typing import Self
 
 from bigdbm.client import BigDBMClient
 from bigdbm.schemas import IABJob, MD5WithPII
@@ -21,6 +22,10 @@ class BaseProcessor(ABC):
 
     Comes with an __init__ that takes a BigDBM client. If overriding the __init__
     for some reason, be sure to super() and make sure self.client is defined.
+
+    When working with validators, method chaining is possible as an instance of self
+    is returned for `.add_validator` and `.clear_validators`.
+    Ex: `FillProcessor(client).add_validator(validator).process(job)`
     """
 
     def __init__(self, bigdbm_client: BigDBMClient) -> None:
@@ -28,17 +33,18 @@ class BaseProcessor(ABC):
         self.client = bigdbm_client
         self.validators: list[BaseValidator] = DEFAULT_VALIDATORS
 
-    def clear_validators(self) -> None:
+    def clear_validators(self) -> Self:
         """Remove all validators from the processor."""
         self.validators = []
+        return self
 
-    def add_validator(self, validator: BaseValidator) -> list[BaseValidator]:
+    def add_validator(self, validator: BaseValidator) -> Self:
         """Add a validator instance to the processor's validators."""
         if not isinstance(validator, BaseValidator):
             raise TypeError("You must pass in a valid BaseValidator instance.")
 
         self.validators.append(validator)
-        return self.validators
+        return self
 
     @abstractmethod
     def process(self, iab_job: IABJob) -> list[MD5WithPII]:
