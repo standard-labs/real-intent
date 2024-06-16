@@ -18,6 +18,11 @@ jobs:
       - name: Checkout repository code
         uses: actions/checkout@v4
 
+      - name: Create .env file
+        run: |
+          echo CLIENT_ID=${{ secrets.CLIENT_ID }} >> .env
+          echo CLIENT_SECRET=${{ secrets.CLIENT_SECRET }} >> .env
+
       - name: Build Docker container
         run: docker build -t bigdbm-python .
         
