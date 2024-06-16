@@ -25,3 +25,21 @@ class ContactableValidator(BaseValidator):
         return [
             md5 for md5 in md5s if any([md5.pii.mobile_phones, md5.pii.emails])
         ]
+
+
+class MD5Validator(BaseValidator):
+    """
+    Remove hems that match a list of MD5s.
+
+    Useful when ensuring uniqueness in generated hems.
+    """
+
+    def __init__(self, md5_strings: list[str]) -> None:
+        """Initialize with a list of blacklisted MD5s."""
+        self.md5_strings: list[str] = md5_strings
+
+    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove hems that match the initialized list of MD5 strings."""
+        return [
+            md5 for md5 in md5s if md5.md5 not in self.md5_strings
+        ]
