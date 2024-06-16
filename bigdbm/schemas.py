@@ -73,7 +73,7 @@ class MobilePhone(BaseModel):
 class Gender(str, Enum):
     """Classifications of genders."""
     MALE = "Male"
-    FEMALE = "Fale"
+    FEMALE = "Female"
     UNKNOWN = ""
 
 
