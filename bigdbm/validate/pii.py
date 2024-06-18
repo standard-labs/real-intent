@@ -26,22 +26,20 @@ class AgeValidator(BaseValidator):
     If above is False, only takes people below or equal to the age.
     """
 
-    def __init__(self, age: int, above: bool) -> None:
+    def __init__(self, min_age: int, max_age: int) -> None:
         """Initialize."""
-        self.age = age
-        self.above = above
+        self.min_age = int(min_age)
+        self.max_age = int(max_age)
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove hems that do not match the age requirement."""
-        def id_valid(md5: MD5WithPII) -> bool:
+        def is_valid(md5: MD5WithPII) -> bool:
+            """Check if the MD5 is in the age range."""
             try:
                 age = int(md5.pii.age)
             except ValueError:
                 return False
 
-            if self.above:
-                return age >= self.age
-            
-            return age <= self.age
-
-        return [md5 for md5 in md5s if id_valid(md5)]
+            return self.min_age <= age <= self.max_age
+        
+        return [md5 for md5 in md5s if is_valid(md5)]
