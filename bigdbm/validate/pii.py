@@ -15,3 +15,33 @@ class GenderValidator(BaseValidator):
         return [
             md5 for md5 in md5s if md5.pii.gender in self.genders
         ]
+
+
+class AgeValidator(BaseValidator):
+    """
+    Only show hems of people above or below a certain age.
+    Works inclusively, ex. 50 means 50 or higher/50 or lower.
+
+    If above is True, only takes people above or equal to the age.
+    If above is False, only takes people below or equal to the age.
+    """
+
+    def __init__(self, age: int, above: bool) -> None:
+        """Initialize."""
+        self.age = age
+        self.above = above
+
+    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove hems that do not match the age requirement."""
+        def id_valid(md5: MD5WithPII) -> bool:
+            try:
+                age = int(md5.pii.age)
+            except ValueError:
+                return False
+
+            if self.above:
+                return age >= self.age
+            
+            return age <= self.age
+
+        return [md5 for md5 in md5s if id_valid(md5)]
