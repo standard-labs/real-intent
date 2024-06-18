@@ -8,9 +8,6 @@ class GenderValidator(BaseValidator):
 
     def __init__(self, *gender: Gender) -> None:
         """Initialize with the filtered gender."""
-        if isinstance(gender, Gender):
-            gender = (gender,)  # convert to tuple
-
         self.genders: tuple[Gender] = gender
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
