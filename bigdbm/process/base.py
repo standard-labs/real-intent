@@ -31,7 +31,10 @@ class BaseProcessor(ABC):
     def __init__(self, bigdbm_client: BigDBMClient) -> None:
         """Initialize with a client."""
         self.client = bigdbm_client
-        self.validators: list[BaseValidator] = DEFAULT_VALIDATORS
+        self.validators: list[BaseValidator] = []
+
+        # Start with global default validators
+        self.validators.extend(DEFAULT_VALIDATORS)
 
     def clear_validators(self) -> Self:
         """Remove all validators from the processor."""
