@@ -5,6 +5,9 @@ on:
     paths-ignore:
       - README.md
       - .devcontainer/**/*.*
+      - ".vscode/**/*.*"
+      - .gitignore
+      - pyproject.toml
   pull_request:
     types:  # avoid double runs in open pr
       - opened
