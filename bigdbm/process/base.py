@@ -33,9 +33,6 @@ class BaseProcessor(ABC):
         self.client = bigdbm_client
         self.validators: list[BaseValidator] = []
 
-        # Start with global default validators
-        self.validators.extend(DEFAULT_VALIDATORS)
-
     def clear_validators(self) -> Self:
         """Remove all validators from the processor."""
         self.validators = []
@@ -47,6 +44,13 @@ class BaseProcessor(ABC):
             raise TypeError("You must pass in a valid BaseValidator instance.")
 
         self.validators.append(validator)
+        return self
+
+    def add_default_validators(self) -> Self:
+        """Insert the default validators into the processor."""
+        for validator in DEFAULT_VALIDATORS:
+            self.add_validator(validator)
+
         return self
 
     @abstractmethod
