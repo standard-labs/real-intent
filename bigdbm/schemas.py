@@ -128,8 +128,12 @@ class PII(BaseModel):
         mobile_phones: list[MobilePhone] = []
         for i in range(1, 3+1):
             if f"Mobile_Phone_{i}" in api_dict:
-                phone = api_dict[f"Mobile_Phone_{i}"]
-                dnc = True if api_dict[f"Mobile_Phone_{i}_DNC"] == "1" else False
+                phone: str = api_dict[f"Mobile_Phone_{i}"]
+
+                if not phone:
+                    continue
+
+                dnc: bool = True if api_dict[f"Mobile_Phone_{i}_DNC"] == "1" else False
                 mobile_phones.append(MobilePhone(phone=phone, do_not_call=dnc))
 
         if not api_dict["Email_Array"]:
