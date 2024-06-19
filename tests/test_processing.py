@@ -1,6 +1,7 @@
 """Basic processing test. Make sure things work."""
 from bigdbm.process import SimpleProcessor, FillProcessor
 from bigdbm.schemas import MD5WithPII, IABJob
+from bigdbm.validate.simple import ZipCodeValidator
 
 
 def test_simple_processor(bigdbm_client):
@@ -28,6 +29,7 @@ def test_fill_processor(bigdbm_client):
 
     processor = FillProcessor(bigdbm_client)
     processor.add_default_validators()
-    processor.insert_
+    processor.add_validator(ZipCodeValidator(["22101"]))
+
     result: list[MD5WithPII] = FillProcessor(bigdbm_client).process(job)
     assert result
