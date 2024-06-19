@@ -46,7 +46,7 @@ class BaseProcessor(ABC):
         self.validators.append(validator)
         return self
 
-    def insert_default_validators(self) -> Self:
+    def add_default_validators(self) -> Self:
         """Insert the default validators into the processor."""
         for validator in DEFAULT_VALIDATORS:
             self.add_validator(validator)
