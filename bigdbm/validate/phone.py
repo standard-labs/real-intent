@@ -16,6 +16,16 @@ class PhoneValidator(BaseValidator):
 
     def _validate_phone(self, phone: str) -> bool:
         """Validate a US phone number with numverify."""
+        phone = str(phone)
+        if phone.startswith("+1"):
+            phone = phone[2:]
+        
+        if len(phone) == 11 and phone.startswith("1"):
+            phone = phone[1:]
+        
+        if len(phone) != 10:
+            return False
+        
         response = requests.get(
             "https://apilayer.net/api/validate",
             params={
