@@ -36,3 +36,5 @@ class EmailValidator(BaseValidator):
             md5.pii.emails = [
                 email for email in md5.pii.emails if self._validate_email(email)
             ]
+
+        return md5s
