@@ -28,6 +28,9 @@ class PhoneValidator(BaseValidator):
         response.raise_for_status()
         response_json = response.json()
 
+        if "valid" not in response_json:
+            raise ValueError(f"Unexpected response from numverify: {response_json}")
+
         return response_json["valid"]
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:

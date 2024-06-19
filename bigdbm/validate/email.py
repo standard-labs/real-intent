@@ -28,6 +28,9 @@ class EmailValidator(BaseValidator):
         response.raise_for_status()
         response_json = response.json()
 
+        if "resultcode" not in response_json:
+            raise ValueError(f"Unexpected response from MillionVerifier: {response_json}")
+
         return response_json["resultcode"] == 1
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
