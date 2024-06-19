@@ -17,7 +17,7 @@ class PhoneValidator(BaseValidator):
     def _validate_phone(self, phone: str) -> bool:
         """Validate a US phone number with numverify."""
         response = requests.get(
-            "http://apilayer.net/api/validate",
+            "https://apilayer.net/api/validate",
             params={
                 "access_key": self.api_key,
                 "number": phone,
