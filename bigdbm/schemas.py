@@ -16,16 +16,16 @@ class ConfigDates(BaseModel):
 class IABJob(BaseModel):
     """Payload for creating an IAB job."""
     intent_categories: list[str] = Field(
-        default_factory=list, alias="IABs", description="List of IAB intent categories"
+        default_factory=list, description="List of IAB intent categories"
     )
     zips: list[str] = Field(
-        default_factory=list, alias="Zips", description="List of zip codes"
+        default_factory=list, description="List of zip codes"
     )
     keywords: list[str] = Field(
-        default_factory=list, alias="Keywords", description="List of keywords"
+        default_factory=list, description="List of keywords"
     )
     domains: list[str] = Field(
-        default_factory=list, alias="Domains", description="List of domains"
+        default_factory=list, description="List of domains"
     )
     n_hems: int
 
@@ -40,8 +40,10 @@ class IABJob(BaseModel):
             ]
         ):
             raise ValueError(
-                "Need at least one of intent categories, keywords, or domains."
+                "Need at least one of intent categories, keywords, or domains.\n" + str(self.model_dump())
             )
+
+        return self
 
     def as_payload(self) -> dict[str, str]:
         """Convert into dictionary payload."""
