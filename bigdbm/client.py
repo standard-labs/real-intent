@@ -1,6 +1,7 @@
 """The Client."""
 import requests
 from requests import Request, Session
+from requests import RequestException
 
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -84,17 +85,17 @@ class BigDBMClient:
             "Authorization": f"Bearer {self._access_token}"
         })
 
-        with Session() as session:
-            response = session.send(request.prepare())
-
-        # If there's an error, wait and try just once more
-        if not response.ok:
-            time.sleep(10)
-
+        try:
             with Session() as session:
                 response = session.send(request.prepare())
+            response.raise_for_status()
+        except RequestException:
+            # If there's an error, wait and try just once more
+            time.sleep(10)
+            with Session() as session:
+                response = session.send(request.prepare())
+            response.raise_for_status()
 
-        response.raise_for_status()
         return response.json()
     
     def get_config_dates(self) -> ConfigDates:
