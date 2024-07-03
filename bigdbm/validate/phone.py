@@ -51,3 +51,16 @@ class PhoneValidator(BaseValidator):
             ]
 
         return md5s
+
+
+class HasPhoneValidator(BaseValidator):
+    """
+    Only show hems with a phone number. 
+
+    So, use this validator _after_ PhoneValidator so that phone numbers are not removed
+    afterwards resulting in potentially empty phone lists.
+    """
+
+    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove hems without a phone number."""
+        return [md5 for md5 in md5s if md5.pii.mobile_phones]
