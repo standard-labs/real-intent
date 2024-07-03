@@ -43,3 +43,17 @@ class AgeValidator(BaseValidator):
             return self.min_age <= age <= self.max_age
         
         return [md5 for md5 in md5s if is_valid(md5)]
+
+
+class HNWValidator(BaseValidator):
+    """
+    Only show hems of people with at least $200k in household 
+    income _and_ $250k in household net worth.
+    """
+
+    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove hems that do not match the HNW requirement."""
+        return [
+            md5 for md5 in md5s if md5.pii.household_income in {"N. $200,000-$249,999", "O. $250K +"}
+            and md5.pii.household_net_worth in {"I. $250,000 - $499,999", "J. Greater than $499,999"}
+        ]
