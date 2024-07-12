@@ -1,7 +1,13 @@
 """Read the taxonomy."""
 from pathlib import Path
 import pandas as pd
-            
+
+from functools import lru_cache
+
+
+# Read the taxonomy file
+taxonomy_df = pd.read_csv(Path(__file__).parent / 'iab_categories.csv')
+
 
 # This deprecated function used the old taxonomy.tsv file.
 def _dep_old_code_to_category(code: str | int) -> str:
@@ -28,17 +34,16 @@ def _dep_old_code_to_category(code: str | int) -> str:
     return f"{row['Name']}>{'>'.join(tiers)}"
 
 
+@lru_cache(maxsize=None)
 def code_to_category(code: str | int) -> str:
     """Return the category for a given code."""
-    df = pd.read_csv(Path(__file__).parent / 'iab_categories.csv')
-
     try:
         code = int(code)
     except ValueError:
         return code 
 
     # Search for the category
-    result: pd.DataFrame = df[df["IAB_Category_ID"] == code]
+    result: pd.DataFrame = taxonomy_df[taxonomy_df["IAB_Category_ID"] == code]
 
     if result.empty:
         return code
