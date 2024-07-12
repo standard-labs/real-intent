@@ -2,6 +2,8 @@
 from pathlib import Path
 import pandas as pd
 
+from functools import lru_cache
+
 
 # Read the taxonomy file
 taxonomy_df = pd.read_csv(Path(__file__).parent / 'iab_categories.csv')
@@ -32,6 +34,7 @@ def _dep_old_code_to_category(code: str | int) -> str:
     return f"{row['Name']}>{'>'.join(tiers)}"
 
 
+@lru_cache(maxsize=None)
 def code_to_category(code: str | int) -> str:
     """Return the category for a given code."""
     try:
