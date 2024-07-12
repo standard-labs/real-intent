@@ -24,7 +24,7 @@ classifiers = [
 ]
 
 [tool.setuptools.package-data]
-"bigdbm" = ["*.tsv"]
+"bigdbm" = ["*.tsv", "*.csv"]
 
 [project.urls]
 Homepage = "https://standarddao.finance"
