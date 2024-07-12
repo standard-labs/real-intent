@@ -29,7 +29,7 @@ def _dep_old_code_to_category(code: str | int) -> str:
 
 
 def code_to_category(code: str | int) -> str:
-    """Return the code for a given category."""
+    """Return the category for a given code."""
     df = pd.read_csv(Path(__file__).parent / 'iab_categories.csv')
 
     try:
