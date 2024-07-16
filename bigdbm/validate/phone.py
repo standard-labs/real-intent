@@ -96,6 +96,10 @@ class CallableValidator(BaseValidator):
     not on the DNC list.
     """
 
+    def __init__(self, phone_validator=None, dnc_validator=None):
+        self.phone_validator = phone_validator or HasPhoneValidator()
+        self.dnc_validator = dnc_validator or DNCValidator()
+
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove hems without a phone number or on the DNC list."""
-        return DNCValidator().validate(HasPhoneValidator().validate(md5s))
+        return self.dnc_validator.validate(self.phone_validator.validate(md5s))
