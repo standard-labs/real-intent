@@ -64,3 +64,46 @@ class HasPhoneValidator(BaseValidator):
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove hems without a phone number."""
         return [md5 for md5 in md5s if md5.pii.mobile_phones]
+
+
+class DNCValidator(BaseValidator):
+    """
+    Only provide hems whose primary phone is not on the DNC list.
+    Ignores hems without a phone number - these are still kept.
+    """
+
+    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """
+        Remove hems whose primary phone is marked as DNC.
+        Ignores hems without a phone number - these are still kept.
+        """
+        return_hems: list[MD5WithPII] = []
+
+        for md5 in md5s:
+            if not md5.pii.mobile_phones:
+                continue
+
+            if not md5.pii.mobile_phones[0].do_not_call:
+                return_hems.append(md5)
+
+        return return_hems
+
+
+class CallableValidator(BaseValidator):
+    """
+    Proxy for running both HasPhoneValidator and DNCValidator.
+    Only show hems who are 'callable', meaning they have a phone number and are 
+    not on the DNC list.
+    """
+
+    def __init__(
+            self, 
+            phone_validator: PhoneValidator | None = None, 
+            dnc_validator: DNCValidator | None = None
+        ):
+        self.phone_validator = phone_validator or HasPhoneValidator()
+        self.dnc_validator = dnc_validator or DNCValidator()
+
+    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove hems without a phone number or on the DNC list."""
+        return self.dnc_validator.validate(self.phone_validator.validate(md5s))
