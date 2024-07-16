@@ -87,3 +87,15 @@ class DNCValidator(BaseValidator):
                 return_hems.append(md5)
 
         return return_hems
+
+
+class CallableValidator(BaseValidator):
+    """
+    Proxy for running both HasPhoneValidator and DNCValidator.
+    Only show hems who are 'callable', meaning they have a phone number and are 
+    not on the DNC list.
+    """
+
+    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove hems without a phone number or on the DNC list."""
+        return DNCValidator().validate(HasPhoneValidator().validate(md5s))
