@@ -96,7 +96,11 @@ class CallableValidator(BaseValidator):
     not on the DNC list.
     """
 
-    def __init__(self, phone_validator=None, dnc_validator=None):
+    def __init__(
+            self, 
+            phone_validator: PhoneValidator | None = None, 
+            dnc_validator: DNCValidator | None = None
+        ):
         self.phone_validator = phone_validator or HasPhoneValidator()
         self.dnc_validator = dnc_validator or DNCValidator()
 
