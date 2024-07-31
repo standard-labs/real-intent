@@ -7,7 +7,7 @@ from bigdbm.validate.base import BaseValidator
 
 class PhoneValidator(BaseValidator):
     """
-    Remove US phone numbers determined to not be 'valid' by MillionVerifier.
+    Remove US phone numbers determined to not be 'valid' by Numverify.
     """
 
     def __init__(self, numverify_key: str) -> None:
