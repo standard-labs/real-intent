@@ -43,3 +43,17 @@ class MD5Validator(BaseValidator):
         return [
             md5 for md5 in md5s if md5.md5 not in self.md5_strings
         ]
+
+
+class NumSentencesValidator(BaseValidator):
+    """Ensure MD5s have at least a certain number of sentences."""
+    
+    def __init__(self, min_sentences: int) -> None:
+        """Initialize with a minimum number of sentences."""
+        self.min_sentences: int = min_sentences
+
+    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove hems with fewer than the minimum number of sentences."""
+        return [
+            md5 for md5 in md5s if len(md5.pii.sentences) >= self.min_sentences
+        ]
