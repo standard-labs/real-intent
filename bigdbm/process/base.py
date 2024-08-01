@@ -31,25 +31,46 @@ class BaseProcessor(ABC):
     def __init__(self, bigdbm_client: BigDBMClient) -> None:
         """Initialize with a client."""
         self.client = bigdbm_client
-        self.validators: list[BaseValidator] = []
+        self.required_validators: list[BaseValidator] = []
+        self.fallback_validators: list[BaseValidator] = []
 
     def clear_validators(self) -> Self:
         """Remove all validators from the processor."""
-        self.validators = []
+        self.required_validators = []
+        self.fallback_validators = []
         return self
 
-    def add_validator(self, validator: BaseValidator) -> Self:
-        """Add a validator instance to the processor's validators."""
+    def add_validator(self, validator: BaseValidator, allow_fallback: bool = False) -> Self:
+        """
+        Add a validator instance to the processor's validators.
+
+        Args:
+            validator: A BaseValidator instance.
+            allow_fallback: If True, the validator will be removed from validation if
+                not enough leads are found post-validation. Note that the Processor
+                must implement this behavior.
+        """
         if not isinstance(validator, BaseValidator):
             raise TypeError("You must pass in a valid BaseValidator instance.")
 
-        self.validators.append(validator)
+        if allow_fallback:
+            self.fallback_validators.append(validator)
+        else:
+            self.required_validators.append(validator)
+
         return self
 
-    def add_default_validators(self) -> Self:
-        """Insert the default validators into the processor."""
+    def add_default_validators(self, allow_fallback: bool = False) -> Self:
+        """
+        Insert the default validators into the processor.
+
+        Args:
+            allow_fallback: If True, the default validators will be removed from 
+                validation if not enough leads are found post-validation. Note that the 
+                Processor must implement this behavior.
+        """
         for validator in DEFAULT_VALIDATORS:
-            self.add_validator(validator)
+            self.add_validator(validator, allow_fallback=allow_fallback)
 
         return self
 
