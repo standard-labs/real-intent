@@ -34,6 +34,11 @@ class BaseProcessor(ABC):
         self.required_validators: list[BaseValidator] = []
         self.fallback_validators: list[BaseValidator] = []
 
+    @property
+    def validators(self) -> list[BaseValidator]:
+        """Return all validators."""
+        return self.required_validators + self.fallback_validators
+
     def clear_validators(self) -> Self:
         """Remove all validators from the processor."""
         self.required_validators = []
