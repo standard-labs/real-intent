@@ -26,9 +26,8 @@ def test_fill_processor(bigdbm_client):
         n_hems=3
     )
 
-    processor = FillProcessor(bigdbm_client, intent_multiplier=5)
+    processor = FillProcessor(bigdbm_client)
     processor.add_validator(ZipCodeValidator(["22101"]))
-    processor.add_validator(NumSentencesValidator(2))
     processor.add_default_validators()
 
     result: list[MD5WithPII] = FillProcessor(bigdbm_client).process(job)
