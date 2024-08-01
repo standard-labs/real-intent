@@ -17,6 +17,9 @@ class FillProcessor(BaseProcessor):
     Can return less than the requested amount of data if:
     - The PII hit rate is less than 0.5x, as 2x data is not enough.
     - There is not enough intent data returned.
+
+    If the initial pull does not return enough data, the processor will try again without
+    the fallback validators, retaining whatever leads were already pulled.
     """
 
     def __init__(self, bigdbm_client: BigDBMClient, intent_multiplier: float = 2.5) -> None:
@@ -66,6 +69,9 @@ class FillProcessor(BaseProcessor):
         Can return less than the requested amount of data if:
         - The PII hit rate is less than 0.5x, as 2x data is not enough.
         - There is not enough intent data returned.
+
+        If the initial pull does not return enough data, the processor will try again without
+        the fallback validators, retaining whatever leads were already pulled.
         """
         # Extend the number of hems in the initial job
         n_hems: int = iab_job.n_hems  # true amount of PII to return
