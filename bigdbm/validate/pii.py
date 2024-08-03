@@ -45,6 +45,35 @@ class AgeValidator(BaseValidator):
         return [md5 for md5 in md5s if is_valid(md5)]
 
 
+class MNWValidator(BaseValidator):
+    """
+    Only show hems of people with at least $100k in household 
+    income _and_ $100k in household net worth.
+    """
+
+    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove hems that do not match the HNW requirement."""
+        income_levels = {
+            "K. $100,000-$149,999", 
+            "L. $150,000-$174,999", 
+            "M. $175,000-$199,999", 
+            "N. $200,000-$249,999", 
+            "O. $250K +"
+        }
+        
+        net_worth_levels = {
+            "H. $100,000 - $249,999", 
+            "I. $250,000 - $499,999", 
+            "J. Greater than $499,999"
+        }
+        
+        return [
+            md5 for md5 in md5s 
+            if md5.pii.household_income in income_levels 
+            and md5.pii.household_net_worth in net_worth_levels
+        ]
+
+
 class HNWValidator(BaseValidator):
     """
     Only show hems of people with at least $200k in household 
@@ -53,7 +82,18 @@ class HNWValidator(BaseValidator):
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove hems that do not match the HNW requirement."""
+        income_levels = {
+            "N. $200,000-$249,999", 
+            "O. $250K +"
+        }
+        
+        net_worth_levels = {
+            "I. $250,000 - $499,999", 
+            "J. Greater than $499,999"
+        }
+        
         return [
-            md5 for md5 in md5s if md5.pii.household_income in {"N. $200,000-$249,999", "O. $250K +"}
-            and md5.pii.household_net_worth in {"I. $250,000 - $499,999", "J. Greater than $499,999"}
+            md5 for md5 in md5s 
+            if md5.pii.household_income in income_levels 
+            and md5.pii.household_net_worth in net_worth_levels
         ]
