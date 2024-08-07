@@ -79,6 +79,7 @@ class BigDBMClient:
         
         self._access_token = response_json["access_token"]
         self._access_token_expiration = int(time.time() - 10) + response_json["expires_in"]
+        self._log("trace", "Updated access token.")
         return
 
     def _access_token_valid(self) -> bool:
@@ -113,11 +114,14 @@ class BigDBMClient:
             with Session() as session:
                 response = session.send(request.prepare())
             response.raise_for_status()
-        except RequestException:
+        except RequestException as e:
             # If there's an error, wait and try just once more
+            self._log("warn", f"Request failed. Waiting 10 seconds and trying again. Error: {e}")
             time.sleep(10)
+
             with Session() as session:
                 response = session.send(request.prepare())
+
             response.raise_for_status()
 
         return response.json()
