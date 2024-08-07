@@ -26,7 +26,7 @@ class FillProcessor(BaseProcessor):
         super().__init__(bigdbm_client)
         self.intent_multiplier: float = intent_multiplier
 
-    def _pull_and_validate(
+    def __pull_and_validate(
         self,
         intent_events: list[IntentEvent], 
         n_hems: int, 
@@ -68,7 +68,19 @@ class FillProcessor(BaseProcessor):
 
         return return_md5s
 
-    def process(self, iab_job: IABJob) -> list[MD5WithPII]:
+    def _pull_and_validate(
+        self,
+        intent_events: list[IntentEvent],
+        n_hems: int,
+        validators: list[BaseValidator]
+    ) -> list[MD5WithPII]:
+        """
+        Pulls and validates the leads from the intent events. Logs in a span.
+        """
+        with self.client._log_span("Enhancing MD5s with PII and validating."):
+            return self.__pull_and_validate(intent_events, n_hems, validators)
+
+    def _process(self, iab_job: IABJob) -> list[MD5WithPII]:
         """
         1. Pull 2x as much intent data as requested. (adjustable on instantiation)
         2. Request 1x as much PII.
@@ -81,8 +93,6 @@ class FillProcessor(BaseProcessor):
         If the initial pull does not return enough data, the processor will try again without
         the fallback validators, retaining whatever leads were already pulled.
         """
-        self.client._log("debug", f"Using FillProcessor to process job: {iab_job}")
-
         # Extend the number of hems in the initial job
         n_hems: int = iab_job.n_hems  # true amount of PII to return
         iab_job.n_hems = int(iab_job.n_hems * self.intent_multiplier)
@@ -115,6 +125,22 @@ class FillProcessor(BaseProcessor):
 
         self.client._log("debug", f"Returning {len(return_md5s)} leads after removing fallback validators.")
         return return_md5s
+
+    def process(self, iab_job: IABJob) -> list[MD5WithPII]:
+        """
+        1. Pull 2x as much intent data as requested. (adjustable on instantiation)
+        2. Request 1x as much PII.
+        3. Keep requesting PII on more data until filled.
+
+        Can return less than the requested amount of data if:
+        - The PII hit rate is less than 0.5x, as 2x data is not enough.
+        - There is not enough intent data returned.
+
+        If the initial pull does not return enough data, the processor will try again without
+        the fallback validators, retaining whatever leads were already pulled.
+        """
+        with self.client._log_span(f"Using FillProcessor to process job: {iab_job}"):
+            return self._process(iab_job)
 
 
 # ---- Deprecation Zone ----
