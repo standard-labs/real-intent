@@ -202,10 +202,15 @@ class BigDBMClient:
             params={"listQueueId": list_queue_id}
         )
 
-        return int(self._request(request)["status"])
+        status_code: int = int(self._request(request)["status"])
+        self._log("trace", f"List ID {list_queue_id} has status code {status_code}")
+
+        return status_code
     
     def wait_until_completion(self, list_queue_id: int) -> None:
         """Wait until a job has finished processing."""
+        self._log("trace", f"Waiting for list ID {list_queue_id} to finish processing.")
+
         while (status := self.get_list_status(list_queue_id)) != 100:
             if status > 100:
                 raise BigDBMApiError(f"List ID {list_queue_id} had an error.")
@@ -236,7 +241,7 @@ class BigDBMClient:
 
     def _extract_intent_events(self, fetch_result_json: dict) -> list[IntentEvent]:
         """Pull the intent events listed on a job's results page."""
-        return [
+        intent_events = [
             IntentEvent(
                 md5=obj["mD5"],
                 sentence=obj["sentence"]
@@ -244,12 +249,17 @@ class BigDBMClient:
             for obj in fetch_result_json["result"]
         ]
 
+        self._log("trace", f"Extracted intent events: {intent_events}")
+        return intent_events
+
     def retrieve_md5s(self, list_queue_id: int, n_threads: int = 30) -> list[IntentEvent]:
         """Pull all MD5s from an intent job with multithreads."""
         # First page
         response_json: dict = self._fetch_result_response(list_queue_id, 1)
         page_count: int = response_json["totalCount"]
         intent_events: list[IntentEvent] = self._extract_intent_events(response_json)
+
+        self._log("trace", f"Retrieved page 1. Pulling {page_count} pages.")
 
         def pull_page(p: int) -> list[IntentEvent]:
             return self._extract_intent_events(
@@ -266,6 +276,7 @@ class BigDBMClient:
         for page in result:
             intent_events.extend(page)
 
+        self._log("trace", f"Retrieved all {len(intent_events)} intent events.")
         return intent_events
 
     def uniquify_md5s(self, md5s: list[IntentEvent]) -> list[UniqueMD5]:
@@ -285,7 +296,12 @@ class BigDBMClient:
         key: str
         val: list[str]
 
-        return [UniqueMD5(md5=key, sentences=val) for key, val in md5s_dict.items()]
+        unique_md5s: list[UniqueMD5] = [
+            UniqueMD5(md5=key, sentences=val) for key, val in md5s_dict.items()
+        ]
+
+        self._log("trace", f"Uniquified {len(unique_md5s)} MD5s.")
+        return unique_md5s
 
     def check_numbers(self, iab_job: IABJob) -> dict[str, int]:
         """
@@ -301,6 +317,8 @@ class BigDBMClient:
         events: list[IntentEvent] = self.retrieve_md5s(list_queue_id)
         unique_md5s: list[UniqueMD5] = self.uniquify_md5s(events)
 
+        self._log("info", f"Checked numbers. Total: {len(events)}, Unique: {len(unique_md5s)}")
+
         return {
             "total": len(events),
             "unique": len(unique_md5s)
@@ -308,6 +326,7 @@ class BigDBMClient:
 
     def _pull_pii(self, md5s: list[str], output_id: int = 10008) -> dict[str, dict[str, Any]]:
         """Retrieve PII for a list of MD5 objects."""
+        self._log("trace", f"Pulling PII for {len(md5s)} MD5s.")
         request = Request(
             method="POST",
             url="https://aws-prod-dataapi-v09.bigdbm.com/GetDataBy/Md5",
