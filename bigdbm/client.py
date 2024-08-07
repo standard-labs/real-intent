@@ -6,6 +6,7 @@ from requests import RequestException
 import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
+from contextlib import contextmanager
 
 from bigdbm.schemas import (
     ConfigDates,
@@ -20,10 +21,14 @@ from bigdbm.error import BigDBMApiError
 # Logging import
 try:
     import logfire
-    from contextlib import contextmanager
     DEFAULT_LOGGING = True
 except ImportError:
     DEFAULT_LOGGING = False
+
+# Mock logfire spans
+@contextmanager
+def dummy_span(*args, **kwargs):
+    yield
 
 
 class BigDBMClient:
@@ -45,20 +50,12 @@ class BigDBMClient:
         self._access_token_expiration: int = 0  # unix timestamp
         self._update_token()
 
-    # Logging abstractions
-    @contextmanager
-    def _log_span(self, message: str, _level: str | int = "info"):
-        """With statement, logfire.span() but only if logging is enabled."""
-        if self.logging:
-            with logfire.span(message, _level=_level):
-                yield
-        else:
-            yield
+        # Logging if enabled/disabled
+        self.logfire = logfire
 
-    def _log(self, level: str | int, message: str) -> None:
-        """Log a message at a given level, only if logging is enabled."""
-        if self.logging:
-            logfire.log(level, message)
+        if not logging:
+            self.logfire.log = lambda *args, **kwargs: None
+            self.logfire.span = dummy_span
 
     def _update_token(self) -> None:
         """Update the token inplace."""
