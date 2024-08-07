@@ -29,3 +29,6 @@ classifiers = [
 [project.urls]
 Homepage = "https://standarddao.finance"
 Repository = "https://github.com/Standard-Labs/bigdbm-python.git"
+
+[project.optional-dependencies]
+logfire = ["logfire"]
