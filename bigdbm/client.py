@@ -17,6 +17,14 @@ from bigdbm.schemas import (
 )
 from bigdbm.error import BigDBMApiError
 
+# Logging import
+try:
+    import logfire
+    from contextlib import contextmanager
+    DEFAULT_LOGGING = True
+except ImportError:
+    DEFAULT_LOGGING = False
+
 
 class BigDBMClient:
     """
@@ -26,15 +34,31 @@ class BigDBMClient:
     an access token and configuration dates.
     """
 
-    def __init__(self, client_id: str, client_secret: str) -> None:
+    def __init__(self, client_id: str, client_secret: str, logging: bool = DEFAULT_LOGGING) -> None:
         """Initialize the BigDBM client."""
         self.client_id: str = client_id
         self.client_secret: str = client_secret
+        self.logging: bool = logging
 
         # Access token declarations (defined by _update_token)
         self._access_token: str = ""
         self._access_token_expiration: int = 0  # unix timestamp
         self._update_token()
+
+    # Logging abstractions
+    @contextmanager
+    def _log_span(self, message: str):
+        """With statement, logfire.span() but only if logging is enabled."""
+        if self.logging:
+            with logfire.span(message):
+                yield
+        else:
+            yield
+
+    def _log(self, level: str | int, message: str) -> None:
+        """Log a message at a given level, only if logging is enabled."""
+        if self.logging:
+            logfire.log(level, message)
 
     def _update_token(self) -> None:
         """Update the token inplace."""
