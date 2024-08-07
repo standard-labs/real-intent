@@ -40,31 +40,30 @@ class FillProcessor(BaseProcessor):
         return_md5s: list[MD5WithPII] = []
 
         while len(return_md5s) < n_hems:  # Constantly pull PII until the threshold is hit
-            if not md5s_bank:
-                self.client._log("debug", "No more MD5s to pull.")
-                break
+            with self.client._log_span("Pulling more PII to fill validated quota."):
+                if not md5s_bank:
+                    self.client._log("debug", "No more MD5s to pull.")
+                    break
 
-            n_delta: int = n_hems - len(return_md5s)
-            self.client._log("debug", f"Pulling {n_delta} more PII.")
+                n_delta: int = n_hems - len(return_md5s)
+                md5s_job: list[UniqueMD5] = md5s_bank[:n_delta]
+                md5s_with_pii: list[MD5WithPII] = self.client.pii_for_unique_md5s(md5s_job)
 
-            md5s_job: list[UniqueMD5] = md5s_bank[:n_delta]
-            md5s_with_pii: list[MD5WithPII] = self.client.pii_for_unique_md5s(md5s_job)
+                # Utilize parameterized validators to filter leads
+                validator: BaseValidator
+                for validator in validators:
+                    initial_len: int = len(md5s_with_pii)
+                    md5s_with_pii = validator.validate(md5s_with_pii)
+                    self.client._log(
+                        "debug", 
+                        f"{validator.__class__.__name__} removed {initial_len - len(md5s_with_pii)} leads."
+                    )
 
-            # Utilize parameterized validators to filter leads
-            validator: BaseValidator
-            for validator in validators:
-                initial_len: int = len(md5s_with_pii)
-                md5s_with_pii = validator.validate(md5s_with_pii)
-                self.client._log(
-                    "debug", 
-                    f"{validator.__class__.__name__} removed {initial_len - len(md5s_with_pii)} leads."
-                )
+                # Add post-validated (remaining) leads
+                return_md5s.extend(md5s_with_pii)
 
-            # Add post-validated (remaining) leads
-            return_md5s.extend(md5s_with_pii)
-
-            # Update tracking
-            del md5s_bank[:n_delta]
+                # Update tracking
+                del md5s_bank[:n_delta]
 
         return return_md5s
 
