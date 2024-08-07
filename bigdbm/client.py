@@ -47,10 +47,10 @@ class BigDBMClient:
 
     # Logging abstractions
     @contextmanager
-    def _log_span(self, message: str):
+    def _log_span(self, message: str, _level: str | int = "info"):
         """With statement, logfire.span() but only if logging is enabled."""
         if self.logging:
-            with logfire.span(message):
+            with logfire.span(message, _level=_level):
                 yield
         else:
             yield
@@ -145,7 +145,7 @@ class BigDBMClient:
 
     def _request(self, request: Request) -> dict:
         """Request abstraction with logging."""
-        with self._log_span(f"Requesting {request.method} {request.url}"):
+        with self._log_span(f"Requesting {request.method} {request.url}", _level="trace"):
             return self.__request(request)
     
     def get_config_dates(self) -> ConfigDates:
