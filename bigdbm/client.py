@@ -95,7 +95,7 @@ class BigDBMClient:
 
         return True
 
-    def _request(self, request: Request) -> dict:
+    def __request(self, request: Request) -> dict:
         """
         Abstracted requesting mechanism handling access token.
         Raises for status automatically. 
@@ -140,7 +140,13 @@ class BigDBMClient:
 
             response.raise_for_status()
 
+        self._log("trace", f"Received response: {response.text}")
         return response.json()
+
+    def _request(self, request: Request) -> dict:
+        """Request abstraction with logging."""
+        with self._log_span(f"Requesting {request.method} {request.url}"):
+            return self.__request(request)
     
     def get_config_dates(self) -> ConfigDates:
         """Get the configuration dates from /config."""
@@ -154,10 +160,13 @@ class BigDBMClient:
             )
         )
 
-        return ConfigDates(
+        config_dates = ConfigDates(
             start_date=response_json["startDate"],
             end_date=response_json["endDate"]
         )
+        self._log("trace", f"Retrieved config dates: {config_dates}")
+
+        return config_dates
 
     def create_job(self, iab_job: IABJob) -> int:
         """
@@ -166,6 +175,7 @@ class BigDBMClient:
         """
         config_dates: ConfigDates = self.get_config_dates()
 
+        self._log("trace", f"Creating IABJob: {iab_job}")
         request = Request(
             method="POST",
             url="https://aws-prod-intent-api.bigdbm.com/intent/createList",
@@ -179,7 +189,10 @@ class BigDBMClient:
             }
         )
 
-        return int(self._request(request)["listQueueId"])
+        list_queue_id: int = int(self._request(request)["listQueueId"])
+        self._log("trace", f"Created IABJob with listQueueId: {list_queue_id}")
+
+        return list_queue_id
 
     def get_list_status(self, list_queue_id: int) -> int:
         """Get the processing status of a list."""
