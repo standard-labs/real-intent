@@ -76,7 +76,7 @@ class BigDBMClient:
         
         self._access_token = response_json["access_token"]
         self._access_token_expiration = int(time.time() - 10) + response_json["expires_in"]
-        self._log("trace", "Updated access token.")
+        self.logfire.log("trace", "Updated access token.")
         return
 
     def _access_token_valid(self) -> bool:
@@ -106,7 +106,7 @@ class BigDBMClient:
         request.headers.update({
             "Authorization": f"Bearer {self._access_token}"
         })
-        self._log(
+        self.logfire.log(
             "trace", 
             f"Sending request: {
                 {
@@ -126,23 +126,23 @@ class BigDBMClient:
             response.raise_for_status()
         except RequestException as e:
             # If there's an error, wait and try just once more
-            self._log("warn", f"Request failed. Waiting 10 seconds and trying again. Error: {e}")
+            self.logfire.log("warn", f"Request failed. Waiting 10 seconds and trying again. Error: {e}")
             time.sleep(10)
 
             with Session() as session:
                 response = session.send(request.prepare())
 
             if not response.ok:
-                self._log("error", f"Request failed again. Error: {response.text}")
+                self.logfire.log("error", f"Request failed again. Error: {response.text}")
 
             response.raise_for_status()
 
-        self._log("trace", f"Received response: {response.text}")
+        self.logfire.log("trace", f"Received response: {response.text}")
         return response.json()
 
     def _request(self, request: Request) -> dict:
         """Request abstraction with logging."""
-        with self._log_span(f"Requesting {request.method} {request.url}", _level="trace"):
+        with self.logfire.log_span(f"Requesting {request.method} {request.url}", _level="trace"):
             return self.__request(request)
     
     def get_config_dates(self) -> ConfigDates:
@@ -161,7 +161,7 @@ class BigDBMClient:
             start_date=response_json["startDate"],
             end_date=response_json["endDate"]
         )
-        self._log("trace", f"Retrieved config dates: {config_dates}")
+        self.logfire.log("trace", f"Retrieved config dates: {config_dates}")
 
         return config_dates
 
@@ -172,7 +172,7 @@ class BigDBMClient:
         """
         config_dates: ConfigDates = self.get_config_dates()
 
-        self._log("trace", f"Creating IABJob: {iab_job}")
+        self.logfire.log("trace", f"Creating IABJob: {iab_job}")
         request = Request(
             method="POST",
             url="https://aws-prod-intent-api.bigdbm.com/intent/createList",
@@ -187,7 +187,7 @@ class BigDBMClient:
         )
 
         list_queue_id: int = int(self._request(request)["listQueueId"])
-        self._log("trace", f"Created IABJob with listQueueId: {list_queue_id}")
+        self.logfire.log("trace", f"Created IABJob with listQueueId: {list_queue_id}")
 
         return list_queue_id
 
@@ -200,13 +200,13 @@ class BigDBMClient:
         )
 
         status_code: int = int(self._request(request)["status"])
-        self._log("trace", f"List ID {list_queue_id} has status code {status_code}")
+        self.logfire.log("trace", f"List ID {list_queue_id} has status code {status_code}")
 
         return status_code
     
     def wait_until_completion(self, list_queue_id: int) -> None:
         """Wait until a job has finished processing."""
-        self._log("trace", f"Waiting for list ID {list_queue_id} to finish processing.")
+        self.logfire.log("trace", f"Waiting for list ID {list_queue_id} to finish processing.")
 
         while (status := self.get_list_status(list_queue_id)) != 100:
             if status > 100:
@@ -223,7 +223,7 @@ class BigDBMClient:
         """
         list_queue_id: int = self.create_job(iab_job)
 
-        with self._log_span(f"Waiting for list {list_queue_id} to finish processing.", _level="trace"):
+        with self.logfire.log_span(f"Waiting for list {list_queue_id} to finish processing.", _level="trace"):
             self.wait_until_completion(list_queue_id)
         
         return list_queue_id
@@ -249,7 +249,7 @@ class BigDBMClient:
             for obj in fetch_result_json["result"]
         ]
 
-        self._log("trace", f"Extracted intent events: {intent_events}")
+        self.logfire.log("trace", f"Extracted intent events: {intent_events}")
         return intent_events
 
     def _retrieve_md5s(self, list_queue_id: int, n_threads: int = 30) -> list[IntentEvent]:
@@ -259,7 +259,7 @@ class BigDBMClient:
         page_count: int = response_json["totalCount"]
         intent_events: list[IntentEvent] = self._extract_intent_events(response_json)
 
-        self._log("trace", f"Retrieved page 1. Pulling {page_count} pages.")
+        self.logfire.log("trace", f"Retrieved page 1. Pulling {page_count} pages.")
 
         def pull_page(p: int) -> list[IntentEvent]:
             return self._extract_intent_events(
@@ -276,12 +276,12 @@ class BigDBMClient:
         for page in result:
             intent_events.extend(page)
 
-        self._log("trace", f"Retrieved all {len(intent_events)} intent events.")
+        self.logfire.log("trace", f"Retrieved all {len(intent_events)} intent events.")
         return intent_events
 
     def retrieve_md5s(self, list_queue_id: int, n_threads: int = 30) -> list[IntentEvent]:
         """Retrieve all MD5s from an intent job. Logged."""
-        with self._log_span(f"Retrieving MD5s from list ID {list_queue_id} with {n_threads} threads", _level="trace"):
+        with self.logfire.log_span(f"Retrieving MD5s from list ID {list_queue_id} with {n_threads} threads", _level="trace"):
             return self._retrieve_md5s(list_queue_id, n_threads=n_threads)
 
     def uniquify_md5s(self, md5s: list[IntentEvent]) -> list[UniqueMD5]:
@@ -305,7 +305,7 @@ class BigDBMClient:
             UniqueMD5(md5=key, sentences=val) for key, val in md5s_dict.items()
         ]
 
-        self._log("trace", f"Uniquified {len(unique_md5s)} MD5s.")
+        self.logfire.log("trace", f"Uniquified {len(unique_md5s)} MD5s.")
         return unique_md5s
 
     def check_numbers(self, iab_job: IABJob) -> dict[str, int]:
@@ -322,7 +322,7 @@ class BigDBMClient:
         events: list[IntentEvent] = self.retrieve_md5s(list_queue_id)
         unique_md5s: list[UniqueMD5] = self.uniquify_md5s(events)
 
-        self._log("info", f"Checked numbers. Total: {len(events)}, Unique: {len(unique_md5s)}")
+        self.logfire.log("info", f"Checked numbers. Total: {len(events)}, Unique: {len(unique_md5s)}")
 
         return {
             "total": len(events),
@@ -331,7 +331,7 @@ class BigDBMClient:
 
     def _pull_pii(self, md5s: list[str], output_id: int = 10008) -> dict[str, dict[str, Any]]:
         """Retrieve PII for a list of MD5 objects."""
-        self._log("trace", f"Pulling PII for {len(md5s)} MD5s.")
+        self.logfire.log("trace", f"Pulling PII for {len(md5s)} MD5s.")
         request = Request(
             method="POST",
             url="https://aws-prod-dataapi-v09.bigdbm.com/GetDataBy/Md5",
@@ -379,7 +379,7 @@ class BigDBMClient:
                 )
             )
 
-        self._log(
+        self.logfire.log(
             "trace", 
             (
                 f"Retrieved {len(return_md5s)} PII for {len(unique_md5s)} initial MD5s, "
