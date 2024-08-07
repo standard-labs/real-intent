@@ -252,7 +252,7 @@ class BigDBMClient:
         self._log("trace", f"Extracted intent events: {intent_events}")
         return intent_events
 
-    def retrieve_md5s(self, list_queue_id: int, n_threads: int = 30) -> list[IntentEvent]:
+    def _retrieve_md5s(self, list_queue_id: int, n_threads: int = 30) -> list[IntentEvent]:
         """Pull all MD5s from an intent job with multithreads."""
         # First page
         response_json: dict = self._fetch_result_response(list_queue_id, 1)
@@ -278,6 +278,11 @@ class BigDBMClient:
 
         self._log("trace", f"Retrieved all {len(intent_events)} intent events.")
         return intent_events
+
+    def retrieve_md5s(self, list_queue_id: int, n_threads: int = 30) -> list[IntentEvent]:
+        """Retrieve all MD5s from an intent job. Logged."""
+        with self._log_span(f"Retrieving MD5s from list ID {list_queue_id} with {n_threads} threads."):
+            return self._retrieve_md5s(list_queue_id, n_threads=n_threads)
 
     def uniquify_md5s(self, md5s: list[IntentEvent]) -> list[UniqueMD5]:
         """
