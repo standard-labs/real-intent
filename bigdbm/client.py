@@ -225,7 +225,10 @@ class BigDBMClient:
         Returns an (int) of the listQueueId for pulling the results.
         """
         list_queue_id: int = self.create_job(iab_job)
-        self.wait_until_completion(list_queue_id)
+
+        with self._log_span(f"Waiting for list {list_queue_id} to finish processing."):
+            self.wait_until_completion(list_queue_id)
+        
         return list_queue_id
     
     def _fetch_result_response(self, list_queue_id: int, page_num: int) -> dict:
