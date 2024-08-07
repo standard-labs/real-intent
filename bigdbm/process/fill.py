@@ -45,7 +45,7 @@ class FillProcessor(BaseProcessor):
                 break
 
             n_delta: int = n_hems - len(return_md5s)
-            self.client._log("debug", f"Pulling {n_delta} more MD5s.")
+            self.client._log("debug", f"Pulling {n_delta} more PII.")
 
             md5s_job: list[UniqueMD5] = md5s_bank[:n_delta]
             md5s_with_pii: list[MD5WithPII] = self.client.pii_for_unique_md5s(md5s_job)
@@ -106,7 +106,7 @@ class FillProcessor(BaseProcessor):
 
         # If we have enough leads, return them
         if len(return_md5s) >= n_hems:
-            self.client._log("debug", "Enough leads found with all validators.")
+            self.client._log("debug", f"Enough leads found with all validators. Leads: {return_md5s}")
             return return_md5s
 
         # If we don't have enough leads, try again with fallen back validators
@@ -123,7 +123,10 @@ class FillProcessor(BaseProcessor):
             self.required_validators  # only required, no fallback validators
         )
 
-        self.client._log("debug", f"Returning {len(return_md5s)} leads after removing fallback validators.")
+        self.client._log(
+            "debug", 
+            f"Returning {len(return_md5s)} leads after removing fallback validators. Leads: {return_md5s}"
+        )
         return return_md5s
 
     def process(self, iab_job: IABJob) -> list[MD5WithPII]:
