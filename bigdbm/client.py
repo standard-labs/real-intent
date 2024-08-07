@@ -41,6 +41,13 @@ class BigDBMClient:
 
     def __init__(self, client_id: str, client_secret: str, logging: bool = DEFAULT_LOGGING) -> None:
         """Initialize the BigDBM client."""
+        # Logging if enabled/disabled
+        self.logfire = logfire
+
+        if not logging:
+            self.logfire.log = lambda *args, **kwargs: None
+            self.logfire.span = dummy_span
+
         self.client_id: str = client_id
         self.client_secret: str = client_secret
         self.logging: bool = logging
@@ -49,13 +56,6 @@ class BigDBMClient:
         self._access_token: str = ""
         self._access_token_expiration: int = 0  # unix timestamp
         self._update_token()
-
-        # Logging if enabled/disabled
-        self.logfire = logfire
-
-        if not logging:
-            self.logfire.log = lambda *args, **kwargs: None
-            self.logfire.span = dummy_span
 
     def _update_token(self) -> None:
         """Update the token inplace."""
