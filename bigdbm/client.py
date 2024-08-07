@@ -109,10 +109,23 @@ class BigDBMClient:
         request.headers.update({
             "Authorization": f"Bearer {self._access_token}"
         })
+        self._log(
+            "trace", 
+            f"Sending request: {
+                {
+                    "method": request.method,
+                    "url": request.url,
+                    "headers": request.headers,
+                    "data": request.data,
+                    "json": request.json
+                }
+            }"
+        )
 
         try:
             with Session() as session:
                 response = session.send(request.prepare())
+
             response.raise_for_status()
         except RequestException as e:
             # If there's an error, wait and try just once more
@@ -121,6 +134,9 @@ class BigDBMClient:
 
             with Session() as session:
                 response = session.send(request.prepare())
+
+            if not response.ok:
+                self._log("error", f"Request failed again. Error: {response.text}")
 
             response.raise_for_status()
 
