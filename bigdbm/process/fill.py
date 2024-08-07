@@ -40,7 +40,7 @@ class FillProcessor(BaseProcessor):
         return_md5s: list[MD5WithPII] = []
 
         while len(return_md5s) < n_hems:  # Constantly pull PII until the threshold is hit
-            with self.client.logfire.log_span("Pulling more PII to fill validated quota.", _level="debug"):
+            with self.client.logfire.span("Pulling more PII to fill validated quota.", _level="debug"):
                 if not md5s_bank:
                     self.client.logfire.log("debug", "No more MD5s to pull.")
                     break
@@ -76,7 +76,7 @@ class FillProcessor(BaseProcessor):
         """
         Pulls and validates the leads from the intent events. Logs in a span.
         """
-        with self.client.logfire.log_span("Enhancing MD5s with PII and validating.", _level="debug"):
+        with self.client.logfire.span("Enhancing MD5s with PII and validating.", _level="debug"):
             return self.__pull_and_validate(intent_events, n_hems, validators)
 
     def _process(self, iab_job: IABJob) -> list[MD5WithPII]:
@@ -141,7 +141,7 @@ class FillProcessor(BaseProcessor):
         If the initial pull does not return enough data, the processor will try again without
         the fallback validators, retaining whatever leads were already pulled.
         """
-        with self.client.logfire.log_span(f"Using FillProcessor to process job: {iab_job}", _level="debug"):
+        with self.client.logfire.span(f"Using FillProcessor to process job: {iab_job}", _level="debug"):
             return self._process(iab_job)
 
 

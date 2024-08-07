@@ -142,7 +142,7 @@ class BigDBMClient:
 
     def _request(self, request: Request) -> dict:
         """Request abstraction with logging."""
-        with self.logfire.log_span(f"Requesting {request.method} {request.url}", _level="trace"):
+        with self.logfire.span(f"Requesting {request.method} {request.url}", _level="trace"):
             return self.__request(request)
     
     def get_config_dates(self) -> ConfigDates:
@@ -223,7 +223,7 @@ class BigDBMClient:
         """
         list_queue_id: int = self.create_job(iab_job)
 
-        with self.logfire.log_span(f"Waiting for list {list_queue_id} to finish processing.", _level="trace"):
+        with self.logfire.span(f"Waiting for list {list_queue_id} to finish processing.", _level="trace"):
             self.wait_until_completion(list_queue_id)
         
         return list_queue_id
@@ -281,7 +281,7 @@ class BigDBMClient:
 
     def retrieve_md5s(self, list_queue_id: int, n_threads: int = 30) -> list[IntentEvent]:
         """Retrieve all MD5s from an intent job. Logged."""
-        with self.logfire.log_span(f"Retrieving MD5s from list ID {list_queue_id} with {n_threads} threads", _level="trace"):
+        with self.logfire.span(f"Retrieving MD5s from list ID {list_queue_id} with {n_threads} threads", _level="trace"):
             return self._retrieve_md5s(list_queue_id, n_threads=n_threads)
 
     def uniquify_md5s(self, md5s: list[IntentEvent]) -> list[UniqueMD5]:
