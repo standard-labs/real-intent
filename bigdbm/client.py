@@ -376,7 +376,10 @@ class BigDBMClient:
 
         self._log(
             "trace", 
-            f"Retrieved {len(return_md5s)} PII for {len(unique_md5s)} initial MD5s."
+            (
+                f"Retrieved {len(return_md5s)} PII for {len(unique_md5s)} initial MD5s, "
+                f"hit rate: {len(return_md5s) / len(unique_md5s):.2f}"
+            )
         )
 
         return return_md5s
