@@ -26,7 +26,7 @@ class FillProcessor(BaseProcessor):
         super().__init__(bigdbm_client)
         self.intent_multiplier: float = intent_multiplier
 
-    def _pull_and_validate(
+    def __pull_and_validate(
         self,
         intent_events: list[IntentEvent], 
         n_hems: int, 
@@ -40,27 +40,46 @@ class FillProcessor(BaseProcessor):
         return_md5s: list[MD5WithPII] = []
 
         while len(return_md5s) < n_hems:  # Constantly pull PII until the threshold is hit
-            if not md5s_bank:
-                break
+            with self.client.logfire.span("Pulling more PII to fill validated quota.", _level="debug"):
+                if not md5s_bank:
+                    self.client.logfire.log("debug", "No more MD5s to pull.")
+                    break
 
-            n_delta: int = n_hems - len(return_md5s)
-            md5s_job: list[UniqueMD5] = md5s_bank[:n_delta]
-            md5s_with_pii: list[MD5WithPII] = self.client.pii_for_unique_md5s(md5s_job)
+                n_delta: int = n_hems - len(return_md5s)
+                md5s_job: list[UniqueMD5] = md5s_bank[:n_delta]
+                md5s_with_pii: list[MD5WithPII] = self.client.pii_for_unique_md5s(md5s_job)
 
-            # Utilize parameterized validators to filter leads
-            validator: BaseValidator
-            for validator in validators:
-                md5s_with_pii = validator.validate(md5s_with_pii)
+                # Utilize parameterized validators to filter leads
+                validator: BaseValidator
+                for validator in validators:
+                    initial_len: int = len(md5s_with_pii)
+                    md5s_with_pii = validator.validate(md5s_with_pii)
+                    self.client.logfire.log(
+                        "debug", 
+                        f"{validator.__class__.__name__} removed {initial_len - len(md5s_with_pii)} leads."
+                    )
 
-            # Add post-validated (remaining) leads
-            return_md5s.extend(md5s_with_pii)
+                # Add post-validated (remaining) leads
+                return_md5s.extend(md5s_with_pii)
 
-            # Update tracking
-            del md5s_bank[:n_delta]
+                # Update tracking
+                del md5s_bank[:n_delta]
 
         return return_md5s
 
-    def process(self, iab_job: IABJob) -> list[MD5WithPII]:
+    def _pull_and_validate(
+        self,
+        intent_events: list[IntentEvent],
+        n_hems: int,
+        validators: list[BaseValidator]
+    ) -> list[MD5WithPII]:
+        """
+        Pulls and validates the leads from the intent events. Logs in a span.
+        """
+        with self.client.logfire.span("Enhancing MD5s with PII and validating.", _level="debug"):
+            return self.__pull_and_validate(intent_events, n_hems, validators)
+
+    def _process(self, iab_job: IABJob) -> list[MD5WithPII]:
         """
         1. Pull 2x as much intent data as requested. (adjustable on instantiation)
         2. Request 1x as much PII.
@@ -86,9 +105,16 @@ class FillProcessor(BaseProcessor):
 
         # If we have enough leads, return them
         if len(return_md5s) >= n_hems:
+            self.client.logfire.log("debug", f"Enough leads found with all validators. Leads: {return_md5s}")
             return return_md5s
 
         # If we don't have enough leads, try again with fallen back validators
+        self.client.logfire.log(
+            "debug", 
+            f"Only {len(return_md5s)} leads found with all validators. Retrying without: {
+                [v.__class__.__name__ for v in self.fallback_validators]
+            }"
+        )
         existing_md5s: list[str] = [i.md5 for i in return_md5s]
         return_md5s += self._pull_and_validate(
             [i for i in intent_events if i.md5 not in existing_md5s],  # only run on events not used
@@ -96,7 +122,27 @@ class FillProcessor(BaseProcessor):
             self.required_validators  # only required, no fallback validators
         )
 
+        self.client.logfire.log(
+            "debug", 
+            f"Returning {len(return_md5s)} leads after removing fallback validators. Leads: {return_md5s}"
+        )
         return return_md5s
+
+    def process(self, iab_job: IABJob) -> list[MD5WithPII]:
+        """
+        1. Pull 2x as much intent data as requested. (adjustable on instantiation)
+        2. Request 1x as much PII.
+        3. Keep requesting PII on more data until filled.
+
+        Can return less than the requested amount of data if:
+        - The PII hit rate is less than 0.5x, as 2x data is not enough.
+        - There is not enough intent data returned.
+
+        If the initial pull does not return enough data, the processor will try again without
+        the fallback validators, retaining whatever leads were already pulled.
+        """
+        with self.client.logfire.span(f"Using FillProcessor to process job: {iab_job}", _level="debug"):
+            return self._process(iab_job)
 
 
 # ---- Deprecation Zone ----
