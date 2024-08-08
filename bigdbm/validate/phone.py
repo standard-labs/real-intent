@@ -12,9 +12,10 @@ class PhoneValidator(BaseValidator):
     Remove US phone numbers determined to not be 'valid' by Numverify.
     """
 
-    def __init__(self, numverify_key: str) -> None:
+    def __init__(self, numverify_key: str, max_threads: int = 10) -> None:
         """Initialize with numverify key."""
         self.api_key: str = numverify_key
+        self.max_threads: int = max_threads
 
     def _validate_phone(self, phone: str) -> bool:
         """Validate a US phone number with numverify."""
@@ -53,7 +54,7 @@ class PhoneValidator(BaseValidator):
             all_phones.extend([phone.phone for phone in md5.pii.mobile_phones])
 
         # Validate all the phone numbers
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
             valid_phones_idx: list[bool] = list(
                 executor.map(self._validate_phone, all_phones)
             )
