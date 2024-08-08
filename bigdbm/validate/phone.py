@@ -1,6 +1,8 @@
 """Validate phone numbers using numverify."""
 import requests
 
+from concurrent.futures import ThreadPoolExecutor
+
 from bigdbm.schemas import MD5WithPII
 from bigdbm.validate.base import BaseValidator
 
@@ -10,9 +12,10 @@ class PhoneValidator(BaseValidator):
     Remove US phone numbers determined to not be 'valid' by Numverify.
     """
 
-    def __init__(self, numverify_key: str) -> None:
+    def __init__(self, numverify_key: str, max_threads: int = 10) -> None:
         """Initialize with numverify key."""
         self.api_key: str = numverify_key
+        self.max_threads: int = max_threads
 
     def _validate_phone(self, phone: str) -> bool:
         """Validate a US phone number with numverify."""
@@ -45,9 +48,26 @@ class PhoneValidator(BaseValidator):
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove any phone numbers that are not 'good'."""
+        # Extract all the phone numbers
+        all_phones: list[str] = []
+        for md5 in md5s:
+            all_phones.extend([phone.phone for phone in md5.pii.mobile_phones])
+
+        # Validate all the phone numbers
+        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
+            valid_phones_idx: list[bool] = list(
+                executor.map(self._validate_phone, all_phones)
+            )
+
+        # Extract valid phone numbers
+        valid_phones: list[str] = [
+            phone for phone, is_valid in zip(all_phones, valid_phones_idx) if is_valid
+        ]
+
+        # Remove invalid phone numbers from MD5s
         for md5 in md5s:
             md5.pii.mobile_phones = [
-                phone for phone in md5.pii.mobile_phones if self._validate_phone(phone.phone)
+                phone for phone in md5.pii.mobile_phones if phone.phone in valid_phones
             ]
 
         return md5s
