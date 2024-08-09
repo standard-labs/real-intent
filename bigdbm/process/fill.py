@@ -40,12 +40,19 @@ class FillProcessor(BaseProcessor):
         return_md5s: list[MD5WithPII] = []
 
         while len(return_md5s) < n_hems:  # Constantly pull PII until the threshold is hit
+            n_delta: int = n_hems - len(return_md5s)
+
             with self.client.logfire.span("Pulling more PII to fill validated quota.", _level="debug"):
                 if not md5s_bank:
-                    self.client.logfire.log("debug", "No more MD5s to pull.")
+                    self.client.logfire.log(
+                        "warn", 
+                        (
+                            "Needed more MD5s to fill quota post-validation. "
+                            "Consider increasing the intent multiplier for this job.."
+                        )
+                    )
                     break
 
-                n_delta: int = n_hems - len(return_md5s)
                 md5s_job: list[UniqueMD5] = md5s_bank[:n_delta]
                 md5s_with_pii: list[MD5WithPII] = self.client.pii_for_unique_md5s(md5s_job)
 
