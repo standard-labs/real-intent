@@ -2,6 +2,8 @@
 import requests
 
 from concurrent.futures import ThreadPoolExecutor
+import time
+import random
 
 from bigdbm.schemas import MD5WithPII
 from bigdbm.validate.base import BaseValidator
@@ -45,6 +47,16 @@ class PhoneValidator(BaseValidator):
             raise ValueError(f"Unexpected response from numverify: {response_json}")
 
         return response_json["valid"]
+    
+    def _validate_with_retry(self, phone: str) -> bool:
+        """Retry the validation if it fails."""
+        for _ in range(3):
+            try:
+                return self._validate_phone(phone)
+            except requests.RequestException as e:
+                time.sleep(random.uniform(3, 5))
+
+        raise e
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove any phone numbers that are not 'good'."""
@@ -56,7 +68,7 @@ class PhoneValidator(BaseValidator):
         # Validate all the phone numbers
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
             valid_phones_idx: list[bool] = list(
-                executor.map(self._validate_phone, all_phones)
+                executor.map(self._validate_with_retry, all_phones)
             )
 
         # Extract valid phone numbers
