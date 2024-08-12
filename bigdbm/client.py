@@ -4,6 +4,7 @@ from requests import Request, Session
 from requests import RequestException
 
 import time
+import random
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from contextlib import contextmanager
@@ -126,8 +127,9 @@ class BigDBMClient:
             response.raise_for_status()
         except RequestException as e:
             # If there's an error, wait and try just once more
-            self.logfire.log("warn", f"Request failed. Waiting 10 seconds and trying again. Error: {e}")
-            time.sleep(10)
+            _random_sleep = round(random.uniform(7, 13), 2)
+            self.logfire.log("warn", f"Request failed. Waiting {_random_sleep} seconds and trying again. Error: {e}")
+            time.sleep(_random_sleep)
 
             with Session() as session:
                 response = session.send(request.prepare())
