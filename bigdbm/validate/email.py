@@ -2,6 +2,8 @@
 import requests
 
 from concurrent.futures import ThreadPoolExecutor
+import time
+import random
 
 from bigdbm.schemas import MD5WithPII
 from bigdbm.validate.base import BaseValidator
@@ -36,6 +38,16 @@ class EmailValidator(BaseValidator):
 
         return response_json["resultcode"] == 1
 
+    def _validate_with_retry(self, email: str) -> bool:
+        """Retry the validation if it fails."""
+        for _ in range(3):
+            try:
+                return self._validate_email(email)
+            except requests.RequestException as e:
+                time.sleep(random.uniform(3, 5))
+
+        raise
+
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove any emails that are not 'good'."""
         # Extract all the emails
@@ -46,7 +58,7 @@ class EmailValidator(BaseValidator):
         # Validate all the emails
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
             valid_emails_idx: list[bool] = list(
-                executor.map(self._validate_email, all_emails)
+                executor.map(self._validate_with_retry, all_emails)
             )
 
         # Extract valid emails
