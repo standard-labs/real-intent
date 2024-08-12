@@ -56,7 +56,7 @@ class PhoneValidator(BaseValidator):
             except requests.RequestException as e:
                 time.sleep(random.uniform(3, 5))
 
-        raise e
+        raise
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove any phone numbers that are not 'good'."""
