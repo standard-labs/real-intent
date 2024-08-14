@@ -73,3 +73,16 @@ class EmailValidator(BaseValidator):
             ]
 
         return md5s
+
+
+class HasEmailValidator(BaseValidator):
+    """
+    Only show hems with an email address. 
+
+    So, use this validator _after_ EmailValidator so that emails are not removed
+    afterwards resulting in potentially empty email lists.
+    """
+
+    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove hems without an email address."""
+        return [md5 for md5 in md5s if md5.pii.emails]
