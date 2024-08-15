@@ -111,10 +111,10 @@ class PII(BaseModel):
     mobile phone data.
     """
     id: str = Field(..., alias="Id", description="BigDBM person ID")
-    address: str = Field(..., alias="Address")
-    city: str = Field(..., alias="City")
     first_name: str = Field(..., alias="First_Name")
     last_name: str = Field(..., alias="Last_Name")
+    address: str = Field(..., alias="Address")
+    city: str = Field(..., alias="City")
     # national_consumer_database  # what is this, and what type?
     state: str = Field(..., alias="State")
     zip_code: str = Field(..., alias="Zip")
