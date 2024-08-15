@@ -111,11 +111,10 @@ class PII(BaseModel):
     mobile phone data.
     """
     id: str = Field(..., alias="Id", description="BigDBM person ID")
-    address: str = Field(..., alias="Address")
-    city: str = Field(..., alias="City")
     first_name: str = Field(..., alias="First_Name")
     last_name: str = Field(..., alias="Last_Name")
-    last_name: str = Field(..., alias="Last_Name")
+    address: str = Field(..., alias="Address")
+    city: str = Field(..., alias="City")
     # national_consumer_database  # what is this, and what type?
     state: str = Field(..., alias="State")
     zip_code: str = Field(..., alias="Zip")
@@ -145,6 +144,28 @@ class PII(BaseModel):
         ..., alias="Veteran_HH", description="String number of veterans in the household"
     )
     mobile_phones: list[MobilePhone] = []
+
+    def __eq__(self, other: "PII") -> bool:
+        """Approximate if two PII objects are equivalent based on attributes."""
+        if not isinstance(other, PII):
+            raise ValueError(f"Cannot compare PII with {type(other)}.")
+
+        # Same name
+        if not f"{self.first_name} {self.last_name}" == f"{other.first_name}, {other.last_name}":
+            return False
+
+        # Same age
+        if not self.age == other.age:
+            return False
+
+        # Household stuff
+        if not (
+            self.household_net_worth == other.household_net_worth 
+            and self.household_income == other.household_income
+        ):
+            return False
+
+        return True
 
     @classmethod
     def from_api_dict(cls, api_dict: dict[str, Any]) -> Self:

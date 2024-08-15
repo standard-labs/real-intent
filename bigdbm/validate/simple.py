@@ -45,6 +45,33 @@ class MD5Validator(BaseValidator):
         ]
 
 
+class SamePersonValidator(BaseValidator):
+    """
+    Remove leads approximated to match to humans already in the lead list, i.e.
+    the same person with different MD5s, thus appearing twice.
+    """
+
+    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """
+        Remove leads approximated to match to humans already in the lead list, i.e.
+        the same person with different MD5s, thus appearing twice.
+        """
+        unique_leads: list[MD5WithPII] = []
+
+        lead: MD5WithPII
+        other: MD5WithPII
+
+        for lead in md5s:
+            for other in unique_leads:
+                if lead.pii == other.pii:
+                    other.sentences.extend(lead.sentences)
+                    break
+            else:
+                unique_leads.append(lead)
+        
+        return unique_leads
+
+
 class NumSentencesValidator(BaseValidator):
     """Ensure MD5s have at least a certain number of sentences."""
     
