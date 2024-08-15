@@ -146,6 +146,23 @@ class PII(BaseModel):
     )
     mobile_phones: list[MobilePhone] = []
 
+    def __eq__(self, other: "PII") -> bool:
+        """Approximate if two PII objects are equivalent based on attributes."""
+        # Same name
+        if not f"{self.first_name} {self.last_name}" == f"{other.first_name}, {other.last_name}":
+            return False
+
+        # Same age
+        if not self.age == other.age:
+            return False
+
+        # Household stuff
+        if not (
+            self.household_net_worth != other.household_net_worth 
+            or self.household_income != other.household_income
+        ):
+            return False
+
     @classmethod
     def from_api_dict(cls, api_dict: dict[str, Any]) -> Self:
         """Read in the data and parse the mobile phones."""
