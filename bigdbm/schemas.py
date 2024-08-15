@@ -238,6 +238,6 @@ class MD5WithPII(UniqueMD5):
     def __eq__(self, other: "MD5WithPII") -> bool:
         """Approximate if two MD5WithPII objects are equivalent based on PII."""
         if not isinstance(other, MD5WithPII):
-            raise ValueError(f"Cannot compare MD5WithPII with {type(other)}.")
+            raise TypeError(f"Cannot compare MD5WithPII with {type(other)}.")
 
         return self.hash() == other.hash()
