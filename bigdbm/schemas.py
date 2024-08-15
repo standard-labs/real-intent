@@ -145,27 +145,16 @@ class PII(BaseModel):
     )
     mobile_phones: list[MobilePhone] = []
 
+    def hash(self) -> str:
+        """Hash with instance attributes."""
+        return f"{self.first_name} {self.last_name} {self.zip_code} {self.age} {self.household_net_worth} {self.household_income}"
+
     def __eq__(self, other: "PII") -> bool:
         """Approximate if two PII objects are equivalent based on attributes."""
         if not isinstance(other, PII):
             raise ValueError(f"Cannot compare PII with {type(other)}.")
 
-        # Same name
-        if not f"{self.first_name} {self.last_name}" == f"{other.first_name}, {other.last_name}":
-            return False
-
-        # Same age
-        if not self.age == other.age:
-            return False
-
-        # Household stuff
-        if not (
-            self.household_net_worth == other.household_net_worth 
-            and self.household_income == other.household_income
-        ):
-            return False
-
-        return True
+        return self.hash() == other.hash()
 
     @classmethod
     def from_api_dict(cls, api_dict: dict[str, Any]) -> Self:
@@ -238,6 +227,17 @@ class MD5WithPII(UniqueMD5):
 
     Note: In the future, instead of housing a top-level `pii` attribute, 
     encode each PII attribute with the appropriate data type for full model
-    valudation.
+    validation.
     """
     pii: PII
+
+    def hash(self) -> str:
+        """Hash with PII instance attritutes."""
+        return self.pii.hash()
+
+    def __eq__(self, other: "MD5WithPII") -> bool:
+        """Approximate if two MD5WithPII objects are equivalent based on PII."""
+        if not isinstance(other, MD5WithPII):
+            raise ValueError(f"Cannot compare MD5WithPII with {type(other)}.")
+
+        return self.hash() == other.hash()
