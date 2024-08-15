@@ -156,7 +156,10 @@ class PII(BaseModel):
             return False
 
         # Household stuff
-        if self.household_net_worth == other.household_net_worth and self.household_income == other.household_income:
+        if not (
+            self.household_net_worth == other.household_net_worth 
+            and self.household_income == other.household_income
+        ):
             return False
 
         return True
