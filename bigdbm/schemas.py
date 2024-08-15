@@ -145,7 +145,7 @@ class PII(BaseModel):
     )
     mobile_phones: list[MobilePhone] = []
 
-    def hash(self) -> str:
+    def hash(self: "PII") -> str:
         """Hash with instance attributes."""
         return f"{self.first_name} {self.last_name} {self.zip_code} {self.age} {self.household_net_worth} {self.household_income}"
 
