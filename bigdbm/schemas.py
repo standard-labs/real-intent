@@ -152,7 +152,7 @@ class PII(BaseModel):
     def __eq__(self, other: "PII") -> bool:
         """Approximate if two PII objects are equivalent based on attributes."""
         if not isinstance(other, PII):
-            raise ValueError(f"Cannot compare PII with {type(other)}.")
+            raise TypeError(f"Cannot compare PII with {type(other)}.")
 
         return self.hash() == other.hash()
 
