@@ -162,6 +162,8 @@ class PII(BaseModel):
         ):
             return False
 
+        return True
+
     @classmethod
     def from_api_dict(cls, api_dict: dict[str, Any]) -> Self:
         """Read in the data and parse the mobile phones."""
