@@ -57,10 +57,18 @@ class SamePersonValidator(BaseValidator):
         the same person with different MD5s, thus appearing twice.
         """
         unique_leads: list[MD5WithPII] = []
-        for lead in md5s:
-            if all(lead != other for other in unique_leads):
-                unique_leads.append(lead)
 
+        lead: MD5WithPII
+        other: MD5WithPII
+
+        for lead in md5s:
+            for other in unique_leads:
+                if lead.pii == other.pii:
+                    other.sentences.extend(lead.sentences)
+                    break
+            else:
+                unique_leads.append(lead)
+        
         return unique_leads
 
 
