@@ -56,18 +56,15 @@ class SamePersonValidator(BaseValidator):
         Remove leads approximated to match to humans already in the lead list, i.e.
         the same person with different MD5s, thus appearing twice.
         """
-        unique_leads: list[MD5WithPII] = []
+        unique_leads: dict[str, MD5WithPII] = {}
 
         lead: MD5WithPII
-        other: MD5WithPII
-
         for lead in md5s:
-            for other in unique_leads:
-                if lead.pii == other.pii:
-                    other.sentences.extend(lead.sentences)
-                    break
-            else:
-                unique_leads.append(lead)
+            if lead.hash() in unique_leads:
+                unique_leads[lead.hash()].sentences += lead.sentences
+                continue
+                
+            unique_leads[lead.hash()] = lead
         
         return unique_leads
 
