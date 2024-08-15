@@ -115,7 +115,6 @@ class PII(BaseModel):
     city: str = Field(..., alias="City")
     first_name: str = Field(..., alias="First_Name")
     last_name: str = Field(..., alias="Last_Name")
-    last_name: str = Field(..., alias="Last_Name")
     # national_consumer_database  # what is this, and what type?
     state: str = Field(..., alias="State")
     zip_code: str = Field(..., alias="Zip")
