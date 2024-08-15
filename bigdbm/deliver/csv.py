@@ -4,7 +4,7 @@ import pandas as pd
 from io import StringIO
 from typing import Any
 
-from bigdbm.format.base import BaseOutputFormatter
+from bigdbm.deliver.base import BaseOutputFormatter
 from bigdbm.schemas import MD5WithPII
 
 
