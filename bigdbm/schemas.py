@@ -231,7 +231,7 @@ class MD5WithPII(UniqueMD5):
     """
     pii: PII
 
-    def hash(self) -> str:
+    def hash(self: "MD5WithPII") -> str:
         """Hash with PII instance attritutes."""
         return self.pii.hash()
 
