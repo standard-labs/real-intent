@@ -42,7 +42,7 @@ class OpenAIInsightGenerator(BaseAnalyzer):
         try:
             from openai import OpenAI
         except ImportError:
-            raise ImportError("Please install the openai package to use this analyzer.")
+            raise ImportError("Please install this package with the 'openai' extra.")
         
         self.openai_client = OpenAI(api_key=openai_api_key)
 
