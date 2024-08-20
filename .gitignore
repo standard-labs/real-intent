@@ -5,3 +5,6 @@ __pycache__/
 keys.yaml
 
 Test.ipynb
+
+# Dev things
+result.pkl

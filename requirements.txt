@@ -1,6 +1,7 @@
-pydantic
+pydantic>=2.8.2
 pandas
 requests
-logfire
+logfire>=0.50.1
+openai==1.41.1
 
 python-dotenv
