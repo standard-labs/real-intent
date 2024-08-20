@@ -6,8 +6,10 @@ from bigdbm.validate.email import EmailValidator, HasEmailValidator
 from bigdbm.validate.phone import PhoneValidator
 from unittest.mock import patch, Mock
 
+
 # Load environment variables from .env file
 load_dotenv()
+
 
 def create_md5_with_pii(md5: str, emails: list[str], phones: list[str]) -> MD5WithPII:
     pii_dict = {
@@ -36,6 +38,7 @@ def create_md5_with_pii(md5: str, emails: list[str], phones: list[str]) -> MD5Wi
     
     return MD5WithPII(md5=md5, sentences=["test sentence"], pii=pii)
 
+
 def test_email_validator():
     million_verify_key = os.getenv("MILLION_VERIFY_KEY")
     if not million_verify_key:
@@ -59,6 +62,7 @@ def test_email_validator():
         assert result[1].pii.emails == ["another_valid@example.com"]
         assert result[2].pii.emails == []
 
+
 def test_has_email_validator():
     validator = HasEmailValidator()
     
@@ -73,6 +77,7 @@ def test_has_email_validator():
     assert len(result) == 2
     assert result[0].md5 == "123"
     assert result[1].md5 == "789"
+
 
 def test_phone_validator():
     numverify_key = os.getenv("NUMVERIFY_KEY")
@@ -97,3 +102,4 @@ def test_phone_validator():
         assert len(result[0].pii.mobile_phones) == 1
         assert result[1].pii.mobile_phones[0].phone == "9876543210"
         assert len(result[2].pii.mobile_phones) == 0
+        
