@@ -66,7 +66,7 @@ class SamePersonValidator(BaseValidator):
                 
             unique_leads[lead.hash()] = lead
         
-        return unique_leads
+        return list(unique_leads.values())
 
 
 class NumSentencesValidator(BaseValidator):
