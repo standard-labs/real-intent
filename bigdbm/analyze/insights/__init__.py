@@ -7,6 +7,7 @@ from bigdbm.schemas import MD5WithPII
 from bigdbm.analyze.insights.prompt import SYSTEM_PROMPT
 from bigdbm.format.csv import CSVStringFormatter
 from bigdbm.validate.base import BaseValidator
+from bigdbm.process.base import BaseProcessor
 
 
 class LeadInsights(BaseModel):
@@ -101,8 +102,7 @@ class ValidationInclusiveInsightsGenerator(BaseAnalyzer):
     def __init__(
             self, 
             openai_api_key: str, 
-            required_validators: list[BaseValidator] = [], 
-            fallback_validators: list[BaseValidator] = []
+            processor: BaseProcessor,
         ):
         try:
             from openai import OpenAI
@@ -110,8 +110,8 @@ class ValidationInclusiveInsightsGenerator(BaseAnalyzer):
             raise ImportError("Please install this package with the 'openai' extra.")
         
         self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
-        self.required_validators: list[BaseValidator] = required_validators
-        self.fallback_validators: list[BaseValidator] = fallback_validators
+        self.required_validators: list[BaseValidator] = processor.required_validators
+        self.fallback_validators: list[BaseValidator] = processor.fallback_validators
 
     def extract_validation_info(self) -> str:
         """Pull validation information from the validators."""
