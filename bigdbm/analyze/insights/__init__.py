@@ -34,7 +34,9 @@ class LeadInsights(BaseModel):
             "categories) to make informed assumptions about what the leads would want. "
             "The language used is tailored for the person who will be using these "
             "leads, providing critical and analytical observations that can guide "
-            "marketing strategies and personalized outreach efforts."
+            "marketing strategies and personalized outreach efforts. Each insight "
+            "should be a complete, self-contained statement without any leading "
+            "numbers or bullet points."
         )
     )
 
@@ -88,11 +90,6 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
         # Process insights to create an ordered list
         processed_insights: list[str] = []
         for i, insight in enumerate(lead_insights.insights, start=1):
-            # Remove "- " if present at the beginning of the insight
-            if insight.startswith("- "):
-                insight = insight[2:]
-
-            # Add the ordered list number
             processed_insights.append(f"{i}. {insight}")
 
         return "\n".join(processed_insights)
@@ -129,7 +126,9 @@ class ValidatedLeadInsights(BaseModel):
             "categories) to make informed assumptions about what the leads would want. "
             "The language used is tailored for the person who will be using these "
             "leads, providing critical and analytical observations that can guide "
-            "marketing strategies and personalized outreach efforts."
+            "marketing strategies and personalized outreach efforts. Each insight "
+            "should be a complete, self-contained statement without any leading "
+            "numbers or bullet points."
         )
     )
 
@@ -225,11 +224,6 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         # Process insights to create an ordered list
         processed_insights: list[str] = []
         for i, insight in enumerate(lead_insights.insights, start=1):
-            # Remove "- " if present at the beginning of the insight
-            if insight.startswith("- "):
-                insight = insight[2:]
-
-            # Add the ordered list number
             processed_insights.append(f"{i}. {insight}")
 
         total_str: str = "\n".join(processed_insights)
