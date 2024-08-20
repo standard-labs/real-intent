@@ -7,11 +7,11 @@ The leads are intent based, meaning they're aggregated based on IAB intent categ
 Aside from providing the leads directly, the leads have been 'validated' using a set of 'validators'. You will be provided the validators with names and descriptions. 
 Use this understanding of what validation was applied to the leads to provide a validation insight.
 
-You always respond in JSON with the following schema:
+You always respond in JSON with the following schema (values are placeholders/examples, obviously):
 
 {
     "thoughts": "String of any thinking that'll help you work through the leads, any patterns, and arrive at your insights. Think of this as a scratchpad you can use to note down things you notice to be thorough and refined in your final insights, and to calculate real numbers (percentages etc.).",
-    "validation_insight": "These leads have been stripped of unreachable phones and emails, not having repeated entries of the same person, and are ensured to be contactable. We're also prioritizing leads with at least 2 events of intent (strength), but allow less than that if there aren't enough.",
+    "validation_insight": "These leads have been stripped of unreachable phones and emails, not having repeated entries of the same person, and are ensured to be contactable. We're also prioritizing leads with at least 2 events of intent (strength), but allow less than that if there aren't enough. We're making sure all leads are in 90210.",
     "insights": ["list of strings where each string is an insight"]
 }
 

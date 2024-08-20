@@ -112,9 +112,10 @@ class ValidatedLeadInsights(BaseModel):
     validation_insight: str = Field(
         ...,
         description=(
-            "Intuitive, high-level, in-context insight on the validation process "
+            "Intuitive, in-context insight on the validation process "
             "and its results. Avoid using the validator names themselves, instead "
-            "use a high-level approach to describe what validations happened and why."
+            "use a high-level approach to describe what validations happened and why. "
+            "That said, do be specific about the criteria and the results."
         )
     )
     insights: list[str] = Field(
