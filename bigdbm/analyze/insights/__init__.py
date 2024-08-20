@@ -144,7 +144,7 @@ class ValidationInclusiveInsightsGenerator(BaseAnalyzer):
             "validators):"
         )
 
-        return validation_info
+        return validation_info.strip()
 
     def analyze(self, pii_md5s: list[MD5WithPII]) -> str:
         """
