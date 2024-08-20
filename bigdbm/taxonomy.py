@@ -41,7 +41,7 @@ def code_to_category(code: str | int | None) -> str:
         return "None"
 
     try:
-        code = int(float(code))
+        code = int(code)
     except (ValueError, TypeError):
         return str(code)
 
