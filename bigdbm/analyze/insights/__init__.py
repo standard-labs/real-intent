@@ -81,9 +81,14 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
         if not lead_insights:
             return "No insights on these leads at the moment."
 
-        # Add markdown bullet points to each insight if not already present
-        for i, insight in enumerate(lead_insights.insights):
-            if not insight.startswith("- "):
-                lead_insights.insights[i] = "- " + insight
+        # Process insights to create an ordered list
+        processed_insights: list[str] = []
+        for i, insight in enumerate(lead_insights.insights, start=1):
+            # Remove "- " if present at the beginning of the insight
+            if insight.startswith("- "):
+                insight = insight[2:]
 
-        return "\n".join(lead_insights.insights)
+            # Add the ordered list number
+            processed_insights.append(f"{i}. {insight}")
+
+        return "\n".join(processed_insights)
