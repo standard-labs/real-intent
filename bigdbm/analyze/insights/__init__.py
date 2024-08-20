@@ -6,6 +6,7 @@ from bigdbm.schemas import MD5WithPII
 
 from bigdbm.analyze.insights.prompt import SYSTEM_PROMPT
 from bigdbm.format.csv import CSVStringFormatter
+from bigdbm.validate.base import BaseValidator
 
 
 class LeadInsights(BaseModel):
@@ -38,13 +39,14 @@ class LeadInsights(BaseModel):
 class OpenAIInsightsGenerator(BaseAnalyzer):
     """Generates insights from PII data using OpenAI."""
 
-    def __init__(self, openai_api_key: str):
+    def __init__(self, openai_api_key: str, validators: list[BaseValidator] = []):
         try:
             from openai import OpenAI
         except ImportError:
             raise ImportError("Please install this package with the 'openai' extra.")
         
-        self.openai_client = OpenAI(api_key=openai_api_key)
+        self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
+        self.validators: list[BaseValidator] = validators
 
     def analyze(self, pii_md5s: list[MD5WithPII]) -> str:
         """
