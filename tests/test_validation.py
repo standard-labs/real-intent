@@ -37,7 +37,11 @@ def create_md5_with_pii(md5: str, emails: list[str], phones: list[str]) -> MD5Wi
     return MD5WithPII(md5=md5, sentences=["test sentence"], pii=pii)
 
 def test_email_validator():
-    validator = EmailValidator("fake_api_key")
+    million_verify_key = os.getenv("MILLION_VERIFY_KEY")
+    if not million_verify_key:
+        pytest.skip("MILLION_VERIFY_KEY not found in .env file")
+    
+    validator = EmailValidator(million_verify_key)
     
     md5s = [
         create_md5_with_pii("123", ["valid@example.com", "invalid@example.com"], []),
@@ -71,9 +75,9 @@ def test_has_email_validator():
     assert result[1].md5 == "789"
 
 def test_phone_validator():
-    numverify_key = os.getenv("NUMVERIFY_API_KEY")
+    numverify_key = os.getenv("NUMVERIFY_KEY")
     if not numverify_key:
-        pytest.skip("NUMVERIFY_API_KEY not found in .env file")
+        pytest.skip("NUMVERIFY_KEY not found in .env file")
     
     validator = PhoneValidator(numverify_key=numverify_key)
     
@@ -93,4 +97,3 @@ def test_phone_validator():
         assert len(result[0].pii.mobile_phones) == 1
         assert result[1].pii.mobile_phones[0].phone == "9876543210"
         assert len(result[2].pii.mobile_phones) == 0
-        
