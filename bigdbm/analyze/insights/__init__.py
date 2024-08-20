@@ -133,7 +133,7 @@ class ValidatedLeadInsights(BaseModel):
     )
 
 
-class ValidationInclusiveInsightsGenerator(BaseAnalyzer):
+class ValidatedInsightsGenerator(BaseAnalyzer):
     """Generates insights from PII data using OpenAI. Incorporates knowledge of validators."""
 
     def __init__(
