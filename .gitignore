@@ -7,4 +7,4 @@ keys.yaml
 Test.ipynb
 
 # Dev things
-result.pkl
+*.pkl
