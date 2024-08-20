@@ -4,42 +4,38 @@ from bigdbm.validate.base import BaseValidator
 
 
 class ZipCodeValidator(BaseValidator):
-    """Remove hems that do not match an input zip code."""
+    """Remove leads not matching specified zip codes."""
 
     def __init__(self, zip_codes: list[str]) -> None:
         """Initialize with a list of zip codes."""
         self.zip_codes: list[str] = zip_codes
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
-        """Remove items that are not in the list of zip codes."""
+        """Remove leads that are not in the list of zip codes."""
         return [
             md5 for md5 in md5s if md5.pii.zip_code in self.zip_codes
         ]
 
 
 class ContactableValidator(BaseValidator):
-    """Remove hems that don't have at least one mode of contact."""
+    """Remove leads without a contact method (mobile or email)."""
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
-        """Remove hems that don't have at least one mode of contact."""
+        """Remove leads that don't have at least one mode of contact."""
         return [
             md5 for md5 in md5s if any([md5.pii.mobile_phones, md5.pii.emails])
         ]
 
 
 class MD5Validator(BaseValidator):
-    """
-    Remove hems that match a list of MD5s.
-
-    Useful when ensuring uniqueness in generated hems.
-    """
+    """Remove leads with specific MD5 hashes."""
 
     def __init__(self, md5_strings: list[str]) -> None:
         """Initialize with a list of blacklisted MD5s."""
         self.md5_strings: list[str] = md5_strings
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
-        """Remove hems that match the initialized list of MD5 strings."""
+        """Remove leads that match the initialized list of MD5 strings."""
         return [
             md5 for md5 in md5s if md5.md5 not in self.md5_strings
         ]
@@ -47,15 +43,12 @@ class MD5Validator(BaseValidator):
 
 class SamePersonValidator(BaseValidator):
     """
-    Remove leads approximated to match to humans already in the lead list, i.e.
-    the same person with different MD5s, thus appearing twice.
+    Remove duplicate leads likely representing the same person.
+    Uses hash() method to identify duplicates, merging 'sentences' for matches.
     """
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
-        """
-        Remove leads approximated to match to humans already in the lead list, i.e.
-        the same person with different MD5s, thus appearing twice.
-        """
+        """Remove duplicate leads based on hash() method."""
         unique_leads: dict[str, MD5WithPII] = {}
 
         lead: MD5WithPII
@@ -70,14 +63,14 @@ class SamePersonValidator(BaseValidator):
 
 
 class NumSentencesValidator(BaseValidator):
-    """Ensure MD5s have at least a certain number of sentences."""
+    """Remove leads with fewer than the specified number of sentences."""
     
     def __init__(self, min_sentences: int) -> None:
         """Initialize with a minimum number of sentences."""
         self.min_sentences: int = min_sentences
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
-        """Remove hems with fewer than the minimum number of sentences."""
+        """Remove leads with fewer than the minimum number of sentences."""
         return [
             md5 for md5 in md5s if len(md5.sentences) >= self.min_sentences
         ]
