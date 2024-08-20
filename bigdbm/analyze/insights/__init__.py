@@ -98,14 +98,46 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
 class ValidationInclusiveInsightsGenerator(BaseAnalyzer):
     """Generates insights from PII data using OpenAI. Incorporates knowledge of validators."""
 
-    def __init__(self, openai_api_key: str, validators: list[BaseValidator] = []):
+    def __init__(
+            self, 
+            openai_api_key: str, 
+            required_validators: list[BaseValidator] = [], 
+            fallback_validators: list[BaseValidator] = []
+        ):
         try:
             from openai import OpenAI
         except ImportError:
             raise ImportError("Please install this package with the 'openai' extra.")
         
         self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
-        self.validators: list[BaseValidator] = validators
+        self.required_validators: list[BaseValidator] = required_validators
+        self.fallback_validators: list[BaseValidator] = fallback_validators
+
+    def extract_validation_info(self) -> str:
+        """Pull validation information from the validators."""
+        validation_info: str = "Required Validators (must be used on leads):\n\n"
+
+        def _remove_keys(vd: dict) -> dict:
+            """Remove instance variables from the dictionary that are API creds."""
+            return {k: v for k, v in vd.items() if not k.endswith("_key")}
+
+        for validator in self.required_validators:
+            validation_info += (
+                f"- {validator.__class__.__name__}: {validator.__class__.__doc__}\n"
+                f"Args: {_remove_keys(validator.__dict__)}\n"
+            )
+
+        validation_info += (
+            "\nFallback Validators (attempted at first, removed only if not "
+            "enough volume. i.e. not enough volume, try again with only required "
+            "validators):\n\n"
+        )
+
+        for validator in self.fallback_validators:
+            validation_info += (
+                f"- {validator.__class__.__name__}: {validator.__class__.__doc__}\n"
+                f"Args: {_remove_keys(validator.__dict__)}\n"
+            )
 
     def analyze(self, pii_md5s: list[MD5WithPII]) -> str:
         """
