@@ -57,7 +57,7 @@ class PhoneValidator(BaseValidator):
         raise
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
-        """Remove any phone numbers that are not 'good'."""
+        """Remove any phone numbers that are not considered valid."""
         # Extract all the phone numbers
         all_phones: list[str] = []
         for md5 in md5s:
@@ -85,23 +85,23 @@ class PhoneValidator(BaseValidator):
 
 class HasPhoneValidator(BaseValidator):
     """
-    Remove MD5WithPII objects without a phone number.
+    Remove leads without a phone number.
 
-    Use after PhoneValidator to ensure objects have valid phone numbers.
+    Use after PhoneValidator to ensure leads have valid phone numbers.
     """
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
-        """Remove hems without a phone number."""
+        """Remove leads without a phone number."""
         return [md5 for md5 in md5s if md5.pii.mobile_phones]
 
 
 class DNCValidator(BaseValidator):
-    """Remove MD5WithPII objects with primary phone on DNC list. Keeps objects without phones."""
+    """Remove leads with primary phone on DNC list. Keeps leads without phones."""
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """
-        Remove hems whose primary phone is marked as DNC.
-        Ignores hems without a phone number - these are still kept.
+        Remove leads whose primary phone is marked as DNC.
+        Ignores leads without a phone number - these are still kept.
         """
         return_hems: list[MD5WithPII] = []
 
@@ -116,7 +116,7 @@ class DNCValidator(BaseValidator):
 
 
 class CallableValidator(BaseValidator):
-    """Remove objects without a phone or with primary phone on DNC list."""
+    """Remove leads without a phone or with primary phone on DNC list."""
 
     def __init__(
             self, 
@@ -127,5 +127,5 @@ class CallableValidator(BaseValidator):
         self.dnc_validator = dnc_validator or DNCValidator()
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
-        """Remove hems without a phone number or on the DNC list."""
+        """Remove leads without a phone number or on the DNC list."""
         return self.dnc_validator.validate(self.phone_validator.validate(md5s))
