@@ -1,10 +1,13 @@
-import pytest
 import os
+from typing import List
+from unittest.mock import Mock
+
+import pytest
 from dotenv import load_dotenv
+
 from bigdbm.analyze.base import BaseAnalyzer
 from bigdbm.analyze.insights import OpenAIInsightsGenerator, ValidatedInsightsGenerator
 from bigdbm.schemas import MD5WithPII, PII
-from unittest.mock import Mock
 
 
 # Load environment variables
@@ -12,11 +15,11 @@ load_dotenv()
 
 
 class TestAnalyzer(BaseAnalyzer):
-    def analyze(self, md5s: list[MD5WithPII]) -> str:
+    def analyze(self, md5s: List[MD5WithPII]) -> str:
         return f"Analyzed {len(md5s)} MD5s"
 
 
-def create_test_pii():
+def create_test_pii() -> PII:
     return PII.from_api_dict({
         "Id": "test_id",
         "First_Name": "John",
@@ -39,7 +42,7 @@ def create_test_pii():
     })
 
 
-def test_base_analyzer():
+def test_base_analyzer() -> None:
     analyzer = TestAnalyzer()
     md5s = [
         MD5WithPII(md5="123", sentences=["test"], pii=create_test_pii()),
@@ -50,7 +53,7 @@ def test_base_analyzer():
 
 
 @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not found")
-def test_openai_insights_generator():
+def test_openai_insights_generator() -> None:
     api_key = os.getenv("OPENAI_API_KEY")
     generator = OpenAIInsightsGenerator(api_key)
     md5s = [
@@ -63,7 +66,7 @@ def test_openai_insights_generator():
 
 
 @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not found")
-def test_validated_insights_generator():
+def test_validated_insights_generator() -> None:
     api_key = os.getenv("OPENAI_API_KEY")
     mock_processor = Mock()
     mock_processor.required_validators = []

@@ -5,7 +5,7 @@ from bigdbm.validate.simple import ZipCodeValidator
 from bigdbm.validate.pii import HNWValidator, MNWValidator
 
 
-def test_simple_processor(bigdbm_client):
+def test_simple_processor(bigdbm_client) -> None:
     job = IABJob(
         intent_categories=["Real Estate>Real Estate Buying and Selling"],
         domains=[],
@@ -18,7 +18,7 @@ def test_simple_processor(bigdbm_client):
     assert processor.process(job)
 
 
-def test_fill_processor(bigdbm_client):
+def test_fill_processor(bigdbm_client) -> None:
     job = IABJob(
         intent_categories=["Real Estate>Real Estate Buying and Selling"],
         domains=[],
@@ -35,7 +35,7 @@ def test_fill_processor(bigdbm_client):
     assert result
 
 
-def test_hnw_mnw(bigdbm_client):
+def test_hnw_mnw(bigdbm_client) -> None:
     job = IABJob(
         intent_categories=["Real Estate>Real Estate Buying and Selling"],
         domains=[],

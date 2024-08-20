@@ -1,7 +1,6 @@
-import pytest
 from bigdbm.format.csv import CSVStringFormatter
 from bigdbm.schemas import MD5WithPII, PII
-from io import StringIO
+
 
 def create_test_md5_with_pii() -> MD5WithPII:
     pii_dict = {
@@ -28,9 +27,10 @@ def create_test_md5_with_pii() -> MD5WithPII:
     pii = PII.from_api_dict(pii_dict)
     return MD5WithPII(md5="123abc", sentences=["test sentence"], pii=pii)
 
-def test_csv_string_formatter():
+
+def test_csv_string_formatter() -> None:
     formatter = CSVStringFormatter()
-    md5s = [create_test_md5_with_pii(), create_test_md5_with_pii()]
+    md5s: list[MD5WithPII] = [create_test_md5_with_pii(), create_test_md5_with_pii()]
     
     csv_content = formatter.format_md5s(md5s)
     
@@ -42,9 +42,10 @@ def test_csv_string_formatter():
     # Check if the CSV contains the correct number of rows (header + 2 data rows)
     assert len(csv_content.split('\n')) == 4  # 3 rows + empty line at the end
 
-def test_csv_string_formatter_empty_input():
+
+def test_csv_string_formatter_empty_input() -> None:
     formatter = CSVStringFormatter()
-    md5s = []
+    md5s: list[MD5WithPII] = []
     
     csv_content = formatter.format_md5s(md5s)
     
