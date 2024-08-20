@@ -35,7 +35,7 @@ class LeadInsights(BaseModel):
     )
 
 
-class OpenAIInsightGenerator(BaseAnalyzer):
+class OpenAIInsightsGenerator(BaseAnalyzer):
     """Generates insights from PII data using OpenAI."""
 
     def __init__(self, openai_api_key: str):
