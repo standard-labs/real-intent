@@ -35,11 +35,13 @@ def _dep_old_code_to_category(code: str | int) -> str:
 
 
 @lru_cache(maxsize=None)
-def code_to_category(code: str | int) -> str:
+def code_to_category(code: str | int | None) -> str:
     """Return the category for a given code."""
+    if code is None:
+        return "None"
     try:
-        code = int(code)
-    except ValueError:
+        code = int(float(code))
+    except (ValueError, TypeError):
         return str(code)
 
     # Search for the category
