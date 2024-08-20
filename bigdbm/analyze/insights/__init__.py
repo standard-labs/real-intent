@@ -115,29 +115,36 @@ class ValidationInclusiveInsightsGenerator(BaseAnalyzer):
 
     def extract_validation_info(self) -> str:
         """Pull validation information from the validators."""
-        validation_info: str = "Required Validators (must be used on leads):\n\n"
-
         def _remove_keys(vd: dict) -> dict:
             """Remove instance variables from the dictionary that are API creds."""
             return {k: v for k, v in vd.items() if not k.endswith("_key")}
 
-        for validator in self.required_validators:
-            validation_info += (
+        def _format_validator_info(validator: BaseValidator) -> str:
+            """Format the information for a single validator."""
+            return (
                 f"- {validator.__class__.__name__}: {validator.__class__.__doc__}\n"
                 f"Args: {_remove_keys(validator.__dict__)}\n"
             )
 
-        validation_info += (
-            "\nFallback Validators (attempted at first, removed only if not "
-            "enough volume. i.e. not enough volume, try again with only required "
-            "validators):\n\n"
+        def _get_validators_info(validators: list[BaseValidator], header: str) -> str:
+            """Get formatted information for a list of validators."""
+            info = f"{header}\n\n"
+            info += "".join(_format_validator_info(v) for v in validators)
+            return info
+
+        validation_info = _get_validators_info(
+            self.required_validators,
+            "Required Validators (must be used on leads):"
         )
 
-        for validator in self.fallback_validators:
-            validation_info += (
-                f"- {validator.__class__.__name__}: {validator.__class__.__doc__}\n"
-                f"Args: {_remove_keys(validator.__dict__)}\n"
-            )
+        validation_info += "\n\n" + _get_validators_info(
+            self.fallback_validators,
+            "Fallback Validators (attempted at first, removed only if not "
+            "enough volume. i.e. not enough volume, try again with only required "
+            "validators):"
+        )
+
+        return validation_info
 
     def analyze(self, pii_md5s: list[MD5WithPII]) -> str:
         """
