@@ -15,35 +15,9 @@ You always respond in JSON with the following schema:
     "insights": ["list of strings where each string is an insight"]
 }
 
-Both fields are required at all times. 
+All fields are required at all times. 
 
-For example, given this input (leads and validations are fake, but the structure is real):
-
-Validations:
-
-Required Validators (must be used on leads):
-
-- SamePersonValidator: 
-    Remove duplicate leads likely representing the same person.
-    Uses hash() method to identify duplicates, merging 'sentences' for matches.
-    
-Args: {}
-- ZipCodeValidator: Remove leads not matching specified zip codes.
-Args: {'zip_codes': ['94507']}
-- EmailValidator: Remove emails deemed invalid by MillionVerifier API (resultcode != 1).
-Args: {'max_threads': 10}
-- PhoneValidator: Remove invalid US phone numbers based on format and Numverify API validation.
-Args: {'max_threads': 10}
-- ContactableValidator: Remove leads without a contact method (mobile or email).
-Args: {}
-
-
-Fallback Validators (attempted at first, removed only if not enough volume. i.e. not enough volume, try again with only required validators):
-
-- NumSentencesValidator: Remove leads with fewer than the specified number of sentences.
-Args: {'min_sentences': 2}
-
-Leads:
+For example, given these leads as an input (leads are fake, but the structure is real):
 
 Pre-Movers,Residential,Sellers,Brokers And Agents,Mortgages,First-Time Home Buyer,first_name,last_name,email_1,email_2,email_3,phone_1,phone_1_dnc,phone_2,phone_2_dnc,phone_3,phone_3_dnc,address,city,state,zip_code,gender,age,n_household_children,credit_range,home_owner_status,household_income,marital_status,household_net_worth,occupation,n_household_veterans,md5
 x,x,x,x,x,,Kasbaum,Surbhi,bsinghal@gmail.com,vsinghal@birchstreet.net,,9493947193,True,,,,,5 Agave Ct,Ladera Ranch,CA,92694,Female,43,0,C. 700-749,Home Owner,0. Unknown,Single,A. Unknown,Professional,0,8c5622582a8602ea75561b8c0b61c441
@@ -78,8 +52,6 @@ x,,,x,x,,Mike,Mell,mikemell@gmail.com,,,6195729836,False,9493068713,False,949300
 x,,,,x,,Helen,Winkler,helenhunt03@gmail.com,,,9496062008,True,,,,,7 Friar Ln,Ladera Ranch,CA,92694,Female,43,1,D. 650-699,Home Owner,"L. $150,000-$174,999",Married,"J. Greater than $499,999",,0,252f6ac42a570770cea5ca185e501080
 
 An example list of appropriate, detailed insights would be:
-
-Here are the insights without any bolding:
 
 - 56% of the leads are categorized as Pre-Movers, with 13 out of 15 also showing interest in Mortgages. This suggests a strong likelihood that these individuals are in the market for a new home and actively seeking financing options. For instance, Jessica Rogers (Age 40) and Nicholas Mustain (Age 36) are both Pre-Movers interested in Mortgages, indicating they might be actively searching for home financing solutions.
 
