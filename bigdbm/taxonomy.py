@@ -40,12 +40,12 @@ def code_to_category(code: str | int) -> str:
     try:
         code = int(code)
     except ValueError:
-        return code 
+        return str(code)
 
     # Search for the category
     result: pd.DataFrame = taxonomy_df[taxonomy_df["IAB_Category_ID"] == code]
 
     if result.empty:
-        return code
+        return str(code)
 
-    return result.iloc[0]["IAB_Category_Name"]
+    return str(result.iloc[0]["IAB_Category_Name"])
