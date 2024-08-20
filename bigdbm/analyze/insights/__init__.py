@@ -236,3 +236,5 @@ class ValidationInclusiveInsightsGenerator(BaseAnalyzer):
         # Insert validation message at the start
         if lead_insights.validation_insight:
             total_str = f"On validation: {lead_insights.validation_insight}\n\n{total_str}"
+
+        return total_str
