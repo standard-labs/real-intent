@@ -5,6 +5,8 @@ from bigdbm.analyze.base import BaseAnalyzer
 from bigdbm.schemas import MD5WithPII
 
 from bigdbm.analyze.insights.prompt import SYSTEM_PROMPT
+from bigdbm.analyze.insights.validator_prompt import SYSTEM_PROMPT as VALIDATOR_PROMPT
+
 from bigdbm.format.csv import CSVStringFormatter
 from bigdbm.validate.base import BaseValidator
 from bigdbm.process.base import BaseProcessor
@@ -96,6 +98,41 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
         return "\n".join(processed_insights)
 
 
+class ValidatedLeadInsights(BaseModel):
+    """Insights generated from lead data."""
+    thoughts: str = Field(
+        ...,
+        description=(
+            "String of any thinking that'll help you work through the leads, any "
+            "patterns, and arrive at your insights. Think of this as a scratchpad you "
+            "can use to note down things you notice to be thorough and refined in your "
+            "final insights, and to calculate real numbers (percentages etc.)."
+        )
+    )
+    validation_insight: str = Field(
+        ...,
+        description=(
+            "Intuitive, high-level, in-context insight on the validation process "
+            "and its results. Avoid using the validator names themselves, instead "
+            "use a high-level approach to describe what validations happened and why."
+        )
+    )
+    insights: list[str] = Field(
+        ...,
+        description=(
+            "List of strings where each string is a detailed insight derived from "
+            "the lead data. These insights focus on IAB intent categories and personal "
+            "information of each lead. They provide actionable information to help "
+            "understand how to sell to these leads effectively. Insights combine "
+            "multiple attributes (e.g., marital status, net worth, and intent "
+            "categories) to make informed assumptions about what the leads would want. "
+            "The language used is tailored for the person who will be using these "
+            "leads, providing critical and analytical observations that can guide "
+            "marketing strategies and personalized outreach efforts."
+        )
+    )
+
+
 class ValidationInclusiveInsightsGenerator(BaseAnalyzer):
     """Generates insights from PII data using OpenAI. Incorporates knowledge of validators."""
 
@@ -161,11 +198,14 @@ class ValidationInclusiveInsightsGenerator(BaseAnalyzer):
             messages=[
                 {
                     "role": "system",
-                    "content": SYSTEM_PROMPT
+                    "content": VALIDATOR_PROMPT
                 },
                 {
                     "role": "user",
-                    "content": CSVStringFormatter().format_md5s(pii_md5s)
+                    "content": (
+                        f"Validations:\n\n{self.extract_validation_info()}\n\n"
+                        f"Leads:\n\n{CSVStringFormatter().format_md5s(pii_md5s)}"
+                    )
                 }
             ],
             max_tokens=4095,
@@ -173,10 +213,10 @@ class ValidationInclusiveInsightsGenerator(BaseAnalyzer):
             top_p=1,
             frequency_penalty=0,
             presence_penalty=0,
-            response_format=LeadInsights
+            response_format=ValidatedLeadInsights
         )
 
-        lead_insights: LeadInsights | None = result.choices[0].message.parsed
+        lead_insights: ValidatedLeadInsights | None = result.choices[0].message.parsed
 
         if not lead_insights:
             return "No insights on these leads at the moment."
@@ -191,4 +231,8 @@ class ValidationInclusiveInsightsGenerator(BaseAnalyzer):
             # Add the ordered list number
             processed_insights.append(f"{i}. {insight}")
 
-        return "\n".join(processed_insights)
+        total_str: str = "\n".join(processed_insights)
+
+        # Insert validation message at the start
+        if lead_insights.validation_insight:
+            total_str = f"On validation: {lead_insights.validation_insight}\n\n{total_str}"
