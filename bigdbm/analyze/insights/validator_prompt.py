@@ -17,9 +17,9 @@ You always respond in JSON with the following schema:
 
 Both fields are required at all times. 
 
-For example, given this input:
+For example, given this input (leads and validations are fake, but the structure is real):
 
-Validators:
+Validations:
 
 Required Validators (must be used on leads):
 
