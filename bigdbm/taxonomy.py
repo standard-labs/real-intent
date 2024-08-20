@@ -39,6 +39,7 @@ def code_to_category(code: str | int | None) -> str:
     """Return the category for a given code."""
     if code is None:
         return "None"
+
     try:
         code = int(float(code))
     except (ValueError, TypeError):
