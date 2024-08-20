@@ -10,9 +10,7 @@ from bigdbm.validate.base import BaseValidator
 
 
 class PhoneValidator(BaseValidator):
-    """
-    Remove US phone numbers determined to not be 'valid' by Numverify.
-    """
+    """Remove invalid US phone numbers based on format and Numverify API validation."""
 
     def __init__(self, numverify_key: str, max_threads: int = 10) -> None:
         """Initialize with numverify key."""
@@ -87,10 +85,9 @@ class PhoneValidator(BaseValidator):
 
 class HasPhoneValidator(BaseValidator):
     """
-    Only show hems with a phone number. 
+    Remove MD5WithPII objects without a phone number.
 
-    So, use this validator _after_ PhoneValidator so that phone numbers are not removed
-    afterwards resulting in potentially empty phone lists.
+    Use after PhoneValidator to ensure objects have valid phone numbers.
     """
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
@@ -99,10 +96,7 @@ class HasPhoneValidator(BaseValidator):
 
 
 class DNCValidator(BaseValidator):
-    """
-    Only provide hems whose primary phone is not on the DNC list.
-    Ignores hems without a phone number - these are still kept.
-    """
+    """Remove MD5WithPII objects with primary phone on DNC list. Keeps objects without phones."""
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """
@@ -122,11 +116,7 @@ class DNCValidator(BaseValidator):
 
 
 class CallableValidator(BaseValidator):
-    """
-    Proxy for running both HasPhoneValidator and DNCValidator.
-    Only show hems who are 'callable', meaning they have a phone number and are 
-    not on the DNC list.
-    """
+    """Remove objects without a phone or with primary phone on DNC list."""
 
     def __init__(
             self, 

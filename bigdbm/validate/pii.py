@@ -1,10 +1,10 @@
-"""Gender validator. Only show hems of a certain verified gender."""
+"""Validators for personal identifiable information (PII)."""
 from bigdbm.schemas import MD5WithPII, Gender
 from bigdbm.validate.base import BaseValidator
 
 
 class GenderValidator(BaseValidator):
-    """Only show hems of a certain verified gender."""
+    """Remove MD5WithPII objects with gender not matching specified gender(s)."""
 
     def __init__(self, *gender: Gender) -> None:
         """Initialize with the filtered gender."""
@@ -18,13 +18,7 @@ class GenderValidator(BaseValidator):
 
 
 class AgeValidator(BaseValidator):
-    """
-    Only show hems of people above or below a certain age.
-    Works inclusively, ex. 50 means 50 or higher/50 or lower.
-
-    If above is True, only takes people above or equal to the age.
-    If above is False, only takes people below or equal to the age.
-    """
+    """Remove MD5WithPII objects with age outside specified range (inclusive)."""
 
     def __init__(self, min_age: int, max_age: int) -> None:
         """Initialize."""
@@ -46,13 +40,10 @@ class AgeValidator(BaseValidator):
 
 
 class MNWValidator(BaseValidator):
-    """
-    Only show hems of people with at least $100k in household 
-    income _and_ $100k in household net worth.
-    """
+    """Remove MD5WithPII objects below Medium Net Worth (MNW): $100k+ income and $100k+ net worth."""
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
-        """Remove hems that do not match the HNW requirement."""
+        """Remove hems that do not match the MNW requirement."""
         income_levels = {
             "K. $100,000-$149,999", 
             "L. $150,000-$174,999", 
@@ -75,10 +66,7 @@ class MNWValidator(BaseValidator):
 
 
 class HNWValidator(BaseValidator):
-    """
-    Only show hems of people with at least $200k in household 
-    income _and_ $250k in household net worth.
-    """
+    """Remove MD5WithPII objects below High Net Worth (HNW): $200k+ income and $250k+ net worth."""
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove hems that do not match the HNW requirement."""

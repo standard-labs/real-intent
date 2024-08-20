@@ -10,9 +10,7 @@ from bigdbm.validate.base import BaseValidator
 
 
 class EmailValidator(BaseValidator):
-    """
-    Remove emails determined to not be 'good' by MillionVerifier.
-    """
+    """Remove emails deemed invalid by MillionVerifier API (resultcode != 1)."""
 
     def __init__(self, million_key: str, max_threads: int = 10) -> None:
         """Initialize with MillionVerifier key."""
@@ -77,10 +75,9 @@ class EmailValidator(BaseValidator):
 
 class HasEmailValidator(BaseValidator):
     """
-    Only show hems with an email address. 
+    Remove MD5WithPII objects without an email address.
 
-    So, use this validator _after_ EmailValidator so that emails are not removed
-    afterwards resulting in potentially empty email lists.
+    Use after EmailValidator to ensure objects have valid emails.
     """
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:

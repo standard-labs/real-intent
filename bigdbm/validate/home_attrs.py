@@ -4,7 +4,7 @@ from bigdbm.validate.base import BaseValidator
 
 
 class NotRenterValidator(BaseValidator):
-    """Remove hems that are renters."""
+    """Remove MD5WithPII objects where 'home_owner_status' is "Renter"."""
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove hems that are renters."""

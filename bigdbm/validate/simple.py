@@ -4,7 +4,7 @@ from bigdbm.validate.base import BaseValidator
 
 
 class ZipCodeValidator(BaseValidator):
-    """Remove hems that do not match an input zip code."""
+    """Remove MD5WithPII objects not matching specified zip codes."""
 
     def __init__(self, zip_codes: list[str]) -> None:
         """Initialize with a list of zip codes."""
@@ -18,7 +18,7 @@ class ZipCodeValidator(BaseValidator):
 
 
 class ContactableValidator(BaseValidator):
-    """Remove hems that don't have at least one mode of contact."""
+    """Remove MD5WithPII objects without a contact method (mobile or email)."""
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove hems that don't have at least one mode of contact."""
@@ -28,11 +28,7 @@ class ContactableValidator(BaseValidator):
 
 
 class MD5Validator(BaseValidator):
-    """
-    Remove hems that match a list of MD5s.
-
-    Useful when ensuring uniqueness in generated hems.
-    """
+    """Remove MD5WithPII objects with specific MD5 hashes."""
 
     def __init__(self, md5_strings: list[str]) -> None:
         """Initialize with a list of blacklisted MD5s."""
@@ -47,15 +43,12 @@ class MD5Validator(BaseValidator):
 
 class SamePersonValidator(BaseValidator):
     """
-    Remove leads approximated to match to humans already in the lead list, i.e.
-    the same person with different MD5s, thus appearing twice.
+    Remove duplicate MD5WithPII objects likely representing the same person.
+    Uses hash() method to identify duplicates, merging 'sentences' for matches.
     """
 
     def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
-        """
-        Remove leads approximated to match to humans already in the lead list, i.e.
-        the same person with different MD5s, thus appearing twice.
-        """
+        """Remove duplicate leads based on hash() method."""
         unique_leads: dict[str, MD5WithPII] = {}
 
         lead: MD5WithPII
@@ -70,7 +63,7 @@ class SamePersonValidator(BaseValidator):
 
 
 class NumSentencesValidator(BaseValidator):
-    """Ensure MD5s have at least a certain number of sentences."""
+    """Remove MD5WithPII objects with fewer than the specified number of sentences."""
     
     def __init__(self, min_sentences: int) -> None:
         """Initialize with a minimum number of sentences."""
