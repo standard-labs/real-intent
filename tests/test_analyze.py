@@ -1,5 +1,4 @@
 import os
-from typing import List
 from unittest.mock import Mock
 
 import pytest
@@ -15,7 +14,7 @@ load_dotenv()
 
 
 class TestAnalyzer(BaseAnalyzer):
-    def analyze(self, md5s: List[MD5WithPII]) -> str:
+    def analyze(self, md5s: list[MD5WithPII]) -> str:
         return f"Analyzed {len(md5s)} MD5s"
 
 
