@@ -66,39 +66,39 @@ class BigDBMClient:
 
     def _update_token(self) -> None:
         """Update the token inplace."""
-        with self._token_lock:
-            response = requests.post(
-                "https://aws-prod-auth-service.bigdbm.com/oauth2/token",
-                headers={
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
-                data={
-                    "grant_type": "client_credentials",
-                    "client_id": self.client_id,
-                    "client_secret": self.client_secret
-                }
-            )
+        response = requests.post(
+            "https://aws-prod-auth-service.bigdbm.com/oauth2/token",
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            data={
+                "grant_type": "client_credentials",
+                "client_id": self.client_id,
+                "client_secret": self.client_secret
+            }
+        )
 
-            response.raise_for_status()
-            response_json = response.json()
-            
+        response.raise_for_status()
+        response_json = response.json()
+        
+        with self._token_lock:
             self._access_token = response_json["access_token"]
             self._access_token_expiration = int(time.time() - 10) + response_json["expires_in"]
-            self.logfire.log("trace", "Updated access token.")
+        
+        self.logfire.log("trace", "Updated access token.")
 
     def _access_token_valid(self) -> bool:
         """
         Returns a boolean of whether the current access token is still active.
         For this to be True, the access token must both exist and be before expiration.
         """
-        with self._token_lock:
-            if not self._access_token:
-                return False
+        if not self._access_token:
+            return False
 
-            if time.time() >= self._access_token_expiration:
-                return False
+        if time.time() >= self._access_token_expiration:
+            return False
 
-            return True
+        return True
 
     def __request(self, request: Request) -> dict:
         """
@@ -107,14 +107,13 @@ class BigDBMClient:
         
         Returns a dictionary of the response's JSON.
         """
-        with self._token_lock:
-            if not self._access_token_valid():
-                self._update_token()
+        if not self._access_token_valid():
+            self._update_token()
 
-            # Insert access token into request
-            request.headers.update({
-                "Authorization": f"Bearer {self._access_token}"
-            })
+        # Insert access token into request
+        request.headers.update({
+            "Authorization": f"Bearer {self._access_token}"
+        })
 
         self.logfire.log(
             "trace", 
