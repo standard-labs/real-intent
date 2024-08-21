@@ -95,10 +95,7 @@ class BigDBMClient:
         if not self._access_token:
             return False
 
-        if time.time() >= self._access_token_expiration:
-            return False
-
-        return True
+        return time.time() < self._access_token_expiration
 
     def __request(self, request: Request) -> dict:
         """
