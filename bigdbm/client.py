@@ -8,6 +8,7 @@ import random
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from contextlib import contextmanager
+from threading import Lock
 
 from bigdbm.schemas import (
     ConfigDates,
@@ -38,6 +39,8 @@ class BigDBMClient:
 
     Creating an instance is fairly expensive, as it automatically retrieves
     an access token and configuration dates.
+
+    This class is thread-safe.
     """
 
     def __init__(self, client_id: str, client_secret: str, logging: bool = DEFAULT_LOGGING) -> None:
@@ -56,42 +59,44 @@ class BigDBMClient:
         # Access token declarations (defined by _update_token)
         self._access_token: str = ""
         self._access_token_expiration: int = 0  # unix timestamp
+        self._token_lock = Lock()
         self._update_token()
 
     def _update_token(self) -> None:
         """Update the token inplace."""
-        response = requests.post(
-            "https://aws-prod-auth-service.bigdbm.com/oauth2/token",
-            headers={
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            data={
-                "grant_type": "client_credentials",
-                "client_id": self.client_id,
-                "client_secret": self.client_secret
-            }
-        )
+        with self._token_lock:
+            response = requests.post(
+                "https://aws-prod-auth-service.bigdbm.com/oauth2/token",
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                data={
+                    "grant_type": "client_credentials",
+                    "client_id": self.client_id,
+                    "client_secret": self.client_secret
+                }
+            )
 
-        response.raise_for_status()
-        response_json = response.json()
-        
-        self._access_token = response_json["access_token"]
-        self._access_token_expiration = int(time.time() - 10) + response_json["expires_in"]
-        self.logfire.log("trace", "Updated access token.")
-        return
+            response.raise_for_status()
+            response_json = response.json()
+            
+            self._access_token = response_json["access_token"]
+            self._access_token_expiration = int(time.time() - 10) + response_json["expires_in"]
+            self.logfire.log("trace", "Updated access token.")
 
     def _access_token_valid(self) -> bool:
         """
         Returns a boolean of whether the current access token is still active.
         For this to be True, the access token must both exist and be before expiration.
         """
-        if not self._access_token:
-            return False
+        with self._token_lock:
+            if not self._access_token:
+                return False
 
-        if time.time() >= self._access_token_expiration:
-            return False
+            if time.time() >= self._access_token_expiration:
+                return False
 
-        return True
+            return True
 
     def __request(self, request: Request) -> dict:
         """
@@ -100,13 +105,15 @@ class BigDBMClient:
         
         Returns a dictionary of the response's JSON.
         """
-        if not self._access_token_valid():
-            self._update_token()
+        with self._token_lock:
+            if not self._access_token_valid():
+                self._update_token()
 
-        # Insert access token into request
-        request.headers.update({
-            "Authorization": f"Bearer {self._access_token}"
-        })
+            # Insert access token into request
+            request.headers.update({
+                "Authorization": f"Bearer {self._access_token}"
+            })
+
         self.logfire.log(
             "trace", 
             f"Sending request: {
