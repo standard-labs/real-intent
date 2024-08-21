@@ -56,6 +56,8 @@ class BigDBMClient:
         self.client_secret: str = client_secret
         self.logging: bool = logging
 
+        self.timeout_seconds: int = 30
+
         # Access token declarations (defined by _update_token)
         self._access_token: str = ""
         self._access_token_expiration: int = 0  # unix timestamp
@@ -129,7 +131,7 @@ class BigDBMClient:
 
         try:
             with Session() as session:
-                response = session.send(request.prepare(), timeout=10)
+                response = session.send(request.prepare(), timeout=self.timeout_seconds)
 
             response.raise_for_status()
         except RequestException as e:
@@ -139,7 +141,7 @@ class BigDBMClient:
             time.sleep(_random_sleep)
 
             with Session() as session:
-                response = session.send(request.prepare(), timeout=10)
+                response = session.send(request.prepare(), timeout=self.timeout_seconds)
 
             if not response.ok:
                 self.logfire.log("error", f"Request failed again. Error: {response.text}")
