@@ -129,7 +129,7 @@ class BigDBMClient:
 
         try:
             with Session() as session:
-                response = session.send(request.prepare())
+                response = session.send(request.prepare(), timeout=10)
 
             response.raise_for_status()
         except RequestException as e:
@@ -139,7 +139,7 @@ class BigDBMClient:
             time.sleep(_random_sleep)
 
             with Session() as session:
-                response = session.send(request.prepare())
+                response = session.send(request.prepare(), timeout=10)
 
             if not response.ok:
                 self.logfire.log("error", f"Request failed again. Error: {response.text}")
