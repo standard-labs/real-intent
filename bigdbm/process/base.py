@@ -115,7 +115,7 @@ class BaseProcessor(ABC):
         
         return [v.validator for v in self.validators if v.priority == priority]
 
-    def min_priority_validators(self, priority: int) -> list[BaseValidator]:
+    def validators_above_priority(self, priority: int) -> list[BaseValidator]:
         """
         Returns validators with priority at or above the given level (numerically, lower or equal).
         """
