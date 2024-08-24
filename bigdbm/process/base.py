@@ -45,8 +45,12 @@ class BaseProcessor(ABC):
         self.validators: list[ProcessValidator] = []
 
     @property
-    def validators(self) -> list[BaseValidator]:
-        """Return all validators."""
+    def raw_validators(self) -> list[BaseValidator]:
+        """
+        A list of all raw `Validator` objects used without any priority info.
+        This really shouldn't be used - `self.validators` is better. But this exists
+        for backwards compatibility.
+        """
         return self.required_validators + self.fallback_validators
 
     def clear_validators(self) -> Self:

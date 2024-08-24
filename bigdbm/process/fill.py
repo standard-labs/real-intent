@@ -207,7 +207,7 @@ class NoFallbackFillProcessor(BaseProcessor):
 
             # Utilize all registered validators to filter leads
             validator: BaseValidator
-            for validator in self.validators:
+            for validator in self.raw_validators:
                 md5s_with_pii = validator.validate(md5s_with_pii)
 
             # Add post-validated (remaining) leads

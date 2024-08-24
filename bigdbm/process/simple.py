@@ -15,7 +15,7 @@ class SimpleProcessor(BaseProcessor):
         md5s_with_pii: list[MD5WithPII] = self.client.pii_for_unique_md5s(unique_md5s)
 
         validator: BaseValidator
-        for validator in self.validators:
+        for validator in self.raw_validators:
             md5s_with_pii = validator.validate(md5s_with_pii)
 
         return md5s_with_pii
