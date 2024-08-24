@@ -46,10 +46,7 @@ class FillProcessor(BaseProcessor):
                 if not md5s_bank:
                     self.client.logfire.log(
                         "warn", 
-                        (
-                            "Needed more MD5s to fill quota post-validation. "
-                            "Consider increasing the intent multiplier for this job.."
-                        )
+                        f"Not enough valid leads to fill quota - only have {len(return_md5s)}."
                     )
                     break
 
@@ -78,12 +75,20 @@ class FillProcessor(BaseProcessor):
         self,
         intent_events: list[IntentEvent],
         n_hems: int,
-        validators: list[BaseValidator]
+        min_priority: int
     ) -> list[MD5WithPII]:
         """
         Pulls and validates the leads from the intent events. Logs in a span.
+        Uses all validators included in and above the minimum priority.
+        Ex. if min_priority is 8, every validator with a priority of 8 or above
+        (1 to 8 inclusive as priorities are backward) is used.
         """
-        with self.client.logfire.span("Enhancing MD5s with PII and validating.", _level="debug"):
+        validators: list[BaseValidator] = self.min_priority_validators(min_priority)
+
+        with self.client.logfire.span(
+            f"Pulling PII and validating with min priority of {min_priority}", 
+            _level="debug"
+        ):
             return self.__pull_and_validate(intent_events, n_hems, validators)
 
     def _process(self, iab_job: IABJob) -> list[MD5WithPII]:
@@ -107,33 +112,62 @@ class FillProcessor(BaseProcessor):
         list_queue_id: int = self.client.create_and_wait(iab_job)
         intent_events: list[IntentEvent] = self.client.retrieve_md5s(list_queue_id)
 
-        # Run with all validators first
-        return_md5s: list[MD5WithPII] = self._pull_and_validate(intent_events, n_hems, self.validators)
-
-        # If we have enough leads, return them
-        if len(return_md5s) >= n_hems:
-            self.client.logfire.log("debug", f"Enough leads found with all validators. Leads: {return_md5s}")
-            return return_md5s
-
-        # If we don't have enough leads, try again with fallen back validators
+        # Detect lowest validation priority (highest num)
         self.client.logfire.log(
             "debug", 
-            f"Only {len(return_md5s)} leads found with all validators. Retrying without: {
-                [v.__class__.__name__ for v in self.fallback_validators]
-            }"
-        )
-        existing_md5s: list[str] = [i.md5 for i in return_md5s]
-        return_md5s += self._pull_and_validate(
-            [i for i in intent_events if i.md5 not in existing_md5s],  # only run on events not used
-            n_hems - len(return_md5s),  # only the remaining leads needed
-            self.required_validators  # only required, no fallback validators
+            (
+                "Beginning iterative priority-based validation. "
+                f"Lowest priority: {self.lowest_validation_priority}"
+            )
         )
 
+        # Start with all, progressively removing validators
+            # note that range behavior accounts for lowest_validation_priority==0
+            # and stops iterating such that check_priority==1 is the last allowed check
+            # meaning that priority 1 validators are never removed
+
+        return_leads: list[MD5WithPII] = []
+
+        # If there are no validators, still need to run
+        if self.lowest_validation_priority == 0:
+            return_leads += self._pull_and_validate(
+                intent_events=intent_events, 
+                n_hems=n_hems,
+                min_priority=1
+            )
+
+        # this and the above no-validators check are logically mutually exclusive
+        for check_priority in range(self.lowest_validation_priority, 0, -1):
+            self.client.logfire.log(
+                "debug",
+                f"Currently have {len(return_leads)} of {n_hems} leads. "
+            )
+
+            existing_md5s: list[str] = [i.md5 for i in return_leads]
+            return_leads += self._pull_and_validate(
+                [i for i in intent_events if i.md5 not in existing_md5s], 
+                n_hems - len(return_leads),
+                check_priority
+            )
+
+            # If we have enough leads, return them
+            if len(return_leads) >= n_hems:
+                self.client.logfire.log(
+                    "debug", 
+                    f"Enough leads found with min priority {check_priority}. Leads: {return_leads}"
+                )
+                return return_leads
+
+        # And if, after removing all tiers but priority==1, we still don't have enough
         self.client.logfire.log(
             "debug", 
-            f"Returning {len(return_md5s)} leads after removing fallback validators. Leads: {return_md5s}"
+            (
+                f"Returning {len(return_leads)} leads after removing all but "
+                f"priority 1 validators. Leads: {return_leads}"
+            )
         )
-        return return_md5s
+
+        return return_leads
 
     def process(self, iab_job: IABJob) -> list[MD5WithPII]:
         """
@@ -207,7 +241,7 @@ class NoFallbackFillProcessor(BaseProcessor):
 
             # Utilize all registered validators to filter leads
             validator: BaseValidator
-            for validator in self.validators:
+            for validator in self.raw_validators:
                 md5s_with_pii = validator.validate(md5s_with_pii)
 
             # Add post-validated (remaining) leads

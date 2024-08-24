@@ -1,5 +1,4 @@
 import os
-from unittest.mock import Mock
 
 import pytest
 from dotenv import load_dotenv
@@ -7,6 +6,10 @@ from dotenv import load_dotenv
 from bigdbm.analyze.base import BaseAnalyzer
 from bigdbm.analyze.insights import OpenAIInsightsGenerator, ValidatedInsightsGenerator
 from bigdbm.schemas import MD5WithPII, PII
+
+from bigdbm.process.fill import FillProcessor
+from bigdbm.validate.simple import SamePersonValidator
+from bigdbm.validate.pii import MNWValidator
 
 
 # Load environment variables
@@ -65,12 +68,14 @@ def test_openai_insights_generator() -> None:
 
 
 @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not found")
-def test_validated_insights_generator() -> None:
+def test_validated_insights_generator(bigdbm_client) -> None:
     api_key = os.getenv("OPENAI_API_KEY")
-    mock_processor = Mock()
-    mock_processor.required_validators = []
-    mock_processor.fallback_validators = []
-    generator = ValidatedInsightsGenerator(api_key, mock_processor)
+
+    processor = FillProcessor(bigdbm_client)
+    processor.add_validator(SamePersonValidator())
+    processor.add_validator(MNWValidator(), priority=2)
+
+    generator = ValidatedInsightsGenerator(api_key, processor)
     md5s = [
         MD5WithPII(md5="123", sentences=["Interested in buying a new car"], pii=create_test_pii()),
         MD5WithPII(md5="456", sentences=["Looking for auto insurance"], pii=create_test_pii())

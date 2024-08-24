@@ -11,6 +11,16 @@ from bigdbm.client import BigDBMClient
 load_dotenv()
 
 
+# Configure logfire if write token is given
+if os.getenv("LOGFIRE_WRITE_TOKEN"):
+    try:
+        import logfire
+    except ImportError:
+        pass
+    else:
+        logfire.configure(token=os.getenv("LOGFIRE_WRITE_TOKEN"))
+
+
 @pytest.fixture(scope="session")
 def bigdbm_client() -> BigDBMClient:
     """Create a BigDBM client object."""

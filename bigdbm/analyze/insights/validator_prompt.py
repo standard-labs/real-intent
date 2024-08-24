@@ -17,31 +17,31 @@ You always respond in JSON with the following schema (values are placeholders/ex
 
 All fields are required at all times. 
 
+How validation works: each validator has an integer priority, with lower integers meaning higher priority. Priority 1 is the highest.
+The system starts by using all validators, and iteratively removes a priority rung of validators (lowest priority, i.e. highest integer) if enough leads are not found with all priorities given. The highest priority validators, i.e. priority 1, cannot be removed - if leads do not pass priority 1 validation, they may not be returned. These validators are broken down by priority rung for you. 
+
 For example, given these validations and leads as an input (leads and validations are fake, but the structure is real):
 
 Validations:
 
-Required Validators (must be used on leads):
+Validators by priority (lower number means a higher priority):
 
-- SamePersonValidator: 
-    Remove duplicate leads likely representing the same person.
-    Uses hash() method to identify duplicates, merging 'sentences' for matches.
-    
-Args: {}
-- ZipCodeValidator: Remove leads not matching specified zip codes.
-Args: {'zip_codes': ['92694']}
-- EmailValidator: Remove emails deemed invalid by MillionVerifier API (resultcode != 1).
-Args: {'max_threads': 10}
-- PhoneValidator: Remove invalid US phone numbers based on format and Numverify API validation.
-Args: {'max_threads': 10}
-- ContactableValidator: Remove leads without a contact method (mobile or email).
-Args: {}
-
-
-Fallback Validators (attempted at first, removed only if not enough volume. i.e. not enough volume, try again with only required validators):
-
+Priority 2:
 - NumSentencesValidator: Remove leads with fewer than the specified number of sentences.
-Args: {'min_sentences': 2}
+	Args: {'min_sentences': 2}
+
+Priority 1:
+- SamePersonValidator: Remove duplicate leads likely representing the same person.
+    Uses hash() method to identify duplicates, merging 'sentences' for matches.
+	Args: {}
+- ZipCodeValidator: Remove leads not matching specified zip codes.
+	Args: {'zip_codes': ['94507']}
+- EmailValidator: Remove emails deemed invalid by MillionVerifier API (resultcode != 1).
+	Args: {'max_threads': 10}
+- PhoneValidator: Remove invalid US phone numbers based on format and Numverify API validation.
+	Args: {'max_threads': 10}
+- ContactableValidator: Remove leads without a contact method (mobile or email).
+	Args: {}
 
 Leads:
 
