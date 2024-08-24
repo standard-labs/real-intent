@@ -97,8 +97,13 @@ class BaseProcessor(ABC):
         Get the lowest priority of all validators.
         Note that this is the _highest_ integer, but semantically, the lowest
         priority as priority 1 is the highest priority (required).
+
+        Returns 0 if there are no validators.
         """
-        return max([v.priority for v in self.validators])
+        if not self.validators:
+            return 0
+
+        return max(self.validators, key=lambda v: v.priority).priority
 
     def validators_with_priority(self, priority: int) -> list[BaseValidator]:
         """
