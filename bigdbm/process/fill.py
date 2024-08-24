@@ -123,10 +123,21 @@ class FillProcessor(BaseProcessor):
 
         # Start with all, progressively removing validators
             # note that range behavior accounts for lowest_validation_priority==0
-            # and stops iterating before check_priority==1, i.e. priority 1 is required
+            # and stops iterating such that check_priority==1 is the last allowed check
+            # meaning that priority 1 validators are never removed
 
         return_leads: list[MD5WithPII] = []
-        for check_priority in range(self.lowest_validation_priority, 1, -1):
+
+        # If there are no validators, still need to run
+        if self.lowest_validation_priority == 0:
+            return_leads += self._pull_and_validate(
+                intent_events=intent_events, 
+                n_hems=n_hems,
+                min_priority=1
+            )
+
+        # this and the above no-validators check are logically mutually exclusive
+        for check_priority in range(self.lowest_validation_priority, 0, -1):
             self.client.logfire.log(
                 "debug",
                 f"Currently have {len(return_leads)} of {n_hems} leads. "
