@@ -51,7 +51,7 @@ class BaseProcessor(ABC):
         This really shouldn't be used - `self.validators` is better. But this exists
         for backwards compatibility.
         """
-        return self.required_validators + self.fallback_validators
+        return [v.validator for v in self.validators]
 
     def clear_validators(self) -> Self:
         """Remove all validators from the processor."""
