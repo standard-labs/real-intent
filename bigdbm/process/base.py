@@ -115,6 +115,18 @@ class BaseProcessor(ABC):
         
         return [v.validator for v in self.validators if v.priority == priority]
 
+    def min_priority_validators(self, priority: int) -> list[BaseValidator]:
+        """
+        Returns validators with priority at or above the given level (numerically, lower or equal).
+        """
+        if not isinstance(priority, int):
+            raise TypeError("You must provide the priority as an integer.")
+        
+        if priority < 1:
+            raise ValueError("Priority must be a minimum of 1 (highest priority).")
+        
+        return [v.validator for v in self.validators if v.priority <= priority]
+
     def add_default_validators(self, priority: int = 1) -> Self:
         """
         Insert the default validators into the processor. Note that these default 
