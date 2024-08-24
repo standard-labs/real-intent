@@ -1,4 +1,6 @@
 """Define a Processor that will keep trying to pull leads until filling the request."""
+import warnings
+
 from bigdbm.process.base import BaseProcessor
 from bigdbm.client import BigDBMClient
 from bigdbm.schemas import IABJob, UniqueMD5, IntentEvent, MD5WithPII
@@ -205,6 +207,12 @@ class NoFallbackFillProcessor(BaseProcessor):
     """
 
     def __init__(self, bigdbm_client: BigDBMClient, intent_multiplier: float = 2.5) -> None:
+        warnings.warn(
+            "NoFallbackFillProcessor is deprecated and will be removed in a future version. "
+            "Use FillProcessor instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         super().__init__(bigdbm_client)
         self.intent_multiplier: float = intent_multiplier
 
@@ -251,4 +259,3 @@ class NoFallbackFillProcessor(BaseProcessor):
             del md5s_bank[:n_delta]
 
         return return_md5s
-    
