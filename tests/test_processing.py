@@ -45,7 +45,7 @@ def test_hnw_mnw(bigdbm_client) -> None:
     )
 
     processor = FillProcessor(bigdbm_client)
-    processor.add_validator(HNWValidator(), allow_fallback=True)
+    processor.add_validator(HNWValidator(), priority=2)
     processor.add_validator(MNWValidator())
 
     result: list[MD5WithPII] = FillProcessor(bigdbm_client).process(job)
