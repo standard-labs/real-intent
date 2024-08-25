@@ -1,4 +1,4 @@
-from bigdbm.format.csv import CSVStringFormatter
+from bigdbm.deliver.csv import CSVStringFormatter
 from bigdbm.schemas import MD5WithPII, PII
 
 
@@ -32,7 +32,7 @@ def test_csv_string_formatter() -> None:
     formatter = CSVStringFormatter()
     md5s: list[MD5WithPII] = [create_test_md5_with_pii(), create_test_md5_with_pii()]
     
-    csv_content = formatter.format_md5s(md5s)
+    csv_content = formatter.deliver(md5s)
     
     # Check if the CSV contains the expected headers and data
     expected_header = "test sentence,first_name,last_name,email_1,email_2,email_3,phone_1,phone_1_dnc,phone_2,phone_2_dnc,phone_3,phone_3_dnc,address,city,state,zip_code,gender,age,n_household_children,credit_range,home_owner_status,household_income,marital_status,household_net_worth,occupation,n_household_veterans,md5"
@@ -47,7 +47,7 @@ def test_csv_string_formatter_empty_input() -> None:
     formatter = CSVStringFormatter()
     md5s: list[MD5WithPII] = []
     
-    csv_content = formatter.format_md5s(md5s)
+    csv_content = formatter.deliver(md5s)
     
     # Check if the CSV is empty for empty input
     assert csv_content == ""

@@ -7,7 +7,7 @@ from bigdbm.schemas import MD5WithPII
 from bigdbm.analyze.insights.prompt import SYSTEM_PROMPT
 from bigdbm.analyze.insights.validator_prompt import SYSTEM_PROMPT as VALIDATOR_PROMPT
 
-from bigdbm.format.csv import CSVStringFormatter
+from bigdbm.deliver.csv import CSVStringFormatter
 from bigdbm.validate.base import BaseValidator
 from bigdbm.process.base import BaseProcessor, ProcessValidator
 
@@ -71,7 +71,7 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
                 },
                 {
                     "role": "user",
-                    "content": CSVStringFormatter().format_md5s(pii_md5s)
+                    "content": CSVStringFormatter().deliver(pii_md5s)
                 }
             ],
             max_tokens=4095,
@@ -207,7 +207,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
                     "role": "user",
                     "content": (
                         f"Validations:\n\n{self.extract_validation_info()}\n\n"
-                        f"Leads:\n\n{CSVStringFormatter().format_md5s(pii_md5s)}"
+                        f"Leads:\n\n{CSVStringFormatter().deliver(pii_md5s)}"
                     )
                 }
             ],
