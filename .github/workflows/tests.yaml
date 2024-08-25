@@ -25,6 +25,10 @@ jobs:
         run: |
           echo CLIENT_ID=${{ secrets.CLIENT_ID }} >> .env
           echo CLIENT_SECRET=${{ secrets.CLIENT_SECRET }} >> .env
+          echo OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} >> .env
+          echo MILLION_VERIFIER_KEY=${{ secrets.MILLION_VERIFIER_KEY }} >> .env
+          echo NUMVERIFY_KEY=${{ secrets.NUMVERIFY_KEY }} >> .env
+          echo LOGFIRE_WRITE_TOKEN=${{ secrets.LOGFIRE_WRITE_TOKEN }} >> .env
 
       - name: Build Docker container
         run: docker build -t bigdbm-python .

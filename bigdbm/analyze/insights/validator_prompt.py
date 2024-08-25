@@ -17,31 +17,31 @@ You always respond in JSON with the following schema (values are placeholders/ex
 
 All fields are required at all times. 
 
+How validation works: each validator has an integer priority, with lower integers meaning higher priority. Priority 1 is the highest.
+The system starts by using all validators, and iteratively removes a priority rung of validators (lowest priority, i.e. highest integer) if enough leads are not found with all priorities given. The highest priority validators, i.e. priority 1, cannot be removed - if leads do not pass priority 1 validation, they may not be returned. These validators are broken down by priority rung for you. 
+
 For example, given these validations and leads as an input (leads and validations are fake, but the structure is real):
 
 Validations:
 
-Required Validators (must be used on leads):
+Validators by priority (lower number means a higher priority):
 
-- SamePersonValidator: 
-    Remove duplicate leads likely representing the same person.
-    Uses hash() method to identify duplicates, merging 'sentences' for matches.
-    
-Args: {}
-- ZipCodeValidator: Remove leads not matching specified zip codes.
-Args: {'zip_codes': ['92694']}
-- EmailValidator: Remove emails deemed invalid by MillionVerifier API (resultcode != 1).
-Args: {'max_threads': 10}
-- PhoneValidator: Remove invalid US phone numbers based on format and Numverify API validation.
-Args: {'max_threads': 10}
-- ContactableValidator: Remove leads without a contact method (mobile or email).
-Args: {}
-
-
-Fallback Validators (attempted at first, removed only if not enough volume. i.e. not enough volume, try again with only required validators):
-
+Priority 2:
 - NumSentencesValidator: Remove leads with fewer than the specified number of sentences.
-Args: {'min_sentences': 2}
+	Args: {'min_sentences': 2}
+
+Priority 1:
+- SamePersonValidator: Remove duplicate leads likely representing the same person.
+    Uses hash() method to identify duplicates, merging 'sentences' for matches.
+	Args: {}
+- ZipCodeValidator: Remove leads not matching specified zip codes.
+	Args: {'zip_codes': ['94507']}
+- EmailValidator: Remove emails deemed invalid by MillionVerifier API (resultcode != 1).
+	Args: {'max_threads': 10}
+- PhoneValidator: Remove invalid US phone numbers based on format and Numverify API validation.
+	Args: {'max_threads': 10}
+- ContactableValidator: Remove leads without a contact method (mobile or email).
+	Args: {}
 
 Leads:
 
@@ -79,15 +79,17 @@ x,,,,x,,Helen,Winkler,helenhunt03@gmail.com,,,9496062008,True,,,,,7 Friar Ln,Lad
 
 An example list of appropriate, detailed insights would be:
 
-- 56% of the leads are categorized as Pre-Movers, with 13 out of 15 also showing interest in Mortgages. This suggests a strong likelihood that these individuals are in the market for a new home and actively seeking financing options. For instance, Jessica Rogers (Age 40) and Nicholas Mustain (Age 36) are both Pre-Movers interested in Mortgages, indicating they might be actively searching for home financing solutions.
+[
+    "56% of the leads are categorized as Pre-Movers, with 13 out of 15 also showing interest in Mortgages. This suggests a strong likelihood that these individuals are in the market for a new home and actively seeking financing options. For instance, Jessica Rogers (Age 40) and Nicholas Mustain (Age 36) are both Pre-Movers interested in Mortgages, indicating they might be actively searching for home financing solutions.",
 
-- 63% of the leads have a household net worth greater than $499,999, with 10 of these 17 being Pre-Movers. This indicates a strong potential market for upscale residential properties or luxury home services. For example, Summer Nichols (Age 47) and Paul Lee (Age 53), both homeowners with net worths over $500,000, are likely interested in high-end real estate or significant home improvements.
+    "63% of the leads have a household net worth greater than $499,999, with 10 of these 17 being Pre-Movers. This indicates a strong potential market for upscale residential properties or luxury home services. For example, Summer Nichols (Age 47) and Paul Lee (Age 53), both homeowners with net worths over $500,000, are likely interested in high-end real estate or significant home improvements.",
 
-- 41% of the leads have a credit score in the range of 700-749, with most of them being homeowners. This suggests that these individuals could be prime candidates for mortgage refinancing or home equity loans. For example, Bryan Zirkel (Age 44) and John Gresko (Age 49) both fall into this credit range and are homeowners, indicating they might benefit from competitive refinancing offers.
+    "41% of the leads have a credit score in the range of 700-749, with most of them being homeowners. This suggests that these individuals could be prime candidates for mortgage refinancing or home equity loans. For example, Bryan Zirkel (Age 44) and John Gresko (Age 49) both fall into this credit range and are homeowners, indicating they might benefit from competitive refinancing offers.",
 
-- 33% of the leads are married with a household net worth greater than $499,999, and 6 out of these 9 are Pre-Movers. This indicates they may be looking for larger or more prestigious homes to accommodate their lifestyle. For instance, Tammy Salvatore (Age 55) and Victor Celani (Age 63) are both married, high-net-worth Pre-Movers, suggesting they might be interested in luxury properties or exclusive neighborhoods.
+    "33% of the leads are married with a household net worth greater than $499,999, and 6 out of these 9 are Pre-Movers. This indicates they may be looking for larger or more prestigious homes to accommodate their lifestyle. For instance, Tammy Salvatore (Age 55) and Victor Celani (Age 63) are both married, high-net-worth Pre-Movers, suggesting they might be interested in luxury properties or exclusive neighborhoods.",
 
-- Among the female leads, 30% are single homeowners with a household income exceeding $150,000. These individuals may be interested in financial planning services, home improvement, or investment opportunities. For example, Nicole Miller (Age 48) and Margarita Arvizu (Age 64) both fit this profile, indicating they could be targeted for personalized financial advice or investment in real estate.
+    "Among the female leads, 30% are single homeowners with a household income exceeding $150,000. These individuals may be interested in financial planning services, home improvement, or investment opportunities. For example, Nicole Miller (Age 48) and Margarita Arvizu (Age 64) both fit this profile, indicating they could be targeted for personalized financial advice or investment in real estate."
+]
 
 ---
 

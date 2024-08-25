@@ -8,6 +8,7 @@ import random
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from contextlib import contextmanager
+from threading import Lock
 
 from bigdbm.schemas import (
     ConfigDates,
@@ -38,6 +39,8 @@ class BigDBMClient:
 
     Creating an instance is fairly expensive, as it automatically retrieves
     an access token and configuration dates.
+
+    This class is thread-safe.
     """
 
     def __init__(self, client_id: str, client_secret: str, logging: bool = DEFAULT_LOGGING) -> None:
@@ -53,9 +56,12 @@ class BigDBMClient:
         self.client_secret: str = client_secret
         self.logging: bool = logging
 
+        self.timeout_seconds: int = 30
+
         # Access token declarations (defined by _update_token)
         self._access_token: str = ""
         self._access_token_expiration: int = 0  # unix timestamp
+        self._token_lock = Lock()
         self._update_token()
 
     def _update_token(self) -> None:
@@ -75,10 +81,11 @@ class BigDBMClient:
         response.raise_for_status()
         response_json = response.json()
         
-        self._access_token = response_json["access_token"]
-        self._access_token_expiration = int(time.time() - 10) + response_json["expires_in"]
+        with self._token_lock:
+            self._access_token = response_json["access_token"]
+            self._access_token_expiration = int(time.time() - 10) + response_json["expires_in"]
+        
         self.logfire.log("trace", "Updated access token.")
-        return
 
     def _access_token_valid(self) -> bool:
         """
@@ -88,10 +95,7 @@ class BigDBMClient:
         if not self._access_token:
             return False
 
-        if time.time() >= self._access_token_expiration:
-            return False
-
-        return True
+        return time.time() < self._access_token_expiration
 
     def __request(self, request: Request) -> dict:
         """
@@ -107,6 +111,7 @@ class BigDBMClient:
         request.headers.update({
             "Authorization": f"Bearer {self._access_token}"
         })
+
         self.logfire.log(
             "trace", 
             f"Sending request: {
@@ -122,7 +127,7 @@ class BigDBMClient:
 
         try:
             with Session() as session:
-                response = session.send(request.prepare())
+                response = session.send(request.prepare(), timeout=self.timeout_seconds)
 
             response.raise_for_status()
         except RequestException as e:
@@ -132,7 +137,7 @@ class BigDBMClient:
             time.sleep(_random_sleep)
 
             with Session() as session:
-                response = session.send(request.prepare())
+                response = session.send(request.prepare(), timeout=self.timeout_seconds)
 
             if not response.ok:
                 self.logfire.log("error", f"Request failed again. Error: {response.text}")

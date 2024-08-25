@@ -9,7 +9,7 @@ from bigdbm.analyze.insights.validator_prompt import SYSTEM_PROMPT as VALIDATOR_
 
 from bigdbm.format.csv import CSVStringFormatter
 from bigdbm.validate.base import BaseValidator
-from bigdbm.process.base import BaseProcessor
+from bigdbm.process.base import BaseProcessor, ProcessValidator
 
 
 class LeadInsights(BaseModel):
@@ -34,7 +34,9 @@ class LeadInsights(BaseModel):
             "categories) to make informed assumptions about what the leads would want. "
             "The language used is tailored for the person who will be using these "
             "leads, providing critical and analytical observations that can guide "
-            "marketing strategies and personalized outreach efforts."
+            "marketing strategies and personalized outreach efforts. Each insight "
+            "should be a complete, self-contained statement without any leading "
+            "numbers or bullet points."
         )
     )
 
@@ -88,11 +90,6 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
         # Process insights to create an ordered list
         processed_insights: list[str] = []
         for i, insight in enumerate(lead_insights.insights, start=1):
-            # Remove "- " if present at the beginning of the insight
-            if insight.startswith("- "):
-                insight = insight[2:]
-
-            # Add the ordered list number
             processed_insights.append(f"{i}. {insight}")
 
         return "\n".join(processed_insights)
@@ -129,7 +126,9 @@ class ValidatedLeadInsights(BaseModel):
             "categories) to make informed assumptions about what the leads would want. "
             "The language used is tailored for the person who will be using these "
             "leads, providing critical and analytical observations that can guide "
-            "marketing strategies and personalized outreach efforts."
+            "marketing strategies and personalized outreach efforts. Each insight "
+            "should be a complete, self-contained statement without any leading "
+            "numbers or bullet points."
         )
     )
 
@@ -148,8 +147,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
             raise ImportError("Please install this package with the 'openai' extra.")
         
         self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
-        self.required_validators: list[BaseValidator] = processor.required_validators
-        self.fallback_validators: list[BaseValidator] = processor.fallback_validators
+        self.processor: BaseProcessor = processor
 
     def extract_validation_info(self) -> str:
         """Pull validation information from the validators."""
@@ -160,27 +158,31 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         def _format_validator_info(validator: BaseValidator) -> str:
             """Format the information for a single validator."""
             return (
-                f"- {validator.__class__.__name__}: {validator.__class__.__doc__}\n"
-                f"Args: {_remove_keys(validator.__dict__)}\n"
+                f"- {validator.__class__.__name__}: {validator.__class__.__doc__.strip()}\n"
+                f"\tArgs: {_remove_keys(validator.__dict__)}"
             )
 
-        def _get_validators_info(validators: list[BaseValidator], header: str) -> str:
+        def _get_validators_info(validators: list[BaseValidator]) -> str:
             """Get formatted information for a list of validators."""
-            info = f"{header}\n\n"
-            info += "".join(_format_validator_info(v) for v in validators)
-            return info
+            return "\n".join(_format_validator_info(v) for v in validators)
 
-        validation_info = _get_validators_info(
-            self.required_validators,
-            "Required Validators (must be used on leads):"
+        all_priorities: list[int] = sorted(
+            (v.priority for v in self.processor.validators),
+            reverse=True
         )
+        descending_priorities: list[int] = sorted(set(all_priorities), reverse=True)
 
-        validation_info += "\n\n" + _get_validators_info(
-            self.fallback_validators,
-            "Fallback Validators (attempted at first, removed only if not "
-            "enough volume. i.e. not enough volume, try again with only required "
-            "validators):"
+        validation_info: str = (
+            "Validators by priority (lower number means a higher priority):\n\n"
         )
+        for priority in descending_priorities:
+            validation_info += (
+                f"Priority {priority}:\n"
+                f"{_get_validators_info(
+                    self.processor.validators_with_priority(priority)
+                )}\n"
+            )
+            validation_info += "\n"
 
         return validation_info.strip()
 
@@ -225,11 +227,6 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         # Process insights to create an ordered list
         processed_insights: list[str] = []
         for i, insight in enumerate(lead_insights.insights, start=1):
-            # Remove "- " if present at the beginning of the insight
-            if insight.startswith("- "):
-                insight = insight[2:]
-
-            # Add the ordered list number
             processed_insights.append(f"{i}. {insight}")
 
         total_str: str = "\n".join(processed_insights)
