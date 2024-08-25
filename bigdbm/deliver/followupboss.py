@@ -54,16 +54,21 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         return responses
 
     def _prepare_event_data(self, md5_with_pii: MD5WithPII) -> dict:
+        person_data = {}
+        if md5_with_pii.pii.first_name:
+            person_data["firstName"] = md5_with_pii.pii.first_name
+        if md5_with_pii.pii.last_name:
+            person_data["lastName"] = md5_with_pii.pii.last_name
+        if md5_with_pii.pii.emails:
+            person_data["emails"] = [{"value": email} for email in md5_with_pii.pii.emails]
+        if md5_with_pii.pii.mobile_phones:
+            person_data["phones"] = [{"value": phone.phone} for phone in md5_with_pii.pii.mobile_phones]
+
         return {
             "source": self.system,
             "system": self.system,
             "type": self.event_type.value,
-            "person": {
-                "firstName": md5_with_pii.pii.first_name,
-                "lastName": md5_with_pii.pii.last_name,
-                "emails": [{"value": email} for email in md5_with_pii.pii.emails],
-                "phones": [{"value": phone.phone} for phone in md5_with_pii.pii.mobile_phones],
-            }
+            "person": person_data
         }
 
     def _send_event(self, event_data: dict) -> dict:
