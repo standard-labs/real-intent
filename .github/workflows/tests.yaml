@@ -29,6 +29,9 @@ jobs:
           echo MILLION_VERIFIER_KEY=${{ secrets.MILLION_VERIFIER_KEY }} >> .env
           echo NUMVERIFY_KEY=${{ secrets.NUMVERIFY_KEY }} >> .env
           echo LOGFIRE_WRITE_TOKEN=${{ secrets.LOGFIRE_WRITE_TOKEN }} >> .env
+          echo FOLLOWUPBUSS_API_KEY=${{ secrets.FOLLOWUPBOSS_API_KEY }} >> .env
+          echo FOLLOWUPBUSS_SYSTEM=${{ secrets.FOLLOWUPBOSS_SYSTEM }} >> .env
+          echo FOLLOWUPBUSS_SYSTEM_KEY=${{ secrets.FOLLOWUPBOSS_SYSTEM_KEY }} >> .env
 
       - name: Build Docker container
         run: docker build -t bigdbm-python .
