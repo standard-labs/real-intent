@@ -1,6 +1,9 @@
+"""Test the Follow Up Boss deliverer."""
 import pytest
+
 import os
 from dotenv import load_dotenv
+
 from bigdbm.deliver.followupboss import FollowUpBossDeliverer
 from bigdbm.schemas import MD5WithPII, PII, MobilePhone, Gender
 
@@ -60,6 +63,7 @@ def followupboss_deliverer(api_key, system, system_key):
     return FollowUpBossDeliverer(api_key, system, system_key)
 
 
+@pytest.mark.skipif(not os.getenv("FOLLOWUPBOSS_API_KEY"), reason="FUB API key not found")
 def test_followupboss_deliverer_success(followupboss_deliverer, sample_pii_md5s):
     result = followupboss_deliverer.deliver(sample_pii_md5s)
 
@@ -71,6 +75,7 @@ def test_followupboss_deliverer_success(followupboss_deliverer, sample_pii_md5s)
     assert any(phone["value"] == "1234567890" for phone in result[0]["phones"])
 
 
+@pytest.mark.skipif(not os.getenv("FOLLOWUPBOSS_API_KEY"), reason="FUB API key not found")
 def test_prepare_event_data(followupboss_deliverer, sample_pii_md5s):
     event_data = followupboss_deliverer._prepare_event_data(sample_pii_md5s[0])
 
