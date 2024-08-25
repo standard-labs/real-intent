@@ -42,7 +42,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         self.system_key: str = system_key
 
         # Configuration stuff
-        self.event_type: EventType = event_type
+        self.event_type: EventType = EventType(event_type)
 
     def deliver(self, pii_md5s: list[MD5WithPII]) -> list[dict]:
         responses: list[dict] = []
