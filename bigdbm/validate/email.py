@@ -46,7 +46,7 @@ class EmailValidator(BaseValidator):
 
         raise
 
-    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove any emails that are not considered valid."""
         # Extract all the emails
         all_emails: list[str] = []
@@ -80,6 +80,6 @@ class HasEmailValidator(BaseValidator):
     Use after EmailValidator to ensure leads have valid emails.
     """
 
-    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove leads without an email address."""
         return [md5 for md5 in md5s if md5.pii.emails]

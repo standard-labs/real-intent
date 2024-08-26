@@ -10,7 +10,7 @@ class GenderValidator(BaseValidator):
         """Initialize with the filtered gender."""
         self.genders: tuple[Gender] = gender
 
-    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Only return leads whose gender exists in the initialized list of genders."""
         return [
             md5 for md5 in md5s if md5.pii.gender in self.genders
@@ -25,7 +25,7 @@ class AgeValidator(BaseValidator):
         self.min_age = int(min_age)
         self.max_age = int(max_age)
 
-    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove leads that do not match the age requirement."""
         def is_valid(md5: MD5WithPII) -> bool:
             """Check if the lead is in the age range."""
@@ -42,7 +42,7 @@ class AgeValidator(BaseValidator):
 class MNWValidator(BaseValidator):
     """Remove leads below Medium Net Worth (MNW): $100k+ income and $100k+ net worth."""
 
-    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove leads that do not match the MNW requirement."""
         income_levels = {
             "K. $100,000-$149,999", 
@@ -68,7 +68,7 @@ class MNWValidator(BaseValidator):
 class HNWValidator(BaseValidator):
     """Remove leads below High Net Worth (HNW): $200k+ income and $250k+ net worth."""
 
-    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove leads that do not match the HNW requirement."""
         income_levels = {
             "N. $200,000-$249,999", 

@@ -56,7 +56,7 @@ class PhoneValidator(BaseValidator):
 
         raise
 
-    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove any phone numbers that are not considered valid."""
         # Extract all the phone numbers
         all_phones: list[str] = []
@@ -90,7 +90,7 @@ class HasPhoneValidator(BaseValidator):
     Use after PhoneValidator to ensure leads have valid phone numbers.
     """
 
-    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove leads without a phone number."""
         return [md5 for md5 in md5s if md5.pii.mobile_phones]
 
@@ -98,7 +98,7 @@ class HasPhoneValidator(BaseValidator):
 class DNCValidator(BaseValidator):
     """Remove leads with primary phone on DNC list. Keeps leads without phones."""
 
-    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """
         Remove leads whose primary phone is marked as DNC.
         Ignores leads without a phone number - these are still kept.
@@ -126,6 +126,6 @@ class CallableValidator(BaseValidator):
         self.phone_validator = phone_validator or HasPhoneValidator()
         self.dnc_validator = dnc_validator or DNCValidator()
 
-    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove leads without a phone number or on the DNC list."""
         return self.dnc_validator.validate(self.phone_validator.validate(md5s))
