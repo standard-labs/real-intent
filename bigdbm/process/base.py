@@ -6,6 +6,7 @@ from bigdbm.client import BigDBMClient
 from bigdbm.schemas import IABJob, MD5WithPII
 from bigdbm.validate.base import BaseValidator
 from bigdbm.validate.simple import ContactableValidator
+from bigdbm.internal_logging import log, log_span
 
 
 class ProcessValidator(NamedTuple):
@@ -150,6 +151,20 @@ class BaseProcessor(ABC):
 
         return self
 
-    @abstractmethod
     def process(self, iab_job: IABJob) -> list[MD5WithPII]:
-        """Take an IABJob and process it into a list of MD5s with PII."""
+        """
+        Take an IAB job and process it into a list of MD5s with PII.
+        This method wraps the _process method with logging.
+        """
+        with log_span(f"Processing IAB job with {self.__class__.__name__}", _level="debug"):
+            log("debug", f"Starting processing with {self.__class__.__name__}")
+            result = self._process(iab_job)
+            log("debug", f"Processing completed with {self.__class__.__name__}, generated {len(result)} MD5s with PII")
+            return result
+
+    @abstractmethod
+    def _process(self, iab_job: IABJob) -> list[MD5WithPII]:
+        """
+        Internal method to be implemented by subclasses to perform the actual processing.
+        """
+        pass

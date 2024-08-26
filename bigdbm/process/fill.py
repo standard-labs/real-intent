@@ -172,22 +172,6 @@ class FillProcessor(BaseProcessor):
 
         return return_leads
 
-    def process(self, iab_job: IABJob) -> list[MD5WithPII]:
-        """
-        1. Pull 2x as much intent data as requested. (adjustable on instantiation)
-        2. Request 1x as much PII.
-        3. Keep requesting PII on more data until filled.
-
-        Can return less than the requested amount of data if:
-        - The PII hit rate is less than 0.5x, as 2x data is not enough.
-        - There is not enough intent data returned.
-
-        If the initial pull does not return enough data, the processor will try again without
-        the fallback validators, retaining whatever leads were already pulled.
-        """
-        with log_span(f"Using FillProcessor to process job: {iab_job}", _level="debug"):
-            return self._process(iab_job)
-
 
 # ---- Deprecation Zone ----
 
@@ -217,7 +201,7 @@ class NoFallbackFillProcessor(BaseProcessor):
         super().__init__(bigdbm_client)
         self.intent_multiplier: float = intent_multiplier
 
-    def process(self, iab_job: IABJob) -> list[MD5WithPII]:
+    def _process(self, iab_job: IABJob) -> list[MD5WithPII]:
         """
         1. Pull 2x as much intent data as requested. (adjustable on instantiation)
         2. Request 1x as much PII.
