@@ -44,6 +44,15 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         # Configuration stuff
         self.event_type: EventType = EventType(event_type)
 
+    @property
+    def api_headers(self) -> dict:
+        return {
+            "Authorization": f"Basic {base64.b64encode(f'{self.api_key}:'.encode()).decode()}",
+            "Content-Type": "application/json",
+            "X-System": self.system,
+            "X-System-Key": self.system_key
+        }
+
     def deliver(self, pii_md5s: list[MD5WithPII]) -> list[dict]:
         responses: list[dict] = []
 
@@ -72,16 +81,20 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         }
 
     def _send_event(self, event_data: dict) -> dict:
-        headers = {
-            "Authorization": f"Basic {base64.b64encode(f'{self.api_key}:'.encode()).decode()}",
-            "Content-Type": "application/json",
-            "X-System": self.system,
-            "X-System-Key": self.system_key
-        }
-        response = requests.post(f"{self.base_url}/events", json=event_data, headers=headers)
+        response = requests.post(
+            f"{self.base_url}/events", 
+            json=event_data, 
+            headers=self.api_headers
+        )
         
         if response.status_code == 204:
-            return {"status": "ignored", "message": "Lead flow associated with this source has been archived and ignored."}
+            return {
+                "status": "ignored", 
+                "message": (
+                    "Lead flow associated with this source has been "
+                    "archived and ignored."
+                )
+            }
         
         response.raise_for_status()
         return response.json()
