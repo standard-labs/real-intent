@@ -18,8 +18,7 @@ from bigdbm.schemas import (
     MD5WithPII
 )
 from bigdbm.error import BigDBMApiError
-from bigdbm.internal_logging import log, log_span, enable_logging, disable_logging
-
+from bigdbm.internal_logging import log, log_span
 
 class BigDBMClient:
     """
@@ -31,16 +30,10 @@ class BigDBMClient:
     This class is thread-safe.
     """
 
-    def __init__(self, client_id: str, client_secret: str, logging: bool = True) -> None:
+    def __init__(self, client_id: str, client_secret: str) -> None:
         """Initialize the BigDBM client."""
         self.client_id: str = client_id
         self.client_secret: str = client_secret
-        self.logging: bool = logging
-
-        if logging:
-            enable_logging()
-        else:
-            disable_logging()
 
         self.timeout_seconds: int = 30
 
@@ -102,11 +95,11 @@ class BigDBMClient:
             "trace", 
             f"Sending request: {
                 {
-                    "method": request.method,
-                    "url": request.url,
-                    "headers": request.headers,
-                    "data": request.data,
-                    "json": request.json
+                    'method': request.method,
+                    'url': request.url,
+                    'headers': request.headers,
+                    'data': request.data,
+                    'json': request.json
                 }
             }"
         )
