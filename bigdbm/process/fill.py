@@ -59,12 +59,7 @@ class FillProcessor(BaseProcessor):
                 # Utilize parameterized validators to filter leads
                 validator: BaseValidator
                 for validator in validators:
-                    initial_len: int = len(md5s_with_pii)
                     md5s_with_pii = validator.validate(md5s_with_pii)
-                    log(
-                        "debug", 
-                        f"{validator.__class__.__name__} removed {initial_len - len(md5s_with_pii)} leads."
-                    )
 
                 # Add post-validated (remaining) leads
                 return_md5s.extend(md5s_with_pii)
