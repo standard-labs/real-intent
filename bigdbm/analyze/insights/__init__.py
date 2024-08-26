@@ -97,6 +97,9 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
         log("info", f"Generated {len(lead_insights.insights)} insights")
         log("trace", f"Thoughts from OpenAI: {lead_insights.thoughts}")
 
+        for i, insight in enumerate(lead_insights.insights, start=1):
+            log("trace", f"Insight {i}: {insight}")
+
         processed_insights: list[str] = [
             f"{i+1}. {insight}" for i, insight in enumerate(lead_insights.insights)
         ]
@@ -248,6 +251,9 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         log("info", f"Generated {len(lead_insights.insights)} insights")
         log("trace", f"Thoughts from OpenAI: {lead_insights.thoughts}")
         log("trace", f"Validation insight: {lead_insights.validation_insight}")
+
+        for i, insight in enumerate(lead_insights.insights, start=1):
+            log("trace", f"Insight {i}: {insight}")
 
         processed_insights: list[str] = [
             f"{i+1}. {insight}" for i, insight in enumerate(lead_insights.insights)
