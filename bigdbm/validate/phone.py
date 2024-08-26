@@ -7,6 +7,7 @@ import random
 
 from bigdbm.schemas import MD5WithPII
 from bigdbm.validate.base import BaseValidator
+from bigdbm.internal_logging import log
 
 
 class PhoneValidator(BaseValidator):
@@ -42,6 +43,7 @@ class PhoneValidator(BaseValidator):
         response_json = response.json()
 
         if "valid" not in response_json:
+            log("error", f"Unexpected response from numverify: {response_json}")
             raise ValueError(f"Unexpected response from numverify: {response_json}")
 
         return response_json["valid"]
@@ -54,6 +56,7 @@ class PhoneValidator(BaseValidator):
             except requests.RequestException as e:
                 time.sleep(random.uniform(3, 5))
 
+        log("error", f"All validation attempts failed for phone {phone}")
         raise
 
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
