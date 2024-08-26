@@ -84,18 +84,31 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         responses: list[dict] = []
 
         for md5_with_pii in pii_md5s:
-            event_data = self._prepare_event_data(md5_with_pii)
-            response = self._send_event(event_data)
+            response = self._deliver_single_lead(md5_with_pii)
             responses.append(response)
-            log(
-                "trace", 
-                (
-                    f"Delivered lead: {md5_with_pii.md5}, event_type: {self.event_type.value}, "
-                    f"response_status: {response.get('status', 'unknown')}"
-                )
-            )
 
         return responses
+
+    def _deliver_single_lead(self, md5_with_pii: MD5WithPII) -> dict:
+        """
+        Deliver a single lead to FollowUpBoss.
+
+        Args:
+            md5_with_pii (MD5WithPII): The MD5WithPII object containing the PII data for a single lead.
+
+        Returns:
+            dict: A response dictionary from the FollowUpBoss API for the delivered event.
+        """
+        event_data = self._prepare_event_data(md5_with_pii)
+        response = self._send_event(event_data)
+        log(
+            "trace", 
+            (
+                f"Delivered lead: {md5_with_pii.md5}, event_type: {self.event_type.value}, "
+                f"response_status: {response.get('status', 'unknown')}"
+            )
+        )
+        return response
 
     def _prepare_event_data(self, md5_with_pii: MD5WithPII) -> dict:
         """

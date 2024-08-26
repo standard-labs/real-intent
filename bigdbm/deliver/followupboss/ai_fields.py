@@ -94,8 +94,8 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         """
         Deliver the PII data to FollowUpBoss using AI field mapping.
 
-        This method attempts to deliver the data with AI field mapping first. If there's an error,
-        it falls back to the parent class's delivery method without AI fields.
+        This method attempts to deliver each lead individually using the AI-based method.
+        If the AI-based delivery fails for a lead, it falls back to the standard delivery method for that lead.
 
         Args:
             pii_md5s (list[MD5WithPII]): A list of MD5WithPII objects containing the PII data to be delivered.
@@ -103,26 +103,39 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         Returns:
             list[dict]: A list of response dictionaries from the FollowUpBoss API for each delivered event.
         """
+        responses: list[dict] = []
+
+        for md5_with_pii in pii_md5s:
+            response = self._deliver_single_lead(md5_with_pii)
+            responses.append(response)
+
+        return responses
+
+    def _deliver_single_lead(self, md5_with_pii: MD5WithPII) -> dict:
+        """
+        Deliver a single lead to FollowUpBoss, attempting AI-based delivery first and falling back to standard delivery if needed.
+
+        Args:
+            md5_with_pii (MD5WithPII): The MD5WithPII object containing the PII data for a single lead.
+
+        Returns:
+            dict: A response dictionary from the FollowUpBoss API for the delivered event.
+        """
         try:
-            responses: list[dict] = []
-
-            for md5_with_pii in pii_md5s:
-                event_data = self._prepare_event_data(md5_with_pii)
-                response = self._send_event(event_data)
-                responses.append(response)
-                log(
-                    "trace", 
-                    (
-                        f"Delivered lead with AI mapping: {md5_with_pii.md5}, "
-                        f"event_type: {self.event_type.value}, "
-                        f"response_status: {response.get('status', 'unknown')}"
-                    )
+            event_data = self._prepare_event_data(md5_with_pii)
+            response = self._send_event(event_data)
+            log(
+                "trace", 
+                (
+                    f"Delivered lead with AI mapping: {md5_with_pii.md5}, "
+                    f"event_type: {self.event_type.value}, "
+                    f"response_status: {response.get('status', 'unknown')}"
                 )
-
-            return responses
-        except requests.RequestException as e:
-            log("error", f"Error in AI field mapping delivery: {str(e)}. Falling back to standard delivery.")
-            return super()._deliver(pii_md5s)
+            )
+            return response
+        except Exception as e:
+            log("error", f"Error in AI field mapping delivery for lead {md5_with_pii.md5}: {str(e)}. Falling back to standard delivery.")
+            return super()._deliver_single_lead(md5_with_pii)
 
     def _get_custom_fields(self) -> list[CustomField]:
         """
