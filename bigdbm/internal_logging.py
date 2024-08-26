@@ -17,7 +17,7 @@ class DummyLogger:
         pass
 
     @contextmanager
-    def log_span(self, *args, **kwargs):
+    def span(self, *args, **kwargs):
         yield
 
 
@@ -39,4 +39,4 @@ def disable_logging():
 
 # Expose log and log_span methods directly
 log = logger.log
-log_span = logger.log_span
+log_span = logger.span
