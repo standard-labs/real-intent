@@ -6,7 +6,7 @@ import base64
 
 from bigdbm.deliver.base import BaseOutputDeliverer
 from bigdbm.schemas import MD5WithPII
-from bigdbm.internal_logging import log, log_span
+from bigdbm.internal_logging import log
 
 
 class EventType(StrEnum):
@@ -71,7 +71,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             "X-System-Key": self.system_key
         }
 
-    def deliver(self, pii_md5s: list[MD5WithPII]) -> list[dict]:
+    def _deliver(self, pii_md5s: list[MD5WithPII]) -> list[dict]:
         """
         Deliver the PII data to FollowUpBoss.
 
@@ -81,23 +81,21 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         Returns:
             list[dict]: A list of response dictionaries from the FollowUpBoss API for each delivered event.
         """
-        with log_span(f"Delivering {len(pii_md5s)} leads to Follow Up Boss.", _level="debug"):
-            responses: list[dict] = []
+        responses: list[dict] = []
 
-            for md5_with_pii in pii_md5s:
-                event_data = self._prepare_event_data(md5_with_pii)
-                response = self._send_event(event_data)
-                responses.append(response)
-                log(
-                    "trace", 
-                    (
-                        f"Delivered lead: {md5_with_pii.md5}, event_type: {self.event_type.value}, "
-                        f"response_status: {response.get('status', 'unknown')}"
-                    )
+        for md5_with_pii in pii_md5s:
+            event_data = self._prepare_event_data(md5_with_pii)
+            response = self._send_event(event_data)
+            responses.append(response)
+            log(
+                "trace", 
+                (
+                    f"Delivered lead: {md5_with_pii.md5}, event_type: {self.event_type.value}, "
+                    f"response_status: {response.get('status', 'unknown')}"
                 )
+            )
 
-            log("debug", f"Successfully delivered {len(responses)} leads to Follow Up Boss.")
-            return responses
+        return responses
 
     def _prepare_event_data(self, md5_with_pii: MD5WithPII) -> dict:
         """
