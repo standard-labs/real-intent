@@ -14,6 +14,7 @@ class CustomField(BaseModel):
     name: str
     label: str
     type: str
+    choices: list[str] = Field(default_factory=list)
     orderWeight: int
     hideIfEmpty: bool
     readOnly: bool
@@ -90,6 +91,26 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         response.raise_for_status()
         raw_res = response.json()["customfields"]
         return [CustomField(**field) for field in raw_res]
+
+    def _create_custom_field(self, custom_field: CustomFieldCreation) -> CustomField:
+        """Create a custom field in the user's Follow Up Boss account."""
+        # Create the custom field
+        response = requests.post(
+            f"{self.base_url}/customFields",
+            headers=self.api_headers,
+            json=custom_field.model_dump()
+        )
+        response.raise_for_status()
+        field_id = response.json()["id"]
+        
+        # Get the custom field
+        response = requests.get(
+            f"{self.base_url}/customFields/{field_id}",
+            headers=self.api_headers
+        )
+        response.raise_for_status()
+
+        return CustomField(**response.json())
 
     def _prepare_event_data(self, md5_with_pii: MD5WithPII) -> dict:
         return super()._prepare_event_data(md5_with_pii)
