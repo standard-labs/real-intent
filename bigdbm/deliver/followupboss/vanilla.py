@@ -6,6 +6,7 @@ import base64
 
 from bigdbm.deliver.base import BaseOutputDeliverer
 from bigdbm.schemas import MD5WithPII
+from bigdbm.internal_logging import log, log_span
 
 
 class EventType(StrEnum):
@@ -80,13 +81,23 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         Returns:
             list[dict]: A list of response dictionaries from the FollowUpBoss API for each delivered event.
         """
-        responses: list[dict] = []
+        with log_span(f"Delivering {len(pii_md5s)} leads to Follow Up Boss.", _level="debug"):
+            responses: list[dict] = []
 
-        for md5_with_pii in pii_md5s:
-            event_data = self._prepare_event_data(md5_with_pii)
-            responses.append(self._send_event(event_data))
+            for md5_with_pii in pii_md5s:
+                event_data = self._prepare_event_data(md5_with_pii)
+                response = self._send_event(event_data)
+                responses.append(response)
+                log(
+                    "trace", 
+                    (
+                        f"Delivered lead: {md5_with_pii.md5}, event_type: {self.event_type.value}, "
+                        f"response_status: {response.get('status', 'unknown')}"
+                    )
+                )
 
-        return responses
+            log("debug", f"Successfully delivered {len(responses)} leads to Follow Up Boss.")
+            return responses
 
     def _prepare_event_data(self, md5_with_pii: MD5WithPII) -> dict:
         """
@@ -98,6 +109,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         Returns:
             dict: A dictionary containing the prepared event data for the FollowUpBoss API.
         """
+        log("trace", f"Preparing event data for MD5: {md5_with_pii.md5}, first_name: {md5_with_pii.pii.first_name}, last_name: {md5_with_pii.pii.last_name}")
         person_data = {}
         if md5_with_pii.pii.first_name:
             person_data["firstName"] = md5_with_pii.pii.first_name
@@ -128,13 +140,24 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         Raises:
             requests.exceptions.HTTPError: If the API request fails.
         """
+        log(
+            "trace", 
+            (
+                f"Sending event to FollowUpBoss API, event_type: {event_data['type']}, "
+                f"person: {event_data['person']}"
+            )
+        )
+
         response = requests.post(
             f"{self.base_url}/events", 
             json=event_data, 
             headers=self.api_headers
         )
         
+        log("trace", f"Raw response: {response.text}, status_code: {response.status_code}")
+        
         if response.status_code == 204:
+            log("debug", "Lead flow associated with this source has been archived and ignored.")
             return {
                 "status": "ignored", 
                 "message": (
