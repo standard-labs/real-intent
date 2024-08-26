@@ -89,7 +89,18 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
 
     def deliver(self, pii_md5s: list[MD5WithPII]) -> list[dict]:
-        """Parent logic, but, retries without AI fields if there's an error."""
+        """
+        Deliver the PII data to FollowUpBoss using AI field mapping.
+
+        This method attempts to deliver the data with AI field mapping first. If there's an error,
+        it falls back to the parent class's delivery method without AI fields.
+
+        Args:
+            pii_md5s (list[MD5WithPII]): A list of MD5WithPII objects containing the PII data to be delivered.
+
+        Returns:
+            list[dict]: A list of response dictionaries from the FollowUpBoss API for each delivered event.
+        """
         try:
             responses: list[dict] = []
 
@@ -110,14 +121,33 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             return responses
 
     def _get_custom_fields(self) -> list[CustomField]:
-        """Get the custom fields from the user's Follow Up Boss account."""
+        """
+        Get the custom fields from the user's Follow Up Boss account.
+
+        Returns:
+            list[CustomField]: A list of CustomField objects representing the custom fields in the user's account.
+
+        Raises:
+            requests.RequestException: If there's an error in the API request.
+        """
         response = requests.get(f"{self.base_url}/customFields", headers=self.api_headers)
         response.raise_for_status()
         raw_res = response.json()["customfields"]
         return [CustomField(**field) for field in raw_res]
 
     def _create_custom_field(self, custom_field: CustomFieldCreation) -> CustomField:
-        """Create a custom field in the user's Follow Up Boss account."""
+        """
+        Create a custom field in the user's Follow Up Boss account.
+
+        Args:
+            custom_field (CustomFieldCreation): The custom field to be created.
+
+        Returns:
+            CustomField: The created custom field.
+
+        Raises:
+            requests.RequestException: If there's an error in the API request.
+        """
         # Create the custom field
         response = requests.post(
             f"{self.base_url}/customFields",
@@ -137,6 +167,19 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         return CustomField(**response.json())
 
     def _prepare_event_data(self, md5_with_pii: MD5WithPII) -> dict:
+        """
+        Prepare the event data for a single MD5WithPII object using AI field mapping.
+
+        This method extends the parent class's _prepare_event_data method by adding AI-suggested
+        custom field mappings to the event data.
+
+        Args:
+            md5_with_pii (MD5WithPII): The MD5WithPII object containing the PII data.
+
+        Returns:
+            dict: A dictionary containing the prepared event data for the FollowUpBoss API,
+                  including AI-suggested custom field mappings.
+        """
         raw_event_data: dict = super()._prepare_event_data(md5_with_pii)
 
         # Get all the custom fields
