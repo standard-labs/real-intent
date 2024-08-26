@@ -4,7 +4,7 @@ import pandas as pd
 from io import StringIO
 from typing import Any
 
-from bigdbm.format.base import BaseOutputFormatter
+from bigdbm.deliver.base import BaseOutputDeliverer
 from bigdbm.schemas import MD5WithPII
 
 
@@ -38,7 +38,7 @@ OUTPUT_COLUMNS: list[str] = [
 ]
 
 
-class CSVStringFormatter(BaseOutputFormatter):
+class CSVStringFormatter(BaseOutputDeliverer):
     """Format into CSV strings."""
 
     def __init__(self, output_columns: list[str] = OUTPUT_COLUMNS):
@@ -64,7 +64,7 @@ class CSVStringFormatter(BaseOutputFormatter):
 
         return intent_columns
 
-    def format_md5s(self, pii_md5s: list[MD5WithPII]) -> str:
+    def deliver(self, pii_md5s: list[MD5WithPII]) -> str:
         """
         Convert the unique MD5s into a CSV string.
         Returns empty string if no result.
