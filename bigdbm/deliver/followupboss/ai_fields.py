@@ -88,6 +88,27 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
 
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
 
+    def deliver(self, pii_md5s: list[MD5WithPII]) -> list[dict]:
+        """Parent logic, but, retries without AI fields if there's an error."""
+        try:
+            responses: list[dict] = []
+
+            for md5_with_pii in pii_md5s:
+                event_data = self._prepare_event_data(md5_with_pii)
+                responses.append(self._send_event(event_data))
+
+            return responses
+        except requests.RequestException as e:
+            # LOG ERROR HERE using e
+            # try again without AI fields
+            responses: list[dict] = []
+
+            for md5_with_pii in pii_md5s:
+                event_data = super()._prepare_event_data(md5_with_pii)
+                responses.append(super()._send_event(event_data))
+            
+            return responses
+
     def _get_custom_fields(self) -> list[CustomField]:
         """Get the custom fields from the user's Follow Up Boss account."""
         response = requests.get(f"{self.base_url}/customFields", headers=self.api_headers)
