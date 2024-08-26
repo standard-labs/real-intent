@@ -31,5 +31,5 @@ Homepage = "https://standarddao.finance"
 Repository = "https://github.com/Standard-Labs/bigdbm-python.git"
 
 [project.optional-dependencies]
-logfire = ["logfire"]
-openai = ["openai>=1.42.0"]
+logfire = ["logfire>=0.51.0"]
+ai = ["openai>=1.42.0"]
