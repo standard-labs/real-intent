@@ -133,6 +133,7 @@ class FillProcessor(BaseProcessor):
 
         # If there are no validators, still need to run
         if self.lowest_validation_priority == 0:
+            log("debug", "No validators present, running without validation")
             return_leads += self._pull_and_validate(
                 intent_events=intent_events, 
                 n_hems=n_hems,
@@ -143,15 +144,17 @@ class FillProcessor(BaseProcessor):
         for check_priority in range(self.lowest_validation_priority, 0, -1):
             log(
                 "debug",
-                f"Currently have {len(return_leads)} of {n_hems} leads. "
+                f"Validating with priority {check_priority}. Currently have {len(return_leads)} of {n_hems} leads."
             )
 
             existing_md5s: list[str] = [i.md5 for i in return_leads]
-            return_leads += self._pull_and_validate(
+            new_leads = self._pull_and_validate(
                 [i for i in intent_events if i.md5 not in existing_md5s], 
                 n_hems - len(return_leads),
                 check_priority
             )
+            return_leads += new_leads
+            log("debug", f"Added {len(new_leads)} new leads with priority {check_priority}")
 
             # If we have enough leads, return them
             if len(return_leads) >= n_hems:
