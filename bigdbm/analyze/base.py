@@ -8,7 +8,6 @@ from bigdbm.internal_logging import log, log_span
 class BaseAnalyzer(ABC):
     """Base class for analyzers."""
 
-    @abstractmethod
     def analyze(self, pii_md5s: list[MD5WithPII]) -> str:
         """
         Take a list of MD5s with PII and perform analysis according to the purpose
