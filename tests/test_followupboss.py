@@ -147,8 +147,9 @@ def test_ai_followupboss_deliverer_success(ai_followupboss_deliverer, sample_pii
     This test verifies that:
     1. The AI-powered deliverer successfully sends the PII data to Follow Up Boss.
     2. The response contains the expected basic data (id, first name, last name, email, phone).
-    3. The AI has added custom fields to the person data.
-    4. The AI did not fall back to the non-AI method.
+    3. The AI has added the "Net Worth" custom field to the person data.
+    4. The "Net Worth" value is correctly mapped from the PII data.
+    5. The AI did not fall back to the non-AI method.
 
     Args:
         ai_followupboss_deliverer (AIFollowUpBossDeliverer): The AIFollowUpBossDeliverer instance.
@@ -156,7 +157,7 @@ def test_ai_followupboss_deliverer_success(ai_followupboss_deliverer, sample_pii
 
     Raises:
         AssertionError: If any of the assertions fail, indicating that the AI-powered delivery was not successful,
-                        the returned data does not match the expected values, no custom fields were added,
+                        the returned data does not match the expected values, the "Net Worth" field was not added,
                         or the AI fell back to the non-AI method.
     """
     result = ai_followupboss_deliverer.deliver(sample_pii_md5s)
@@ -168,12 +169,15 @@ def test_ai_followupboss_deliverer_success(ai_followupboss_deliverer, sample_pii
     assert any(email["value"] == sample_pii_md5s[0].pii.emails[0] for email in result[0]["emails"])
     assert any(phone["value"] == "1234567890" for phone in result[0]["phones"])
 
-    # Check if any custom fields were added by the AI
+    # Check if the "Net Worth" custom field was added by the AI
     custom_fields = ai_followupboss_deliverer._get_custom_fields()
     event_data = ai_followupboss_deliverer._prepare_event_data(sample_pii_md5s[0])
     
-    ai_added_fields = [field.name for field in custom_fields if field.name in event_data["person"]]
-    assert len(ai_added_fields) > 0, "No custom fields were added by the AI"
+    net_worth_field = next((field for field in custom_fields if field.label == "Net Worth"), None)
+    assert net_worth_field is not None, "Net Worth custom field not found"
+    
+    assert net_worth_field.name in event_data["person"], "Net Worth field not added to person data"
+    assert event_data["person"][net_worth_field.name] == sample_pii_md5s[0].pii.household_net_worth, "Net Worth value not correctly mapped"
 
     # Check that the AI didn't fall back to the non-AI method
     assert len(event_data["person"]) > 4, "AI seems to have fallen back to non-AI method"
