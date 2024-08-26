@@ -48,7 +48,7 @@ class FillProcessor(BaseProcessor):
             with log_span("Pulling more PII to fill validated quota.", _level="debug"):
                 if not md5s_bank:
                     log(
-                        "warn", 
+                        "info", 
                         f"Not enough valid leads to fill quota - only have {len(return_md5s)}."
                     )
                     break
