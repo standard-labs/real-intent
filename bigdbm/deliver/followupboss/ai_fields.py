@@ -2,10 +2,12 @@
 import requests
 from pydantic import BaseModel, Field
 
-from typing import Literal
+import json
+from typing import Literal, Any
 
 from bigdbm.schemas import MD5WithPII
 from bigdbm.deliver.followupboss.vanilla import FollowUpBossDeliverer, EventType
+from bigdbm.deliver.followupboss.ai_prompt import SYSTEM_PROMPT
 
 
 class CustomField(BaseModel):
@@ -18,7 +20,7 @@ class CustomField(BaseModel):
     orderWeight: int
     hideIfEmpty: bool
     readOnly: bool
-    isRecurring: bool
+    isRecurring: bool = False
 
 
 class CustomFieldCreation(BaseModel):
@@ -48,8 +50,9 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
     """
     Delivers data to FollowUpBoss CRM and uses AI to match fields with the user's
     custom fields. Reads the user's custom fields and matches them with fields in PII data.
-    Creates new custom fields for the user's FUB account if they don't exist, and then
-    maps the fields in the PII data to the custom fields.
+
+    (Eventually will optionally create new custom fields for the user's FUB account 
+    if they don't exist, and then maps the fields in the PII data to the custom fields.)
     """
 
     def __init__(
@@ -113,4 +116,59 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         return CustomField(**response.json())
 
     def _prepare_event_data(self, md5_with_pii: MD5WithPII) -> dict:
-        return super()._prepare_event_data(md5_with_pii)
+        raw_event_data: dict = super()._prepare_event_data(md5_with_pii)
+
+        # Get all the custom fields
+        custom_fields: list[CustomField] = self._get_custom_fields()
+        custom_fields_str: str = json.dumps(
+            [field.model_dump() for field in custom_fields],
+            indent=4
+        )
+
+        # Prepare the PII data
+        filtered_pii_data: dict[str, Any] = {
+            key: val for key, val in md5_with_pii.pii.model_dump().items() 
+            if key not in {"first_name", "last_name", "emails", "mobile_phones"}
+        }
+        filtered_pii_data_str: str = json.dumps(filtered_pii_data, indent=4)
+
+        # Match the custom fields with the PII data
+        response = self.openai_client.chat.completions.create(
+            model="gpt-4o-2024-08-06",
+            messages=[
+                {
+                    "role": "system",
+                    "content": SYSTEM_PROMPT
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"PII data:\n{filtered_pii_data_str}\n\n"
+                        f"Custom fields:\n{custom_fields_str}"
+                    )
+                }
+            ],
+            max_tokens=4095,
+            temperature=0.7,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0,
+            response_format={"type": "json_object"}
+        )
+
+        # Try to parse
+        try:
+            ai_suggestions: dict[str, str | int | bool] = json.loads(
+                response.choices[0].message.content
+            )
+        except json.JSONDecodeError:
+            # LOG ERROR HERE ABOUT BAD PARSING
+            ai_suggestions: dict[str, str | int | bool] = {}
+        
+        # Merge the AI suggestions with the protected person data
+        custom_field_names: list[str] = [field.name for field in custom_fields]
+        for key, val in ai_suggestions.items():
+            if key in custom_field_names:
+                raw_event_data["person"][key] = val
+
+        return raw_event_data
