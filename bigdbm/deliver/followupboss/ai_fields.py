@@ -8,7 +8,7 @@ from typing import Literal, Any
 from bigdbm.schemas import MD5WithPII
 from bigdbm.deliver.followupboss.vanilla import FollowUpBossDeliverer, EventType
 from bigdbm.deliver.followupboss.ai_prompt import SYSTEM_PROMPT
-from bigdbm.internal_logging import log
+from bigdbm.internal_logging import log, log_span
 
 
 class CustomField(BaseModel):
@@ -134,18 +134,18 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         Raises:
             requests.RequestException: If there's an error in the API request.
         """
-        log("debug", "Fetching custom fields from Follow Up Boss")
-        response = requests.get(f"{self.base_url}/customFields", headers=self.api_headers)
-        response.raise_for_status()
-        raw_res = response.json()["customfields"]
-        custom_fields = [CustomField(**field) for field in raw_res]
-        log("debug", f"Fetched {len(custom_fields)} custom fields")
-        
-        # Trace logging for custom fields
-        for field in custom_fields:
-            log("trace", f"Custom field: id={field.id}, name='{field.name}', label='{field.label}', type='{field.type}'")
-        
-        return custom_fields
+        with log_span("Fetching custom fields from Follow Up Boss", _level="debug"):
+            response = requests.get(f"{self.base_url}/customFields", headers=self.api_headers)
+            response.raise_for_status()
+            raw_res = response.json()["customfields"]
+            custom_fields = [CustomField(**field) for field in raw_res]
+            log("debug", f"Fetched {len(custom_fields)} custom fields")
+            
+            # Trace logging for custom fields
+            for field in custom_fields:
+                log("trace", f"Custom field: id={field.id}, name='{field.name}', label='{field.label}', type='{field.type}'")
+            
+            return custom_fields
 
     def _create_custom_field(self, custom_field: CustomFieldCreation) -> CustomField:
         """
