@@ -10,6 +10,7 @@ from bigdbm.analyze.insights.validator_prompt import SYSTEM_PROMPT as VALIDATOR_
 from bigdbm.deliver.csv import CSVStringFormatter
 from bigdbm.validate.base import BaseValidator
 from bigdbm.process.base import BaseProcessor, ProcessValidator
+from bigdbm.internal_logging import log
 
 
 class LeadInsights(BaseModel):
@@ -48,13 +49,14 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
         try:
             from openai import OpenAI
         except ImportError:
+            log("error", "Failed to import OpenAI. Make sure to install the package with the 'openai' extra.")
             raise ImportError("Please install this package with the 'openai' extra.")
         
         self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
 
-    def analyze(self, pii_md5s: list[MD5WithPII]) -> str:
+    def _analyze(self, pii_md5s: list[MD5WithPII]) -> str:
         """
-        Analyze the list of MD5s with PII and generate insights using an LLM.
+        Internal method to analyze the list of MD5s with PII and generate insights using an LLM.
 
         Args:
             pii_md5s (list[MD5WithPII]): List of MD5 hashes with associated PII data.
@@ -62,6 +64,10 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
         Returns:
             str: Generated insights as a string.
         """
+        log("debug", f"Starting analysis for {len(pii_md5s)} MD5s")
+        csv_data = CSVStringFormatter().deliver(pii_md5s)
+        log("trace", f"CSV data prepared, length: {len(csv_data)}")
+        
         result = self.openai_client.beta.chat.completions.parse(
             model="gpt-4o-2024-08-06",
             messages=[
@@ -71,7 +77,7 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
                 },
                 {
                     "role": "user",
-                    "content": CSVStringFormatter().deliver(pii_md5s)
+                    "content": csv_data
                 }
             ],
             max_tokens=4095,
@@ -85,14 +91,22 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
         lead_insights: LeadInsights | None = result.choices[0].message.parsed
 
         if not lead_insights:
+            log("error", "OpenAI response did not contain valid insights")
             return "No insights on these leads at the moment."
 
-        # Process insights to create an ordered list
-        processed_insights: list[str] = []
-        for i, insight in enumerate(lead_insights.insights, start=1):
-            processed_insights.append(f"{i}. {insight}")
+        log("info", f"Generated {len(lead_insights.insights)} insights")
+        log("trace", f"Thoughts from OpenAI: {lead_insights.thoughts}")
 
-        return "\n".join(processed_insights)
+        for i, insight in enumerate(lead_insights.insights, start=1):
+            log("trace", f"Insight {i}: {insight}")
+
+        processed_insights: list[str] = [
+            f"{i+1}. {insight}" for i, insight in enumerate(lead_insights.insights)
+        ]
+
+        final_insights = "\n".join(processed_insights)
+        log("debug", f"Final insights:\n{final_insights}")
+        return final_insights
 
 
 class ValidatedLeadInsights(BaseModel):
@@ -144,6 +158,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         try:
             from openai import OpenAI
         except ImportError:
+            log("error", "Failed to import OpenAI. Make sure to install the package with the 'openai' extra.")
             raise ImportError("Please install this package with the 'openai' extra.")
         
         self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
@@ -151,6 +166,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
 
     def extract_validation_info(self) -> str:
         """Pull validation information from the validators."""
+        log("trace", "Extracting validation information")
         def _remove_keys(vd: dict) -> dict:
             """Remove instance variables from the dictionary that are API creds."""
             return {k: v for k, v in vd.items() if not k.endswith("_key")}
@@ -184,11 +200,12 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
             )
             validation_info += "\n"
 
+        log("trace", f"Extracted validation info:\n{validation_info}")
         return validation_info.strip()
 
-    def analyze(self, pii_md5s: list[MD5WithPII]) -> str:
+    def _analyze(self, pii_md5s: list[MD5WithPII]) -> str:
         """
-        Analyze the list of MD5s with PII and generate insights using an LLM.
+        Internal method to analyze the list of MD5s with PII and generate insights using an LLM.
 
         Args:
             pii_md5s (list[MD5WithPII]): List of MD5 hashes with associated PII data.
@@ -196,6 +213,12 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         Returns:
             str: Generated insights as a string.
         """
+        log("debug", f"Starting analysis for {len(pii_md5s)} MD5s")
+        validation_info = self.extract_validation_info()
+        
+        csv_data = CSVStringFormatter().deliver(pii_md5s)
+        log("trace", f"CSV data prepared, length: {len(csv_data)}")
+        
         result = self.openai_client.beta.chat.completions.parse(
             model="gpt-4o-2024-08-06",
             messages=[
@@ -206,8 +229,8 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
                 {
                     "role": "user",
                     "content": (
-                        f"Validations:\n\n{self.extract_validation_info()}\n\n"
-                        f"Leads:\n\n{CSVStringFormatter().deliver(pii_md5s)}"
+                        f"Validations:\n\n{validation_info}\n\n"
+                        f"Leads:\n\n{csv_data}"
                     )
                 }
             ],
@@ -222,17 +245,24 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         lead_insights: ValidatedLeadInsights | None = result.choices[0].message.parsed
 
         if not lead_insights:
+            log("error", "OpenAI response did not contain valid insights")
             return "No insights on these leads at the moment."
 
-        # Process insights to create an ordered list
-        processed_insights: list[str] = []
+        log("info", f"Generated {len(lead_insights.insights)} insights")
+        log("trace", f"Thoughts from OpenAI: {lead_insights.thoughts}")
+        log("trace", f"Validation insight: {lead_insights.validation_insight}")
+
         for i, insight in enumerate(lead_insights.insights, start=1):
-            processed_insights.append(f"{i}. {insight}")
+            log("trace", f"Insight {i}: {insight}")
+
+        processed_insights: list[str] = [
+            f"{i+1}. {insight}" for i, insight in enumerate(lead_insights.insights)
+        ]
 
         total_str: str = "\n".join(processed_insights)
 
-        # Insert validation message at the start
         if lead_insights.validation_insight:
             total_str = f"On validation: {lead_insights.validation_insight}\n\n{total_str}"
 
+        log("debug", f"Final insights with validation:\n{total_str}")
         return total_str

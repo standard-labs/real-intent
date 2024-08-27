@@ -64,7 +64,7 @@ class CSVStringFormatter(BaseOutputDeliverer):
 
         return intent_columns
 
-    def deliver(self, pii_md5s: list[MD5WithPII]) -> str:
+    def _deliver(self, pii_md5s: list[MD5WithPII]) -> str:
         """
         Convert the unique MD5s into a CSV string.
         Returns empty string if no result.

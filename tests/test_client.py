@@ -1,4 +1,6 @@
+"""Test the BigDBMClient class."""
 import pytest
+
 import os
 from concurrent.futures import ThreadPoolExecutor, Future
 from dotenv import load_dotenv
@@ -14,9 +16,11 @@ load_dotenv()
 def bigdbm_client() -> BigDBMClient:
     client_id: str | None = os.getenv("CLIENT_ID")
     client_secret: str | None = os.getenv("CLIENT_SECRET")
+
     if not client_id or not client_secret:
         pytest.skip("CLIENT_ID or CLIENT_SECRET not found in .env file")
-    return BigDBMClient(client_id, client_secret, logging=True)
+
+    return BigDBMClient(client_id, client_secret)
 
 
 def test_bigdbm_client_thread_safety(bigdbm_client: BigDBMClient) -> None:

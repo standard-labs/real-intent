@@ -5,6 +5,7 @@ from bigdbm.process.base import BaseProcessor
 from bigdbm.client import BigDBMClient
 from bigdbm.schemas import IABJob, UniqueMD5, IntentEvent, MD5WithPII
 from bigdbm.validate.base import BaseValidator
+from bigdbm.internal_logging import log, log_span
 
 
 class FillProcessor(BaseProcessor):
@@ -44,10 +45,10 @@ class FillProcessor(BaseProcessor):
         while len(return_md5s) < n_hems:  # Constantly pull PII until the threshold is hit
             n_delta: int = n_hems - len(return_md5s)
 
-            with self.client.logfire.span("Pulling more PII to fill validated quota.", _level="debug"):
+            with log_span("Pulling more PII to fill validated quota.", _level="debug"):
                 if not md5s_bank:
-                    self.client.logfire.log(
-                        "warn", 
+                    log(
+                        "info", 
                         f"Not enough valid leads to fill quota - only have {len(return_md5s)}."
                     )
                     break
@@ -58,12 +59,7 @@ class FillProcessor(BaseProcessor):
                 # Utilize parameterized validators to filter leads
                 validator: BaseValidator
                 for validator in validators:
-                    initial_len: int = len(md5s_with_pii)
                     md5s_with_pii = validator.validate(md5s_with_pii)
-                    self.client.logfire.log(
-                        "debug", 
-                        f"{validator.__class__.__name__} removed {initial_len - len(md5s_with_pii)} leads."
-                    )
 
                 # Add post-validated (remaining) leads
                 return_md5s.extend(md5s_with_pii)
@@ -87,7 +83,7 @@ class FillProcessor(BaseProcessor):
         """
         validators: list[BaseValidator] = self.min_priority_validators(min_priority)
 
-        with self.client.logfire.span(
+        with log_span(
             f"Pulling PII and validating with min priority of {min_priority}", 
             _level="debug"
         ):
@@ -115,7 +111,7 @@ class FillProcessor(BaseProcessor):
         intent_events: list[IntentEvent] = self.client.retrieve_md5s(list_queue_id)
 
         # Detect lowest validation priority (highest num)
-        self.client.logfire.log(
+        log(
             "debug", 
             (
                 "Beginning iterative priority-based validation. "
@@ -132,6 +128,7 @@ class FillProcessor(BaseProcessor):
 
         # If there are no validators, still need to run
         if self.lowest_validation_priority == 0:
+            log("debug", "No validators present, running without validation")
             return_leads += self._pull_and_validate(
                 intent_events=intent_events, 
                 n_hems=n_hems,
@@ -140,28 +137,30 @@ class FillProcessor(BaseProcessor):
 
         # this and the above no-validators check are logically mutually exclusive
         for check_priority in range(self.lowest_validation_priority, 0, -1):
-            self.client.logfire.log(
+            log(
                 "debug",
-                f"Currently have {len(return_leads)} of {n_hems} leads. "
+                f"Validating with priority {check_priority}. Currently have {len(return_leads)} of {n_hems} leads."
             )
 
             existing_md5s: list[str] = [i.md5 for i in return_leads]
-            return_leads += self._pull_and_validate(
+            new_leads = self._pull_and_validate(
                 [i for i in intent_events if i.md5 not in existing_md5s], 
                 n_hems - len(return_leads),
                 check_priority
             )
+            return_leads += new_leads
+            log("debug", f"Added {len(new_leads)} new leads with priority {check_priority}")
 
             # If we have enough leads, return them
             if len(return_leads) >= n_hems:
-                self.client.logfire.log(
+                log(
                     "debug", 
                     f"Enough leads found with min priority {check_priority}. Leads: {return_leads}"
                 )
                 return return_leads
 
         # And if, after removing all tiers but priority==1, we still don't have enough
-        self.client.logfire.log(
+        log(
             "debug", 
             (
                 f"Returning {len(return_leads)} leads after removing all but "
@@ -170,22 +169,6 @@ class FillProcessor(BaseProcessor):
         )
 
         return return_leads
-
-    def process(self, iab_job: IABJob) -> list[MD5WithPII]:
-        """
-        1. Pull 2x as much intent data as requested. (adjustable on instantiation)
-        2. Request 1x as much PII.
-        3. Keep requesting PII on more data until filled.
-
-        Can return less than the requested amount of data if:
-        - The PII hit rate is less than 0.5x, as 2x data is not enough.
-        - There is not enough intent data returned.
-
-        If the initial pull does not return enough data, the processor will try again without
-        the fallback validators, retaining whatever leads were already pulled.
-        """
-        with self.client.logfire.span(f"Using FillProcessor to process job: {iab_job}", _level="debug"):
-            return self._process(iab_job)
 
 
 # ---- Deprecation Zone ----
@@ -216,7 +199,7 @@ class NoFallbackFillProcessor(BaseProcessor):
         super().__init__(bigdbm_client)
         self.intent_multiplier: float = intent_multiplier
 
-    def process(self, iab_job: IABJob) -> list[MD5WithPII]:
+    def _process(self, iab_job: IABJob) -> list[MD5WithPII]:
         """
         1. Pull 2x as much intent data as requested. (adjustable on instantiation)
         2. Request 1x as much PII.

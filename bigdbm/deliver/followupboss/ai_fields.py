@@ -8,6 +8,7 @@ from typing import Literal, Any
 from bigdbm.schemas import MD5WithPII
 from bigdbm.deliver.followupboss.vanilla import FollowUpBossDeliverer, EventType
 from bigdbm.deliver.followupboss.ai_prompt import SYSTEM_PROMPT
+from bigdbm.internal_logging import log, log_span
 
 
 class CustomField(BaseModel):
@@ -82,18 +83,19 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         try:
             import openai
         except ImportError:
+            log("error", "OpenAI is required for AI FollowUpBoss deliverer. pip install bigdbm[ai].")
             raise ImportError(
                 "OpenAI is required for AI FollowUpBoss deliverer. pip install bigdbm[ai]."
             )
 
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
 
-    def deliver(self, pii_md5s: list[MD5WithPII]) -> list[dict]:
+    def _deliver(self, pii_md5s: list[MD5WithPII]) -> list[dict]:
         """
         Deliver the PII data to FollowUpBoss using AI field mapping.
 
-        This method attempts to deliver the data with AI field mapping first. If there's an error,
-        it falls back to the parent class's delivery method without AI fields.
+        This method attempts to deliver each lead individually using the AI-based method.
+        If the AI-based delivery fails for a lead, it falls back to the standard delivery method for that lead.
 
         Args:
             pii_md5s (list[MD5WithPII]): A list of MD5WithPII objects containing the PII data to be delivered.
@@ -101,24 +103,39 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         Returns:
             list[dict]: A list of response dictionaries from the FollowUpBoss API for each delivered event.
         """
+        responses: list[dict] = []
+
+        for md5_with_pii in pii_md5s:
+            response = self._deliver_single_lead(md5_with_pii)
+            responses.append(response)
+
+        return responses
+
+    def _deliver_single_lead(self, md5_with_pii: MD5WithPII) -> dict:
+        """
+        Deliver a single lead to FollowUpBoss, attempting AI-based delivery first and falling back to standard delivery if needed.
+
+        Args:
+            md5_with_pii (MD5WithPII): The MD5WithPII object containing the PII data for a single lead.
+
+        Returns:
+            dict: A response dictionary from the FollowUpBoss API for the delivered event.
+        """
         try:
-            responses: list[dict] = []
-
-            for md5_with_pii in pii_md5s:
-                event_data = self._prepare_event_data(md5_with_pii)
-                responses.append(self._send_event(event_data))
-
-            return responses
-        except requests.RequestException as e:
-            # LOG ERROR HERE using e
-            # try again without AI fields
-            responses: list[dict] = []
-
-            for md5_with_pii in pii_md5s:
-                event_data = super()._prepare_event_data(md5_with_pii)
-                responses.append(super()._send_event(event_data))
-            
-            return responses
+            event_data = self._prepare_event_data(md5_with_pii)
+            response = self._send_event(event_data)
+            log(
+                "trace", 
+                (
+                    f"Delivered lead with AI mapping: {md5_with_pii.md5}, "
+                    f"event_type: {self.event_type.value}, "
+                    f"response_status: {response.get('status', 'unknown')}"
+                )
+            )
+            return response
+        except Exception as e:
+            log("error", f"Error in AI field mapping delivery for lead {md5_with_pii.md5}: {str(e)}. Falling back to standard delivery.")
+            return super()._deliver_single_lead(md5_with_pii)
 
     def _get_custom_fields(self) -> list[CustomField]:
         """
@@ -130,10 +147,18 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         Raises:
             requests.RequestException: If there's an error in the API request.
         """
-        response = requests.get(f"{self.base_url}/customFields", headers=self.api_headers)
-        response.raise_for_status()
-        raw_res = response.json()["customfields"]
-        return [CustomField(**field) for field in raw_res]
+        with log_span("Fetching custom fields from Follow Up Boss", _level="debug"):
+            response = requests.get(f"{self.base_url}/customFields", headers=self.api_headers)
+            response.raise_for_status()
+            raw_res = response.json()["customfields"]
+            custom_fields = [CustomField(**field) for field in raw_res]
+            log("debug", f"Fetched {len(custom_fields)} custom fields")
+            
+            # Trace logging for custom fields
+            for field in custom_fields:
+                log("trace", f"Custom field: id={field.id}, name='{field.name}', label='{field.label}', type='{field.type}'")
+            
+            return custom_fields
 
     def _create_custom_field(self, custom_field: CustomFieldCreation) -> CustomField:
         """
@@ -148,6 +173,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         Raises:
             requests.RequestException: If there's an error in the API request.
         """
+        log("debug", f"Creating custom field: {custom_field.label}")
         # Create the custom field
         response = requests.post(
             f"{self.base_url}/customFields",
@@ -164,7 +190,9 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         )
         response.raise_for_status()
 
-        return CustomField(**response.json())
+        created_field = CustomField(**response.json())
+        log("debug", f"Created custom field: {created_field.label} with ID: {created_field.id}")
+        return created_field
 
     def _prepare_event_data(self, md5_with_pii: MD5WithPII) -> dict:
         """
@@ -180,6 +208,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             dict: A dictionary containing the prepared event data for the FollowUpBoss API,
                   including AI-suggested custom field mappings.
         """
+        log("debug", f"Preparing event data with AI mapping for MD5: {md5_with_pii.md5}")
         raw_event_data: dict = super()._prepare_event_data(md5_with_pii)
 
         # Get all the custom fields
@@ -197,6 +226,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         filtered_pii_data_str: str = json.dumps(filtered_pii_data, indent=4)
 
         # Match the custom fields with the PII data
+        log("debug", "Sending request to OpenAI for field mapping")
         response = self.openai_client.chat.completions.create(
             model="gpt-4o-2024-08-06",
             messages=[
@@ -225,8 +255,13 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             ai_suggestions: dict[str, str | int | bool] = json.loads(
                 response.choices[0].message.content
             )
+            log("debug", f"Received {len(ai_suggestions)} AI suggestions for field mapping")
+            
+            # Trace logging for AI suggestions
+            for key, value in ai_suggestions.items():
+                log("trace", f"AI suggestion: {key} -> {value}")
         except json.JSONDecodeError:
-            # LOG ERROR HERE ABOUT BAD PARSING
+            log("error", "Failed to parse OpenAI response for field mapping")
             ai_suggestions: dict[str, str | int | bool] = {}
         
         # Merge the AI suggestions with the protected person data
@@ -234,5 +269,9 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         for key, val in ai_suggestions.items():
             if key in custom_field_names:
                 raw_event_data["person"][key] = val
+                log("trace", f"Mapped field: {key} -> {val}")
+            else:
+                log("warn", f"Unmapped field: {key} -> {val}")
 
+        log("debug", f"Prepared event data with {len(raw_event_data['person'])} fields")
         return raw_event_data

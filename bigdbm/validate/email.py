@@ -7,6 +7,7 @@ import random
 
 from bigdbm.schemas import MD5WithPII
 from bigdbm.validate.base import BaseValidator
+from bigdbm.internal_logging import log
 
 
 class EmailValidator(BaseValidator):
@@ -32,21 +33,25 @@ class EmailValidator(BaseValidator):
         response_json = response.json()
 
         if "resultcode" not in response_json:
+            log("error", f"Unexpected response from MillionVerifier: {response_json}")
             raise ValueError(f"Unexpected response from MillionVerifier: {response_json}")
 
         return response_json["resultcode"] == 1
 
     def _validate_with_retry(self, email: str) -> bool:
         """Retry the validation if it fails."""
-        for _ in range(3):
+        for attempt in range(3):
             try:
                 return self._validate_email(email)
             except requests.RequestException as e:
+                if attempt < 2:  # Log warning for retries
+                    log("warn", f"Validation attempt {attempt + 1} failed for email {email}. Retrying...")
                 time.sleep(random.uniform(3, 5))
 
+        log("error", f"All validation attempts failed for email {email}")
         raise
 
-    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove any emails that are not considered valid."""
         # Extract all the emails
         all_emails: list[str] = []
@@ -80,6 +85,6 @@ class HasEmailValidator(BaseValidator):
     Use after EmailValidator to ensure leads have valid emails.
     """
 
-    def validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove leads without an email address."""
         return [md5 for md5 in md5s if md5.pii.emails]

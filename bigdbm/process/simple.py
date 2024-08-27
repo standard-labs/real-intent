@@ -7,7 +7,7 @@ from bigdbm.validate.base import BaseValidator
 class SimpleProcessor(BaseProcessor):
     """Process simply, one method at a time. No quota counting, etc."""
 
-    def process(self, iab_job: IABJob) -> list[MD5WithPII]:
+    def _process(self, iab_job: IABJob) -> list[MD5WithPII]:
         """Process the job and return a list of MD5s with PII."""
         list_queue_id: int = self.client.create_and_wait(iab_job)
         intent_events: list[IntentEvent] = self.client.retrieve_md5s(list_queue_id)
