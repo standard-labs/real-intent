@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 from bigdbm.schemas import MD5WithPII, PII, MobilePhone
 from bigdbm.validate.email import EmailValidator, HasEmailValidator
-from bigdbm.validate.phone import PhoneValidator
+from bigdbm.validate.phone import PhoneValidator, DNCValidator
 
 
 # Load environment variables from .env file
@@ -119,3 +119,23 @@ def test_phone_validator() -> None:
     assert any(phone not in validated_phones for phone in fake_phones), "All fake phones were validated"
     assert all(phone in validated_phones for phone in real_phones), "Not all real phones were validated"
     assert all(phone not in validated_phones for phone in fake_phones), "Some fake phones were validated"
+
+
+def test_dnc_validator() -> None:
+    validator = DNCValidator()
+    
+    md5s = [
+        create_md5_with_pii("123", [], ["1234567890"]),  # Not on DNC list
+        create_md5_with_pii("456", [], []),  # No phone
+        create_md5_with_pii("789", [], ["9876543210"])  # On DNC list
+    ]
+    
+    # Set the first phone of the third MD5 as DNC
+    md5s[2].pii.mobile_phones[0].do_not_call = True
+    
+    result = validator.validate(md5s)
+    
+    assert len(result) == 2
+    assert result[0].md5 == "123"  # Keep: has phone, not on DNC
+    assert result[1].md5 == "456"  # Keep: no phone
+    assert all(md5.md5 != "789" for md5 in result)  # Remove: on DNC list
