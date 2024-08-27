@@ -271,7 +271,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
                 raw_event_data["person"][key] = val
                 log("trace", f"Mapped field: {key} -> {val}")
             else:
-                log("trace", f"Unmapped field: {key} -> {val}")
+                log("warn", f"Unmapped field: {key} -> {val}")
 
         log("debug", f"Prepared event data with {len(raw_event_data['person'])} fields")
         return raw_event_data
