@@ -99,17 +99,47 @@ class HasPhoneValidator(BaseValidator):
 
 
 class DNCValidator(BaseValidator):
-    """Remove leads with primary phone on DNC list. Keeps leads without phones."""
+    """
+    Remove leads based on Do Not Call (DNC) status.
+
+    In normal mode:
+    - Removes leads with primary phone on DNC list.
+    - Keeps leads without phones.
+
+    In strict mode:
+    - Removes leads if ANY phone number is on the DNC list.
+    - Keeps leads only if ALL phone numbers are not on the DNC list.
+    - Keeps leads without phones.
+    """
+
+    def __init__(self, strict_mode: bool = False):
+        """
+        Initialize the DNCValidator.
+
+        Args:
+            strict_mode (bool): If True, enables strict mode validation.
+                Defaults to False.
+        """
+        self.strict_mode = strict_mode
 
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """
-        Remove leads whose primary phone is marked as DNC.
-        Keeps leads without a phone number.
+        Remove leads based on DNC status.
+
+        Returns:
+            list[MD5WithPII]: Filtered list of leads based on DNC status.
         """
-        return [
-            md5 for md5 in md5s
-            if not md5.pii.mobile_phones or not md5.pii.mobile_phones[0].do_not_call
-        ]
+        if self.strict_mode:
+            return [
+                md5 for md5 in md5s
+                if not md5.pii.mobile_phones or
+                all(not phone.do_not_call for phone in md5.pii.mobile_phones)
+            ]
+        else:
+            return [
+                md5 for md5 in md5s
+                if not md5.pii.mobile_phones or not md5.pii.mobile_phones[0].do_not_call
+            ]
 
 
 class CallableValidator(BaseValidator):

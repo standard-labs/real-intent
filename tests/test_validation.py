@@ -122,20 +122,35 @@ def test_phone_validator() -> None:
 
 
 def test_dnc_validator() -> None:
-    validator = DNCValidator()
+    # Test normal mode
+    validator_normal = DNCValidator(strict_mode=False)
     
     md5s = [
         create_md5_with_pii("123", [], ["1234567890"]),  # Not on DNC list
         create_md5_with_pii("456", [], []),  # No phone
-        create_md5_with_pii("789", [], ["9876543210"])  # On DNC list
+        create_md5_with_pii("789", [], ["9876543210", "1112223333"]),  # Primary on DNC, secondary not
+        create_md5_with_pii("101", [], ["5556667777", "9998887777"])  # Primary not on DNC, secondary on DNC
     ]
     
-    # Set the first phone of the third MD5 as DNC
+    # Set DNC status
     md5s[2].pii.mobile_phones[0].do_not_call = True
+    md5s[3].pii.mobile_phones[1].do_not_call = True
     
-    result = validator.validate(md5s)
+    result_normal = validator_normal.validate(md5s)
     
-    assert len(result) == 2
-    assert result[0].md5 == "123"  # Keep: has phone, not on DNC
-    assert result[1].md5 == "456"  # Keep: no phone
-    assert all(md5.md5 != "789" for md5 in result)  # Remove: on DNC list
+    assert len(result_normal) == 3
+    assert result_normal[0].md5 == "123"  # Keep: has phone, not on DNC
+    assert result_normal[1].md5 == "456"  # Keep: no phone
+    assert result_normal[2].md5 == "101"  # Keep: primary not on DNC
+    assert all(md5.md5 != "789" for md5 in result_normal)  # Remove: primary on DNC
+
+    # Test strict mode
+    validator_strict = DNCValidator(strict_mode=True)
+    
+    result_strict = validator_strict.validate(md5s)
+    
+    assert len(result_strict) == 2
+    assert result_strict[0].md5 == "123"  # Keep: has phone, not on DNC
+    assert result_strict[1].md5 == "456"  # Keep: no phone
+    assert all(md5.md5 != "789" for md5 in result_strict)  # Remove: has DNC phone
+    assert all(md5.md5 != "101" for md5 in result_strict)  # Remove: has DNC phone (secondary)
