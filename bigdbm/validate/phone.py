@@ -104,18 +104,12 @@ class DNCValidator(BaseValidator):
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """
         Remove leads whose primary phone is marked as DNC.
-        Ignores leads without a phone number - these are still kept.
+        Keeps leads without a phone number.
         """
-        return_hems: list[MD5WithPII] = []
-
-        for md5 in md5s:
-            if not md5.pii.mobile_phones:
-                continue
-
-            if not md5.pii.mobile_phones[0].do_not_call:
-                return_hems.append(md5)
-
-        return return_hems
+        return [
+            md5 for md5 in md5s
+            if not md5.pii.mobile_phones or not md5.pii.mobile_phones[0].do_not_call
+        ]
 
 
 class CallableValidator(BaseValidator):
