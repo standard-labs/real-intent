@@ -90,27 +90,6 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
 
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
 
-    def _deliver(self, pii_md5s: list[MD5WithPII]) -> list[dict]:
-        """
-        Deliver the PII data to FollowUpBoss using AI field mapping.
-
-        This method attempts to deliver each lead individually using the AI-based method.
-        If the AI-based delivery fails for a lead, it falls back to the standard delivery method for that lead.
-
-        Args:
-            pii_md5s (list[MD5WithPII]): A list of MD5WithPII objects containing the PII data to be delivered.
-
-        Returns:
-            list[dict]: A list of response dictionaries from the FollowUpBoss API for each delivered event.
-        """
-        responses: list[dict] = []
-
-        for md5_with_pii in pii_md5s:
-            response = self._deliver_single_lead(md5_with_pii)
-            responses.append(response)
-
-        return responses
-
     def _deliver_single_lead(self, md5_with_pii: MD5WithPII) -> dict:
         """
         Deliver a single lead to FollowUpBoss, attempting AI-based delivery first and falling back to standard delivery if needed.
