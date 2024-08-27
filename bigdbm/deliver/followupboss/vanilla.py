@@ -161,7 +161,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         sentences_str = ", ".join(sentences)
         sentences_str = f"Intents: {sentences_str}."
 
-        # TEMP ADD TAGS
+        # Add tags to be applied to all leads
         person_data["tags"] = self.tags
 
         return {
