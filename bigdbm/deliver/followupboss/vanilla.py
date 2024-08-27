@@ -70,6 +70,19 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             "X-System": self.system,
             "X-System-Key": self.system_key
         }
+    
+    def _warn_dnc(self, pii_md5s: list[MD5WithPII]) -> None:
+        """Log a warning if any of the leads are on the DNC list."""
+        for md5_with_pii in pii_md5s:
+            if any(phone.do_not_call for phone in md5_with_pii.pii.mobile_phones):
+                log(
+                    "warn",
+                    (
+                        f"At least 1 lead in the Follow Up Boss deliverer was on "
+                        f"the DNC list. Please validate the lead before delivery."
+                    )
+                )
+                break
 
     def _deliver(self, pii_md5s: list[MD5WithPII]) -> list[dict]:
         """
@@ -81,6 +94,9 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         Returns:
             list[dict]: A list of response dictionaries from the FollowUpBoss API for each delivered event.
         """
+        # Log if any of the leads are on the DNC list
+        self._warn_dnc(pii_md5s)
+
         responses: list[dict] = []
 
         for md5_with_pii in pii_md5s:
