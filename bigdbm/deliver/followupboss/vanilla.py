@@ -35,6 +35,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             api_key: str, 
             system: str, 
             system_key: str, 
+            tags: list[str] = [],
             base_url: str = "https://api.followupboss.com/v1",
             event_type: EventType = EventType.REGISTRATION
         ):
@@ -51,6 +52,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         self.api_key: str = api_key
         self.base_url: str = base_url
         self.system: str = system
+        self.tags: list[str] = tags
         self.system_key: str = system_key
 
         # Configuration stuff
@@ -158,6 +160,9 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         
         sentences_str = ", ".join(sentences)
         sentences_str = f"Intents: {sentences_str}."
+
+        # Add tags to be applied to all leads
+        person_data["tags"] = self.tags
 
         return {
             "source": self.system,

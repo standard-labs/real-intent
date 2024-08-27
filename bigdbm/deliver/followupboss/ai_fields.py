@@ -62,6 +62,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         system: str,
         system_key: str,
         openai_api_key: str,
+        tags: list[str] = [],
         base_url: str = "https://api.followupboss.com/v1",
         event_type: EventType = EventType.REGISTRATION,
         **kwargs
@@ -78,7 +79,15 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             event_type (EventType, optional): The event type for adding a lead. Defaults to Registration.
             **kwargs: Additional keyword arguments to be passed to the parent class.
         """
-        super().__init__(api_key, system, system_key, base_url, event_type, **kwargs)
+        super().__init__(
+            api_key=api_key,
+            system=system,
+            system_key=system_key,
+            tags=tags,
+            base_url=base_url,
+            event_type=event_type,
+            **kwargs
+        )
 
         try:
             import openai
