@@ -131,9 +131,22 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         if md5_with_pii.pii.mobile_phones:
             person_data["phones"] = [{"value": phone.phone} for phone in md5_with_pii.pii.mobile_phones]
 
+        # Prepare sentences
+        sentences: list[str] = []
+        for sentence in md5_with_pii.sentences:
+            if ">" in sentence:
+                sentences.append(sentence.split(">")[-1])
+                continue
+            
+            sentences.append(sentence)
+        
+        sentences_str = ", ".join(sentences)
+        sentences_str = f"Intents: {sentences_str}."
+
         return {
             "source": self.system,
             "system": self.system,
+            "description": sentences_str,
             "type": self.event_type.value,
             "person": person_data
         }
