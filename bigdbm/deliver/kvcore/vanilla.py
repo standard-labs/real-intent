@@ -6,7 +6,6 @@ import requests
 from datetime import datetime
 
 from bigdbm.deliver.base import BaseOutputDeliverer
-from bigdbm.error import BigDBMError
 from bigdbm.schemas import MD5WithPII
 from bigdbm.internal_logging import log
 
@@ -40,7 +39,7 @@ class KvCoreDeliverer(BaseOutputDeliverer):
             try:
                 response = self._deliver_single_lead(md5_with_pii)
                 responses.append(response)
-            except BigDBMError as e:
+            except Exception as e:
                 log("error", f"Failed to deliver lead {md5_with_pii.md5}: {str(e)}")
                 responses.append({"status": "error", "message": str(e)})
 
@@ -125,7 +124,8 @@ class KvCoreDeliverer(BaseOutputDeliverer):
             The ID of the created contact.
 
         Raises:
-            BigDBMError: If the API request fails or returns an unexpected response.
+            ValueError: If the API response does not contain an 'id' field.
+            requests.RequestException: If the API request fails.
         """
         url = f"{self.base_url}/contact"
 
@@ -134,10 +134,10 @@ class KvCoreDeliverer(BaseOutputDeliverer):
             response.raise_for_status()
             response_data = response.json()
             if 'id' not in response_data:
-                raise BigDBMError("kvCORE API response did not contain an 'id' field")
+                raise ValueError("kvCORE API response did not contain an 'id' field")
             return response_data['id']
         except requests.RequestException as e:
-            raise BigDBMError(f"Failed to create contact in kvCORE: {str(e)}")
+            raise requests.RequestException(f"Failed to create contact in kvCORE: {str(e)}")
 
     def add_note(self, contact_id: str, note: str) -> None:
         """
@@ -148,7 +148,7 @@ class KvCoreDeliverer(BaseOutputDeliverer):
             note: The note to add.
 
         Raises:
-            BigDBMError: If the API request fails.
+            requests.RequestException: If the API request fails.
         """
         url = f"{self.base_url}/contact/{contact_id}/action/note"
         data: dict[str, str] = {
@@ -160,4 +160,4 @@ class KvCoreDeliverer(BaseOutputDeliverer):
             response = requests.put(url, json=data, headers=self.api_headers)
             response.raise_for_status()
         except requests.RequestException as e:
-            raise BigDBMError(f"Failed to add note to contact in kvCORE: {str(e)}")
+            raise requests.RequestException(f"Failed to add note to contact in kvCORE: {str(e)}")
