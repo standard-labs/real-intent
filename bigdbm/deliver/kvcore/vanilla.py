@@ -1,7 +1,7 @@
 """
 kvCORE integration with no AI field mapping.
 """
-from typing import Dict, Any, List
+from typing import Any
 import requests
 from datetime import datetime
 
@@ -13,28 +13,28 @@ from bigdbm.internal_logging import log
 class KvCoreDeliverer(BaseOutputDeliverer):
     def __init__(self, api_key: str, source_name: str, base_url: str = "https://api.kvcore.com/v2/public"):
         super().__init__()
-        self.api_key = api_key
-        self.base_url = base_url
-        self.source_name = source_name
+        self.api_key: str = api_key
+        self.base_url: str = base_url
+        self.source_name: str = source_name
 
     @property
-    def api_headers(self) -> Dict[str, str]:
+    def api_headers(self) -> dict[str, str]:
         return {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
 
-    def _deliver(self, pii_md5s: List[MD5WithPII]) -> List[Dict[str, Any]]:
+    def _deliver(self, pii_md5s: list[MD5WithPII]) -> list[dict[str, Any]]:
         """
         Deliver the PII data to kvCORE.
 
         Args:
-            pii_md5s (List[MD5WithPII]): A list of MD5WithPII objects containing the PII data to be delivered.
+            pii_md5s: A list of MD5WithPII objects containing the PII data to be delivered.
 
         Returns:
-            List[Dict[str, Any]]: A list of response dictionaries from the kvCORE API for each delivered contact.
+            A list of response dictionaries from the kvCORE API for each delivered contact.
         """
-        responses: List[Dict[str, Any]] = []
+        responses: list[dict[str, Any]] = []
 
         for md5_with_pii in pii_md5s:
             try:
@@ -46,15 +46,15 @@ class KvCoreDeliverer(BaseOutputDeliverer):
 
         return responses
 
-    def _deliver_single_lead(self, md5_with_pii: MD5WithPII) -> Dict[str, Any]:
+    def _deliver_single_lead(self, md5_with_pii: MD5WithPII) -> dict[str, Any]:
         """
         Deliver a single lead to kvCORE.
 
         Args:
-            md5_with_pii (MD5WithPII): The MD5WithPII object containing the PII data for a single lead.
+            md5_with_pii: The MD5WithPII object containing the PII data for a single lead.
 
         Returns:
-            Dict[str, Any]: A response dictionary from the kvCORE API for the delivered contact.
+            A response dictionary from the kvCORE API for the delivered contact.
         """
         contact_data = self._prepare_contact_data(md5_with_pii)
         contact_id = self.create_contact(contact_data)
@@ -69,18 +69,18 @@ class KvCoreDeliverer(BaseOutputDeliverer):
 
         return {"contact_id": contact_id, "status": "success"}
 
-    def _prepare_contact_data(self, md5_with_pii: MD5WithPII) -> Dict[str, Any]:
+    def _prepare_contact_data(self, md5_with_pii: MD5WithPII) -> dict[str, Any]:
         """
         Prepare the contact data for a single MD5WithPII object.
 
         Args:
-            md5_with_pii (MD5WithPII): The MD5WithPII object containing the PII data.
+            md5_with_pii: The MD5WithPII object containing the PII data.
 
         Returns:
-            Dict[str, Any]: A dictionary containing the prepared contact data for the kvCORE API.
+            A dictionary containing the prepared contact data for the kvCORE API.
         """
         pii = md5_with_pii.pii
-        contact_data = {
+        contact_data: dict[str, Any] = {
             "first_name": pii.first_name,
             "last_name": pii.last_name,
             "source": self.source_name,
@@ -106,23 +106,23 @@ class KvCoreDeliverer(BaseOutputDeliverer):
         Prepare the note content from the sentences in MD5WithPII.
 
         Args:
-            md5_with_pii (MD5WithPII): The MD5WithPII object containing the sentences.
+            md5_with_pii: The MD5WithPII object containing the sentences.
 
         Returns:
-            str: The prepared note content.
+            The prepared note content.
         """
         sentences = [sentence.split(">")[-1] if ">" in sentence else sentence for sentence in md5_with_pii.sentences]
         return f"Intents: {', '.join(sentences)}."
 
-    def create_contact(self, contact_data: Dict[str, Any]) -> str:
+    def create_contact(self, contact_data: dict[str, Any]) -> str:
         """
         Create a contact in kvCORE.
 
         Args:
-            contact_data (Dict[str, Any]): Dictionary containing contact information.
+            contact_data: Dictionary containing contact information.
 
         Returns:
-            str: The ID of the created contact.
+            The ID of the created contact.
 
         Raises:
             BigDBMError: If the API request fails or returns an unexpected response.
@@ -144,14 +144,14 @@ class KvCoreDeliverer(BaseOutputDeliverer):
         Add a note to a contact in kvCORE.
 
         Args:
-            contact_id (str): The ID of the contact.
-            note (str): The note to add.
+            contact_id: The ID of the contact.
+            note: The note to add.
 
         Raises:
             BigDBMError: If the API request fails.
         """
         url = f"{self.base_url}/contact/{contact_id}/action/note"
-        data = {
+        data: dict[str, str] = {
             "details": note,
             "date": datetime.now().isoformat()
         }
