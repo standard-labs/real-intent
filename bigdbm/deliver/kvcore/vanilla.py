@@ -130,15 +130,14 @@ class KvCoreDeliverer(BaseOutputDeliverer):
         """
         url = f"{self.base_url}/contact"
 
-        try:
-            response = requests.post(url, json=contact_data, headers=self.api_headers)
-            response.raise_for_status()
-            response_data = response.json()
-            if 'id' not in response_data:
-                raise ValueError("kvCORE API response did not contain an 'id' field")
-            return response_data['id']
-        except requests.RequestException as e:
-            raise requests.RequestException(f"Failed to create contact in kvCORE: {str(e)}")
+        response = requests.post(url, json=contact_data, headers=self.api_headers)
+        response.raise_for_status()
+        response_data = response.json()
+
+        if 'id' not in response_data:
+            raise ValueError("kvCORE API response did not contain an 'id' field")
+
+        return response_data['id']
 
     def add_note(self, contact_id: str, note: str) -> None:
         """
@@ -157,8 +156,5 @@ class KvCoreDeliverer(BaseOutputDeliverer):
             "date": datetime.now().isoformat()
         }
 
-        try:
-            response = requests.put(url, json=data, headers=self.api_headers)
-            response.raise_for_status()
-        except requests.RequestException as e:
-            raise requests.RequestException(f"Failed to add note to contact in kvCORE: {str(e)}")
+        response = requests.put(url, json=data, headers=self.api_headers)
+        response.raise_for_status()
