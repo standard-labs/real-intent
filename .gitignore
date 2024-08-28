@@ -4,7 +4,6 @@ __pycache__/
 .env
 keys.yaml
 
-Test.ipynb
-
 # Dev things
+idev_*.*
 *.pkl
