@@ -12,7 +12,6 @@ from bigdbm.internal_logging import log
 
 class KvCoreDeliverer(BaseOutputDeliverer):
     def __init__(self, api_key: str, source_name: str, base_url: str = "https://api.kvcore.com/v2/public"):
-        super().__init__()
         self.api_key: str = api_key
         self.base_url: str = base_url
         self.source_name: str = source_name
