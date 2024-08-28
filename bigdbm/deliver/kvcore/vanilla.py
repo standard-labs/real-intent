@@ -9,6 +9,7 @@ from bigdbm.deliver.base import BaseOutputDeliverer
 from bigdbm.schemas import MD5WithPII
 from bigdbm.internal_logging import log
 
+
 class KvCoreDeliverer(BaseOutputDeliverer):
     def __init__(self, api_key: str, source_name: str, base_url: str = "https://api.kvcore.com/v2/public"):
         super().__init__()
