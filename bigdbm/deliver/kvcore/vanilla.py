@@ -79,28 +79,25 @@ class KvCoreDeliverer(BaseOutputDeliverer):
         Returns:
             Dict[str, Any]: A dictionary containing the prepared contact data for the kvCORE API.
         """
+        pii = md5_with_pii.pii
         contact_data = {
-            "first_name": md5_with_pii.pii.first_name,
-            "last_name": md5_with_pii.pii.last_name,
+            "first_name": pii.first_name,
+            "last_name": pii.last_name,
             "source": self.source_name,
-            "status": 0
+            "status": 0,
+            "primary_address": pii.address,
+            "primary_city": pii.city,
+            "primary_state": pii.state,
+            "primary_zip": pii.zip_code
         }
 
-        # Add all email addresses
-        for i, email in enumerate(md5_with_pii.pii.emails, start=1):
+        # Add emails
+        for i, email in enumerate(pii.emails, start=1):
             contact_data[f"email_{i}"] = email
 
-        # Add all phone numbers
-        for i, phone in enumerate(md5_with_pii.pii.mobile_phones, start=1):
+        # Add mobile phones
+        for i, phone in enumerate(pii.mobile_phones, start=1):
             contact_data[f"cell_phone_{i}"] = phone.phone
-
-        # Add home phone if available
-        if md5_with_pii.pii.home_phone:
-            contact_data["home_phone"] = md5_with_pii.pii.home_phone.phone
-
-        # Add primary_zip if available
-        if md5_with_pii.pii.address and md5_with_pii.pii.address.zip_code:
-            contact_data["primary_zip"] = md5_with_pii.pii.address.zip_code
 
         return contact_data
 
@@ -128,14 +125,17 @@ class KvCoreDeliverer(BaseOutputDeliverer):
             str: The ID of the created contact.
 
         Raises:
-            BigDBMError: If the API request fails.
+            BigDBMError: If the API request fails or returns an unexpected response.
         """
         url = f"{self.base_url}/contact"
 
         try:
             response = requests.post(url, json=contact_data, headers=self.api_headers)
             response.raise_for_status()
-            return response.json().get("id")
+            response_data = response.json()
+            if 'id' not in response_data:
+                raise BigDBMError("kvCORE API response did not contain an 'id' field")
+            return response_data['id']
         except requests.RequestException as e:
             raise BigDBMError(f"Failed to create contact in kvCORE: {str(e)}")
 
