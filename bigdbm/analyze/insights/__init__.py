@@ -49,8 +49,8 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
         try:
             from openai import OpenAI
         except ImportError:
-            log("error", "Failed to import OpenAI. Make sure to install the package with the 'openai' extra.")
-            raise ImportError("Please install this package with the 'openai' extra.")
+            log("error", "Failed to import OpenAI. Make sure to install the package with the 'ai' extra.")
+            raise ImportError("Please install this package with the 'ai' extra.")
         
         self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
 
@@ -158,8 +158,8 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         try:
             from openai import OpenAI
         except ImportError:
-            log("error", "Failed to import OpenAI. Make sure to install the package with the 'openai' extra.")
-            raise ImportError("Please install this package with the 'openai' extra.")
+            log("error", "Failed to import OpenAI. Make sure to install the package with the 'ai' extra.")
+            raise ImportError("Please install this package with the 'ai' extra.")
         
         self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
         self.processor: BaseProcessor = processor
