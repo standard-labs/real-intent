@@ -1,5 +1,5 @@
-from bigdbm.deliver.csv import CSVStringFormatter
-from bigdbm.schemas import MD5WithPII, PII
+from real_intent.deliver.csv import CSVStringFormatter
+from real_intent.schemas import MD5WithPII, PII
 
 
 def create_test_md5_with_pii() -> MD5WithPII:

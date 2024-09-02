@@ -5,7 +5,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor, Future
 from dotenv import load_dotenv
 
-from bigdbm.client import BigDBMClient
+from real_intent.client import BigDBMClient
 
 
 # Load environment variables
