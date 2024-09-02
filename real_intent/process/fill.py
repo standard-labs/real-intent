@@ -1,11 +1,11 @@
 """Define a Processor that will keep trying to pull leads until filling the request."""
 import warnings
 
-from bigdbm.process.base import BaseProcessor
-from bigdbm.client import BigDBMClient
-from bigdbm.schemas import IABJob, UniqueMD5, IntentEvent, MD5WithPII
-from bigdbm.validate.base import BaseValidator
-from bigdbm.internal_logging import log, log_span
+from real_intent.process.base import BaseProcessor
+from real_intent.client import BigDBMClient
+from real_intent.schemas import IABJob, UniqueMD5, IntentEvent, MD5WithPII
+from real_intent.validate.base import BaseValidator
+from real_intent.internal_logging import log, log_span
 
 
 class FillProcessor(BaseProcessor):

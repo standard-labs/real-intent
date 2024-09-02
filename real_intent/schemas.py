@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Any, Self
 from enum import Enum
 
-from bigdbm.taxonomy import code_to_category
+from real_intent.taxonomy import code_to_category
 
 
 class ConfigDates(BaseModel):

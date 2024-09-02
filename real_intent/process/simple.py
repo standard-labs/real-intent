@@ -1,7 +1,7 @@
 """Simple linear pipeline processor. Nothing special, just follow the methods."""
-from bigdbm.process.base import BaseProcessor
-from bigdbm.schemas import IABJob, MD5WithPII, IntentEvent, UniqueMD5
-from bigdbm.validate.base import BaseValidator
+from real_intent.process.base import BaseProcessor
+from real_intent.schemas import IABJob, MD5WithPII, IntentEvent, UniqueMD5
+from real_intent.validate.base import BaseValidator
 
 
 class SimpleProcessor(BaseProcessor):

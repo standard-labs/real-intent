@@ -1,6 +1,6 @@
 """Validators for personal identifiable information (PII)."""
-from bigdbm.schemas import MD5WithPII, Gender
-from bigdbm.validate.base import BaseValidator
+from real_intent.schemas import MD5WithPII, Gender
+from real_intent.validate.base import BaseValidator
 
 
 class GenderValidator(BaseValidator):

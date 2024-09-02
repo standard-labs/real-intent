@@ -1,6 +1,6 @@
 """Basic validation: zip codes, contactable, etc."""
-from bigdbm.schemas import MD5WithPII
-from bigdbm.validate.base import BaseValidator
+from real_intent.schemas import MD5WithPII
+from real_intent.validate.base import BaseValidator
 
 
 class ZipCodeValidator(BaseValidator):
