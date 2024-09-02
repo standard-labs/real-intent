@@ -92,9 +92,9 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         try:
             import openai
         except ImportError:
-            log("error", "OpenAI is required for AI FollowUpBoss deliverer. pip install bigdbm[ai].")
+            log("error", "OpenAI is required for AI FollowUpBoss deliverer. pip install real-intent[ai].")
             raise ImportError(
-                "OpenAI is required for AI FollowUpBoss deliverer. pip install bigdbm[ai]."
+                "OpenAI is required for AI FollowUpBoss deliverer. pip install real-intent[ai]."
             )
 
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
