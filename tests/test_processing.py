@@ -1,10 +1,10 @@
 """Basic processing test. Make sure things work."""
 import pytest
 
-from bigdbm.process import SimpleProcessor, FillProcessor
-from bigdbm.schemas import MD5WithPII, IABJob
-from bigdbm.validate.simple import ZipCodeValidator
-from bigdbm.validate.pii import HNWValidator, MNWValidator
+from real_intent.process import SimpleProcessor, FillProcessor
+from real_intent.schemas import MD5WithPII, IABJob
+from real_intent.validate.simple import ZipCodeValidator
+from real_intent.validate.pii import HNWValidator, MNWValidator
 
 
 def test_simple_processor(bigdbm_client) -> None:
