@@ -1,4 +1,4 @@
-"""Client package to interface with the BigDBM API."""
+"""Client package to interface with the Real Intent operations and data APIs."""
 from real_intent.client import BigDBMClient
 from real_intent.schemas import IABJob
 
