@@ -4,8 +4,8 @@ import pandas as pd
 from io import StringIO
 from typing import Any
 
-from bigdbm.deliver.base import BaseOutputDeliverer
-from bigdbm.schemas import MD5WithPII
+from real_intent.deliver.base import BaseOutputDeliverer
+from real_intent.schemas import MD5WithPII
 
 
 OUTPUT_COLUMNS: list[str] = [

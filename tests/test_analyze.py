@@ -3,13 +3,13 @@ import os
 import pytest
 from dotenv import load_dotenv
 
-from bigdbm.analyze.base import BaseAnalyzer
-from bigdbm.analyze.insights import OpenAIInsightsGenerator, ValidatedInsightsGenerator
-from bigdbm.schemas import MD5WithPII, PII
+from real_intent.analyze.base import BaseAnalyzer
+from real_intent.analyze.insights import OpenAIInsightsGenerator, ValidatedInsightsGenerator
+from real_intent.schemas import MD5WithPII, PII
 
-from bigdbm.process.fill import FillProcessor
-from bigdbm.validate.simple import SamePersonValidator
-from bigdbm.validate.pii import MNWValidator
+from real_intent.process.fill import FillProcessor
+from real_intent.validate.simple import SamePersonValidator
+from real_intent.validate.pii import MNWValidator
 
 
 # Load environment variables

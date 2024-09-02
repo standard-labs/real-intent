@@ -2,8 +2,8 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from bigdbm.schemas import MD5WithPII
-from bigdbm.internal_logging import log, log_span
+from real_intent.schemas import MD5WithPII
+from real_intent.internal_logging import log, log_span
 
 
 class BaseOutputDeliverer(ABC):

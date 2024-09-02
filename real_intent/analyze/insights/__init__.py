@@ -1,16 +1,16 @@
 """Use an LLM to generate insights from PII data."""
 from pydantic import BaseModel, Field
 
-from bigdbm.analyze.base import BaseAnalyzer
-from bigdbm.schemas import MD5WithPII
+from real_intent.analyze.base import BaseAnalyzer
+from real_intent.schemas import MD5WithPII
 
-from bigdbm.analyze.insights.prompt import SYSTEM_PROMPT
-from bigdbm.analyze.insights.validator_prompt import SYSTEM_PROMPT as VALIDATOR_PROMPT
+from real_intent.analyze.insights.prompt import SYSTEM_PROMPT
+from real_intent.analyze.insights.validator_prompt import SYSTEM_PROMPT as VALIDATOR_PROMPT
 
-from bigdbm.deliver.csv import CSVStringFormatter
-from bigdbm.validate.base import BaseValidator
-from bigdbm.process.base import BaseProcessor, ProcessValidator
-from bigdbm.internal_logging import log
+from real_intent.deliver.csv import CSVStringFormatter
+from real_intent.validate.base import BaseValidator
+from real_intent.process.base import BaseProcessor, ProcessValidator
+from real_intent.internal_logging import log
 
 
 class LeadInsights(BaseModel):
