@@ -1,6 +1,6 @@
 import pytest
 
-from bigdbm.taxonomy import code_to_category
+from real_intent.taxonomy import code_to_category
 
 
 def test_code_to_category_valid_code() -> None:

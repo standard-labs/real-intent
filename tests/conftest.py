@@ -4,7 +4,7 @@ import pytest
 import os
 from dotenv import load_dotenv
 
-from bigdbm.client import BigDBMClient
+from real_intent.client import BigDBMClient
 
 
 # Load env

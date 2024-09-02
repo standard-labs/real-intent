@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "bigdbm"
+name = "real-intent"
 version = "1.3.0"
 dependencies = [
   "requests",
@@ -17,18 +17,18 @@ authors = [
 maintainers = [
   {name = "Prerit Das", email = "prerit@standarddao.finance"},
 ]
-description = "Standard Labs internal SDK for BigDBM's API."
+description = "Standard Labs internal SDK for Real Intent."
 readme = "README.md"
 classifiers = [
   "Programming Language :: Python"
 ]
 
 [tool.setuptools.package-data]
-"bigdbm" = ["*.tsv", "*.csv"]
+"real-intent" = ["*.tsv", "*.csv"]
 
 [project.urls]
 Homepage = "https://standarddao.finance"
-Repository = "https://github.com/Standard-Labs/bigdbm-python.git"
+Repository = "https://github.com/Standard-Labs/real-intent.git"
 
 [project.optional-dependencies]
 logfire = ["logfire>=0.51.0"]

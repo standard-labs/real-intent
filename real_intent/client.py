@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from threading import Lock
 
-from bigdbm.schemas import (
+from real_intent.schemas import (
     ConfigDates,
     IABJob,
     IntentEvent,
@@ -17,8 +17,8 @@ from bigdbm.schemas import (
     PII,
     MD5WithPII
 )
-from bigdbm.error import BigDBMApiError
-from bigdbm.internal_logging import log, log_span
+from real_intent.error import BigDBMApiError
+from real_intent.internal_logging import log, log_span
 
 class BigDBMClient:
     """

@@ -5,10 +5,10 @@ from pydantic import BaseModel, Field
 import json
 from typing import Literal, Any
 
-from bigdbm.schemas import MD5WithPII
-from bigdbm.deliver.followupboss.vanilla import FollowUpBossDeliverer, EventType
-from bigdbm.deliver.followupboss.ai_prompt import SYSTEM_PROMPT
-from bigdbm.internal_logging import log, log_span
+from real_intent.schemas import MD5WithPII
+from real_intent.deliver.followupboss.vanilla import FollowUpBossDeliverer, EventType
+from real_intent.deliver.followupboss.ai_prompt import SYSTEM_PROMPT
+from real_intent.internal_logging import log, log_span
 
 
 class CustomField(BaseModel):
@@ -92,9 +92,9 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         try:
             import openai
         except ImportError:
-            log("error", "OpenAI is required for AI FollowUpBoss deliverer. pip install bigdbm[ai].")
+            log("error", "OpenAI is required for AI FollowUpBoss deliverer. pip install real-intent[ai].")
             raise ImportError(
-                "OpenAI is required for AI FollowUpBoss deliverer. pip install bigdbm[ai]."
+                "OpenAI is required for AI FollowUpBoss deliverer. pip install real-intent[ai]."
             )
 
         self.openai_client = openai.OpenAI(api_key=openai_api_key)

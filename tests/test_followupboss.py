@@ -6,9 +6,9 @@ import random
 import string
 from dotenv import load_dotenv
 
-from bigdbm.deliver.followupboss import FollowUpBossDeliverer
-from bigdbm.deliver.followupboss.ai_fields import AIFollowUpBossDeliverer
-from bigdbm.schemas import MD5WithPII, PII, MobilePhone, Gender
+from real_intent.deliver.followupboss import FollowUpBossDeliverer
+from real_intent.deliver.followupboss.ai_fields import AIFollowUpBossDeliverer
+from real_intent.schemas import MD5WithPII, PII, MobilePhone, Gender
 
 
 # Load environment variables from .env file

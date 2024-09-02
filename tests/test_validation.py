@@ -2,9 +2,9 @@ import os
 import pytest
 from dotenv import load_dotenv
 
-from bigdbm.schemas import MD5WithPII, PII, MobilePhone
-from bigdbm.validate.email import EmailValidator, HasEmailValidator
-from bigdbm.validate.phone import PhoneValidator, DNCValidator
+from real_intent.schemas import MD5WithPII, PII, MobilePhone
+from real_intent.validate.email import EmailValidator, HasEmailValidator
+from real_intent.validate.phone import PhoneValidator, DNCValidator
 
 
 # Load environment variables from .env file

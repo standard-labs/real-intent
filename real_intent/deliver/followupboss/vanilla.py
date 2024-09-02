@@ -4,9 +4,9 @@ import requests
 from enum import StrEnum
 import base64
 
-from bigdbm.deliver.base import BaseOutputDeliverer
-from bigdbm.schemas import MD5WithPII
-from bigdbm.internal_logging import log
+from real_intent.deliver.base import BaseOutputDeliverer
+from real_intent.schemas import MD5WithPII
+from real_intent.internal_logging import log
 
 
 class EventType(StrEnum):

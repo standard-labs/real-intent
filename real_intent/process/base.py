@@ -2,11 +2,11 @@
 from abc import ABC, abstractmethod
 from typing import Self, NamedTuple
 
-from bigdbm.client import BigDBMClient
-from bigdbm.schemas import IABJob, MD5WithPII
-from bigdbm.validate.base import BaseValidator
-from bigdbm.validate.simple import ContactableValidator
-from bigdbm.internal_logging import log, log_span
+from real_intent.client import BigDBMClient
+from real_intent.schemas import IABJob, MD5WithPII
+from real_intent.validate.base import BaseValidator
+from real_intent.validate.simple import ContactableValidator
+from real_intent.internal_logging import log, log_span
 
 
 class ProcessValidator(NamedTuple):

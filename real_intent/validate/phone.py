@@ -5,9 +5,9 @@ from concurrent.futures import ThreadPoolExecutor
 import time
 import random
 
-from bigdbm.schemas import MD5WithPII
-from bigdbm.validate.base import BaseValidator
-from bigdbm.internal_logging import log
+from real_intent.schemas import MD5WithPII
+from real_intent.validate.base import BaseValidator
+from real_intent.internal_logging import log
 
 
 class PhoneValidator(BaseValidator):
