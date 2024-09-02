@@ -34,7 +34,7 @@ jobs:
           echo FOLLOWUPBOSS_SYSTEM_KEY=${{ secrets.FOLLOWUPBOSS_SYSTEM_KEY }} >> .env
 
       - name: Build Docker container
-        run: docker build -t bigdbm-python .
+        run: docker build -t real-intent .
         
       - name: Run tests inside container
-        run: docker run bigdbm-python sh -c "pip install --no-cache-dir -r tests/requirements.txt && pytest"
+        run: docker run real-inetnt sh -c "pip install --no-cache-dir -r tests/requirements.txt && pytest"
