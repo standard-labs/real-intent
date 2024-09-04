@@ -40,7 +40,7 @@ def create_md5_with_pii(md5: str, emails: list[str], phones: list[str]) -> MD5Wi
                 Birth_Month_and_Year="01/1990",
                 Age="45",
                 Prop_Type="Single Family",
-                Email_Array=["tunasandwich@gmail.com"],
+                Email_Array=emails,
                 mobile_phones=[MobilePhone(phone="1234567890", do_not_call=False)],
                 Children_HH="2",
                 Credit_Range="Good",

@@ -29,10 +29,10 @@ def create_test_md5_with_pii() -> MD5WithPII:
                 Congressional_District="7",
                 HeadOfHousehold="Yes",
                 Birth_Month_and_Year="01/1990",
-                Age="45",
+                Age="30",
                 Prop_Type="Single Family",
-                Email_Array=["tunasandwich@gmail.com"],
-                mobile_phones=[MobilePhone(phone="1234567890", do_not_call=False)],
+                Email_Array=["john@example.com"],
+                mobile_phones=[],
                 Children_HH="2",
                 Credit_Range="Good",
                 Income_HH="100000-150000",
@@ -82,11 +82,12 @@ def test_csv_string_formatter() -> None:
     md5s: list[MD5WithPII] = [create_test_md5_with_pii(), create_test_md5_with_pii()]
     
     csv_content = formatter.deliver(md5s)
+    print("CSV CONTENT: \n", csv_content)
     
     # Check if the CSV contains the expected headers and data
     expected_header = "test sentence,first_name,last_name,email_1,email_2,email_3,phone_1,phone_1_dnc,phone_2,phone_2_dnc,phone_3,phone_3_dnc,address,city,state,zip_code,gender,age,n_household_children,credit_range,home_owner_status,household_income,marital_status,household_net_worth,occupation,md5"
     assert expected_header in csv_content
-    assert "x,John,Doe,john@example.com,,,,,,,,,123 Test St,Test City,TS,12345,Male,30,2,Good,Yes,100000-150000,Married,500000-1000000,Engineer,0,123abc" in csv_content
+    assert "x,John,Doe,john@example.com,,,,,,,,,123 Test St,Test City,TS,12345,Male,30,2,Good,Yes,100000-150000,Married,500000-1000000,Engineer,123abc" in csv_content
     
     # Check if the CSV contains the correct number of rows (header + 2 data rows)
     assert len(csv_content.split('\n')) == 4  # 3 rows + empty line at the end
