@@ -33,7 +33,6 @@ OUTPUT_COLUMNS: list[str] = [
     'marital_status',
     'household_net_worth',
     'occupation',
-    'n_household_veterans',
     'md5',
 ]
 

@@ -150,7 +150,7 @@ class PII(BaseModel):
         ..., alias="Home_Owner", description="Descriptor of home ownership status"
     )
     marital_status: str = Field(..., alias="Marital_Status", description="Descriptor of marital status")
-    occupation_detail: str = Field(..., alias="Occupation_Detail")
+    occupation: str = Field(..., alias="Occupation_Detail")
     median_home_value: str = Field(..., alias="Median_Home_Value")
     education: str = Field(..., alias="Education")
     length_of_residence: str = Field(..., alias="Length_of_Residence")

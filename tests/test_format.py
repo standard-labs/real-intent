@@ -84,7 +84,7 @@ def test_csv_string_formatter() -> None:
     csv_content = formatter.deliver(md5s)
     
     # Check if the CSV contains the expected headers and data
-    expected_header = "test sentence,first_name,last_name,email_1,email_2,email_3,phone_1,phone_1_dnc,phone_2,phone_2_dnc,phone_3,phone_3_dnc,address,city,state,zip_code,gender,age,n_household_children,credit_range,home_owner_status,household_income,marital_status,household_net_worth,occupation,n_household_veterans,md5"
+    expected_header = "test sentence,first_name,last_name,email_1,email_2,email_3,phone_1,phone_1_dnc,phone_2,phone_2_dnc,phone_3,phone_3_dnc,address,city,state,zip_code,gender,age,n_household_children,credit_range,home_owner_status,household_income,marital_status,household_net_worth,occupation,md5"
     assert expected_header in csv_content
     assert "x,John,Doe,john@example.com,,,,,,,,,123 Test St,Test City,TS,12345,Male,30,2,Good,Yes,100000-150000,Married,500000-1000000,Engineer,0,123abc" in csv_content
     
