@@ -1,4 +1,5 @@
 """Datatypes for working with the API."""
+from annotated_types import Ge
 import deprecated
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -130,7 +131,7 @@ class PII(BaseModel):
     census_tract: str = Field(..., alias="Census_Tract")
     census_block_group: str = Field(..., alias="Census_Block_Group")
     census_block: str = Field(..., alias="Census_Block")
-    gender: str = Field(..., alias="Gender")
+    gender: Gender = Field(..., alias="Gender")
     scf: str = Field(..., alias="SCF")
     dma: str = Field(..., alias="DMA")
     msa: str = Field(..., alias="MSA")
