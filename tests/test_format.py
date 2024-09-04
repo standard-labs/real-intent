@@ -5,8 +5,8 @@ from real_intent.schemas import Gender, MD5WithPII, PII, MobilePhone
 def create_test_md5_with_pii() -> MD5WithPII:
     pii = PII(
                 Id="test_id",
-                First_Name="Tuna",
-                Last_Name="Sandwich",
+                First_Name="John",
+                Last_Name="Doe",
                 Address="123 Test St",
                 City="Test City",
                 State="TS",

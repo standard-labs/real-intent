@@ -197,7 +197,7 @@ class PII(BaseModel):
 
     @classmethod
     def from_api_dict(cls, api_dict: dict[str, Any]) -> Self:
-        """Read in the data and parse the mobile phones."""
+        """Read in the data and parse the mobile phones and gender."""
         mobile_phones: list[MobilePhone] = []
         for i in range(1, 3+1):
             if f"Mobile_Phone_{i}" in api_dict:
@@ -211,6 +211,14 @@ class PII(BaseModel):
 
         if not api_dict["Email_Array"]:
             api_dict["Email_Array"] = []
+
+        # Gender is returned as "M" or "F" in the 10026 API output
+        if api_dict.get('Gender') == 'M':
+            api_dict['Gender'] = 'Male'
+        elif api_dict.get('Gender') == 'F':
+            api_dict['Gender'] = 'Female'
+        else:
+            api_dict['Gender'] = 'Unknown'
 
         return cls(**api_dict, mobile_phones=mobile_phones)
 
