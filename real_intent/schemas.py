@@ -258,7 +258,7 @@ class PII(BaseModel):
         return export_dict
 
 
-@deprecated("PII with output code 10026 is now standard")
+# DEPRECATED: PII with output code 10026 is now standard
 class PIILegacy(BaseModel):
     """
     PII in output code 10008 as returned by BigDBM API directly. 
