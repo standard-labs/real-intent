@@ -304,16 +304,35 @@ class BigDBMClient:
         Returns a dictionary with the keys "total" and "unique". All values are
         integers.
         """
-        list_queue_id: int = self.create_and_wait(iab_job)
-        events: list[IntentEvent] = self.retrieve_md5s(list_queue_id)
-        unique_md5s: list[UniqueMD5] = self.uniquify_md5s(events)
+        config_dates: ConfigDates = self.get_config_dates()
+        
+        request = Request(
+            method="POST",
+            url="https://aws-prod-intent-api.bigdbm.com/intent/queueCount",                
+            headers={"Content-Type": "application/json"},
+            json={"StartDate": config_dates.start_date, "EndDate": config_dates.end_date, **iab_job.as_payload()}
+        )
+        
+        response_json: dict = self._request(request)
 
-        log("info", f"Checked numbers. Total: {len(events)}, Unique: {len(unique_md5s)}")
+        list_queue_id: int = response_json["listQueueId"]
 
-        return {
-            "total": len(events),
-            "unique": len(unique_md5s)
-        }
+        while (status := self.get_list_status(list_queue_id)) != 100:
+            if status > 100:
+                raise BigDBMApiError(f"List ID {list_queue_id} had an error.")
+
+            time.sleep(3)
+       
+        request_count = Request(
+            method="POST",
+            url="https://aws-prod-intent-api.bigdbm.com/intent/resultCount",
+            headers={"Content-Type": "application/json"},
+            json={"ListQueueId": list_queue_id}
+        )
+        response_count_json: dict = self._request(request_count)
+        log("info", f"Checked numbers. Total: {response_count_json['count']}, Unique: {response_count_json['distinctCount']}")
+        return response_count_json
+        
 
     def _pull_pii(self, md5s: list[str], output_id: int = 10008) -> dict[str, dict[str, Any]]:
         """Retrieve PII for a list of MD5 objects."""

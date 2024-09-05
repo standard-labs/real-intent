@@ -3,5 +3,7 @@
         "tests"
     ],
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "CodeGPT.apiKey": "Anthropic",
+    "CodeGPT.Autocomplete.maxTokens": 16
 }
