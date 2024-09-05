@@ -218,6 +218,10 @@ class PII(BaseModel):
         else:
             api_dict['Gender'] = 'Unknown'
 
+        # Investment_Type isn't always present
+        if "Investment_Type" not in api_dict:
+            api_dict["Investment_Type"] = None
+
         return cls(**api_dict, mobile_phones=mobile_phones)
 
     def as_lead_export(self) -> dict[str, Any]:
