@@ -56,10 +56,10 @@ def test_check_numbers(bigdbm_client: BigDBMClient) -> None:
     result = bigdbm_client.check_numbers(sample_iab_job)
 
     assert isinstance(result, dict), "Result should be a dictionary"
-    assert "total" in result, "Result should contain 'total' key"
-    assert "unique" in result, "Result should contain 'unique' key"
-    assert isinstance(result["total"], int), "'total' value should be an integer"
-    assert isinstance(result["unique"], int), "'unique' value should be an integer"
-    assert result["total"] >= 0, "'total' should be non-negative"
-    assert result["unique"] >= 0, "'unique' should be non-negative"
-    assert result["unique"] <= result["total"], "'unique' should not exceed 'total'"
+    assert "count" in result, "Result should contain 'count' key"
+    assert "distinctCount" in result, "Result should contain 'distinctCount' key"
+    assert isinstance(result["count"], int), "'count' value should be an integer"
+    assert isinstance(result["distinctCount"], int), "'distinctCount' value should be an integer"
+    assert result["count"] >= 0, "'count' should be non-negative"
+    assert result["distinctCount"] >= 0, "'distinctCount' should be non-negative"
+    assert result["distinctCount"] <= result["count"], "'unique' should not exceed 'count'"
