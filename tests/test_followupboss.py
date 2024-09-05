@@ -58,7 +58,7 @@ def sample_pii_md5s():
                 State="TS",
                 Zip="12345",
                 Zip4="2224",
-                Fips_State_Code="01",
+                Fips_State_Code="001",
                 Fips_County_Code="002",
                 County_Name="Columbia",
                 Latitude="34.1234",

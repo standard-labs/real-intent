@@ -85,7 +85,8 @@ class CSVStringFormatter(BaseOutputDeliverer):
 
         # Convert to DataFrame for exporting
         self.output_columns[0:0] = (list_sentences := list(unique_sentences))
-        pii_df: pd.DataFrame = pd.DataFrame(lead_dicts)[self.output_columns]
+        pii_df: pd.DataFrame = pd.DataFrame(lead_dicts)#[self.output_columns]
+        
 
         # Rename intent columns for readability
         pii_df.rename(
