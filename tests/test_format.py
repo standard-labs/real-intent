@@ -1,5 +1,5 @@
 from real_intent.deliver.csv import CSVStringFormatter
-from real_intent.schemas import Gender, MD5WithPII, PII, MobilePhone
+from real_intent.schemas import Gender, MD5WithPII, PII
 
 
 def create_test_md5_with_pii() -> MD5WithPII:
