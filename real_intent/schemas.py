@@ -154,33 +154,40 @@ class PII(BaseModel):
     length_of_residence: int = Field(..., alias="Length_of_Residence")
     n_household_adults: int = Field(..., alias="Num_Adults_HH", description="String number of adults in the household")
     political_party: str = Field(..., alias="Political_Party")
-    health_beauty_products: Optional[bool] = Field(..., alias="Health_Beauty_Products")
-    cosmetics: Optional[bool] = Field(..., alias="Cosmetics")
-    jewelry: Optional[bool] = Field(..., alias="Jewelry")
+    health_beauty_products: bool = Field(..., alias="Health_Beauty_Products")
+    cosmetics: bool = Field(..., alias="Cosmetics")
+    jewelry: bool = Field(..., alias="Jewelry")
     investment_type: Optional[bool] = Field(..., alias="Investment_Type")
-    investments: Optional[bool] = Field(..., alias="Investments")
-    pet_owner: Optional[bool] = Field(..., alias="Pet_Owner")
-    pets_affinity: Optional[bool] = Field(..., alias="Pets_Affinity")
-    health_affinity: Optional[bool] = Field(..., alias="Health_Affinity")
-    diet_affinity: Optional[bool] = Field(..., alias="Diet_Affinity")
-    fitness_affinity: Optional[bool] = Field(..., alias="Fitness_Affinity")
-    outdoors_affinity: Optional[bool] = Field(..., alias="Outdoors_Affinity")
-    boating_sailing_affinity: Optional[bool] = Field(..., alias="Boating_Sailing_Affinity")
-    camping_hiking_climbing_affinity: Optional[bool] = Field(..., alias="Camping_Hiking_Climbing_Affinity")
-    fishing_affinity: Optional[bool] = Field(..., alias="Fishing_Affinity")
-    hunting_affinity: Optional[bool] = Field(..., alias="Hunting_Affinity")
-    aerobics: Optional[bool] = Field(..., alias="Aerobics")
-    nascar: Optional[bool] = Field(..., alias="NASCAR")
-    scuba: Optional[bool] = Field(..., alias="Scuba")
-    weight_lifting: Optional[bool] = Field(..., alias="Weight_Lifting")
-    healthy_living_interest: Optional[bool] = Field(..., alias="Healthy_Living_Interest")
-    motor_racing: Optional[bool] = Field(..., alias="Motor_Racing")
-    foreign_travel: Optional[bool] = Field(..., alias="Travel_Foreign")
-    self_improvement: Optional[bool] = Field(..., alias="Self_Improvement")
-    walking: Optional[bool] = Field(..., alias="Walking")
-    fitness: Optional[bool] = Field(..., alias="Fitness")
+    investments: bool = Field(..., alias="Investments")
+    pet_owner: bool = Field(..., alias="Pet_Owner")
+    pets_affinity: bool = Field(..., alias="Pets_Affinity")
+    health_affinity: bool = Field(..., alias="Health_Affinity")
+    diet_affinity: bool = Field(..., alias="Diet_Affinity")
+    fitness_affinity: bool = Field(..., alias="Fitness_Affinity")
+    outdoors_affinity: bool = Field(..., alias="Outdoors_Affinity")
+    boating_sailing_affinity: bool = Field(..., alias="Boating_Sailing_Affinity")
+    camping_hiking_climbing_affinity: bool = Field(..., alias="Camping_Hiking_Climbing_Affinity")
+    fishing_affinity: bool = Field(..., alias="Fishing_Affinity")
+    hunting_affinity: bool = Field(..., alias="Hunting_Affinity")
+    aerobics: bool = Field(..., alias="Aerobics")
+    nascar: bool = Field(..., alias="NASCAR")
+    scuba: bool = Field(..., alias="Scuba")
+    weight_lifting: bool = Field(..., alias="Weight_Lifting")
+    healthy_living_interest: bool = Field(..., alias="Healthy_Living_Interest")
+    motor_racing: bool = Field(..., alias="Motor_Racing")
+    foreign_travel: bool = Field(..., alias="Travel_Foreign")
+    self_improvement: bool = Field(..., alias="Self_Improvement")
+    walking: bool = Field(..., alias="Walking")
+    fitness: bool = Field(..., alias="Fitness")
     ethnicity_detail: str = Field(..., alias="Ethnicity_Detail")
     ethnic_group: str = Field(..., alias="Ethnic_Group")
+
+    @field_validator("investment_type", mode="before")
+    def validate_investment_type(cls, v: str) -> Optional[bool]:
+        """If empty string is passed to investment_type make it None."""
+        if v == "":
+            return None
+        return v
 
     def hash(self: "PII") -> str:
         """Hash with instance attributes."""
@@ -217,10 +224,6 @@ class PII(BaseModel):
             api_dict['Gender'] = 'Female'
         else:
             api_dict['Gender'] = 'Unknown'
-
-        # Investment_Type isn't always present
-        if "Investment_Type" not in api_dict:
-            api_dict["Investment_Type"] = None
 
         return cls(**api_dict, mobile_phones=mobile_phones)
 
