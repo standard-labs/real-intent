@@ -1,7 +1,7 @@
 """Datatypes for working with the API."""
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from typing import Any, Self
+from typing import Any, Optional, Self
 from enum import Enum
 
 from real_intent.taxonomy import code_to_category
@@ -104,7 +104,7 @@ class Gender(str, Enum):
 
 class PII(BaseModel):
     """
-    PII in output code 10008 as returned by BigDBM API directly. 
+    PII in output code 10026 as returned by BigDBM API directly.
     No transformations, only typed data validation.
 
     Instantiate with `.from_api_dict` to ensure correct pre-processing of 
@@ -118,32 +118,77 @@ class PII(BaseModel):
     # national_consumer_database  # what is this, and what type?
     state: str = Field(..., alias="State")
     zip_code: str = Field(..., alias="Zip")
-    emails: list[str] = Field(..., alias="Email_Array")
+    zip4: str = Field(..., alias="Zip4")
+    fips_state_code: str = Field(..., alias="Fips_State_Code")
+    fips_county_code: str = Field(..., alias="Fips_County_Code")
+    county_name: str = Field(..., alias="County_Name")
+    latitude: float = Field(..., alias="Latitude")
+    longitude: float = Field(..., alias="Longitude")
+    address_type: str = Field(..., alias="Address_Type")
+    cbsa: str = Field(..., alias="Cbsa")
+    census_tract: str = Field(..., alias="Census_Tract")
+    census_block_group: int | str = Field(..., alias="Census_Block_Group")
+    census_block: str = Field(..., alias="Census_Block")
     gender: Gender = Field(..., alias="Gender")
-    age: str = Field(..., alias="Age")
-    n_household_children: str = Field(
-        ..., alias="Children_HH", description="String number of children in the household"
-    )
+    scf: str = Field(..., alias="SCF")
+    dma: str = Field(..., alias="DMA")
+    msa: str = Field(..., alias="MSA")
+    congressional_district: str = Field(..., alias="Congressional_District")
+    head_of_household: bool | str = Field(..., alias="HeadOfHousehold")
+    birth_month_and_year: str = Field(..., alias="Birth_Month_and_Year")
+    age: int | str = Field(..., alias="Age")
+    prop_type: str = Field(..., alias="Prop_Type")
+    emails: list[str] = Field(..., alias="Email_Array")
+    mobile_phones: list[MobilePhone] = []
+    n_household_children: int | str = Field(..., alias="Children_HH", description="String number of children in the household")
     credit_range: str = Field(..., alias="Credit_Range")
+    household_income: str = Field(..., alias="Income_HH", description="Descriptor of household income")
+    household_net_worth: str = Field(..., alias="Net_Worth_HH", description="Descriptor of household net worth")
     home_owner_status: str = Field(
         ..., alias="Home_Owner", description="Descriptor of home ownership status"
     )
-    household_income: str = Field(
-        ..., alias="Income_HH", description="Descriptor of household income range"
-    )
-    household_net_worth: str = Field(
-        ..., alias="Net_Worth_HH", description="Descriptor of household net worth"
-    )
-    marital_status: str = Field(
-        ..., alias="Marital_Status", description="Descriptor of marital status"
-    )
-    occupation: str = Field(
-        ..., alias="Occupation_Detail", description="Descriptor of occupation"
-    )
-    n_household_veterans: str = Field(
-        ..., alias="Veteran_HH", description="String number of veterans in the household"
-    )
-    mobile_phones: list[MobilePhone] = []
+    marital_status: str = Field(..., alias="Marital_Status", description="Descriptor of marital status")
+    occupation: str = Field(..., alias="Occupation_Detail")
+    median_home_value: int | str = Field(..., alias="Median_Home_Value")
+    education: str = Field(..., alias="Education")
+    length_of_residence: int | str = Field(..., alias="Length_of_Residence")
+    n_household_adults: int | str = Field(..., alias="Num_Adults_HH", description="String number of adults in the household")
+    political_party: str = Field(..., alias="Political_Party")
+    health_beauty_products: bool | str = Field(..., alias="Health_Beauty_Products")
+    cosmetics: bool | str = Field(..., alias="Cosmetics")
+    jewelry: bool | str = Field(..., alias="Jewelry")
+    investment_type: Optional[bool] = Field(..., alias="Investment_Type")
+    investments: bool | str = Field(..., alias="Investments")
+    pet_owner: bool | str = Field(..., alias="Pet_Owner")
+    pets_affinity: int | str = Field(..., alias="Pets_Affinity")
+    health_affinity: int | str = Field(..., alias="Health_Affinity")
+    diet_affinity: int | str = Field(..., alias="Diet_Affinity")
+    fitness_affinity: int | str = Field(..., alias="Fitness_Affinity")
+    outdoors_affinity: int | str = Field(..., alias="Outdoors_Affinity")
+    boating_sailing_affinity: int | str = Field(..., alias="Boating_Sailing_Affinity")
+    camping_hiking_climbing_affinity: int | str = Field(..., alias="Camping_Hiking_Climbing_Affinity")
+    fishing_affinity: int | str = Field(..., alias="Fishing_Affinity")
+    hunting_affinity: int | str = Field(..., alias="Hunting_Affinity")
+    aerobics: int | str = Field(..., alias="Aerobics")
+    nascar: int | str = Field(..., alias="NASCAR")
+    scuba: int | str = Field(..., alias="Scuba")
+    weight_lifting: int | str = Field(..., alias="Weight_Lifting")
+    healthy_living_interest: int | str = Field(..., alias="Healthy_Living_Interest")
+    motor_racing: int | str = Field(..., alias="Motor_Racing")
+    foreign_travel: int | str = Field(..., alias="Travel_Foreign")
+    self_improvement: int | str = Field(..., alias="Self_Improvement")
+    walking: int | str = Field(..., alias="Walking")
+    fitness: int | str = Field(..., alias="Fitness")
+    ethnicity_detail: str = Field(..., alias="Ethnicity_Detail")
+    ethnic_group: str = Field(..., alias="Ethnic_Group")
+
+    @field_validator("investment_type", mode="before")
+    def validate_investment_type(cls, v: str) -> Optional[bool]:
+        """If empty string is passed to investment_type make it None."""
+        if v == "":
+            return None
+
+        return v
 
     def hash(self: "PII") -> str:
         """Hash with instance attributes."""
@@ -158,7 +203,7 @@ class PII(BaseModel):
 
     @classmethod
     def from_api_dict(cls, api_dict: dict[str, Any]) -> Self:
-        """Read in the data and parse the mobile phones."""
+        """Read in the data and parse the mobile phones and gender."""
         mobile_phones: list[MobilePhone] = []
         for i in range(1, 3+1):
             if f"Mobile_Phone_{i}" in api_dict:
@@ -172,6 +217,14 @@ class PII(BaseModel):
 
         if not api_dict["Email_Array"]:
             api_dict["Email_Array"] = []
+
+        # Gender is returned as "M" or "F" in the 10026 API output
+        if api_dict.get('Gender') == 'M':
+            api_dict['Gender'] = 'Male'
+        elif api_dict.get('Gender') == 'F':
+            api_dict['Gender'] = 'Female'
+        else:
+            api_dict['Gender'] = 'Unknown'
 
         return cls(**api_dict, mobile_phones=mobile_phones)
 

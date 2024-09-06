@@ -315,7 +315,7 @@ class BigDBMClient:
             "unique": len(unique_md5s)
         }
 
-    def _pull_pii(self, md5s: list[str], output_id: int = 10008) -> dict[str, dict[str, Any]]:
+    def _pull_pii(self, md5s: list[str], output_id: int = 10026) -> dict[str, dict[str, Any]]:
         """Retrieve PII for a list of MD5 objects."""
         log("trace", f"Pulling PII for {len(md5s)} MD5s.")
         request = Request(
