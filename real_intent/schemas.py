@@ -187,6 +187,7 @@ class PII(BaseModel):
         """If empty string is passed to investment_type make it None."""
         if v == "":
             return None
+
         return v
 
     def hash(self: "PII") -> str:
