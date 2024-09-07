@@ -305,12 +305,19 @@ class BigDBMClient:
         integers.
         """
         config_dates: ConfigDates = self.get_config_dates()
+
+        job_payload: dict[str, str] = iab_job.as_payload()
+        del job_payload["NumberOfHems"]
         
         request = Request(
             method="POST",
             url="https://aws-prod-intent-api.bigdbm.com/intent/queueCount",                
             headers={"Content-Type": "application/json"},
-            json={"StartDate": config_dates.start_date, "EndDate": config_dates.end_date, **iab_job.as_payload()}
+            json={
+                "StartDate": config_dates.start_date, 
+                "EndDate": config_dates.end_date, 
+                **job_payload
+            }
         )
         
         response_json: dict = self._request(request)
