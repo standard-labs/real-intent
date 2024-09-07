@@ -45,7 +45,7 @@ class IABJob(BaseModel):
 
         return self
 
-    def as_payload(self) -> dict[str, str]:
+    def as_payload(self) -> dict[str, str | int]:
         """Convert into dictionary payload."""
         return {
             "IABs": ",".join(self.intent_categories),
