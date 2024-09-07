@@ -322,7 +322,6 @@ class BigDBMClient:
             )
             
             response_json: dict = self._request(request)
-
             list_queue_id: int = response_json["listQueueId"]
 
             while (status := self.get_list_status(list_queue_id)) != 100:
