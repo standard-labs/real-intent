@@ -304,16 +304,51 @@ class BigDBMClient:
         Returns a dictionary with the keys "total" and "unique". All values are
         integers.
         """
-        list_queue_id: int = self.create_and_wait(iab_job)
-        events: list[IntentEvent] = self.retrieve_md5s(list_queue_id)
-        unique_md5s: list[UniqueMD5] = self.uniquify_md5s(events)
+        with log_span(f"Checking numbers for job: {iab_job}", _level="info"):
+            config_dates: ConfigDates = self.get_config_dates()
 
-        log("info", f"Checked numbers. Total: {len(events)}, Unique: {len(unique_md5s)}")
+            job_payload: dict[str, str] = iab_job.as_payload()
+            del job_payload["NumberOfHems"]
+            
+            request = Request(
+                method="POST",
+                url="https://aws-prod-intent-api.bigdbm.com/intent/queueCount",                
+                headers={"Content-Type": "application/json"},
+                json={
+                    "StartDate": config_dates.start_date, 
+                    "EndDate": config_dates.end_date, 
+                    **job_payload
+                }
+            )
+            
+            response_json: dict = self._request(request)
+            list_queue_id: int = response_json["listQueueId"]
 
-        return {
-            "total": len(events),
-            "unique": len(unique_md5s)
-        }
+            while (status := self.get_list_status(list_queue_id)) != 100:
+                if status > 100:
+                    raise BigDBMApiError(f"List ID {list_queue_id} had an error.")
+
+                time.sleep(3)
+        
+            request_count = Request(
+                method="POST",
+                url="https://aws-prod-intent-api.bigdbm.com/intent/resultCount",
+                headers={"Content-Type": "application/json"},
+                json={"ListQueueId": list_queue_id}
+            )
+            response_count_json: dict = self._request(request_count)
+
+            count_response: dict[str, int] = {
+                "total": response_count_json["count"],
+                "unique": response_count_json["distinctCount"]
+            }
+
+            log(
+                "info", 
+                f"Checked numbers. Total: {count_response['total']}, Unique: {count_response['unique']}"
+            )
+            return count_response
+        
 
     def _pull_pii(self, md5s: list[str], output_id: int = 10026) -> dict[str, dict[str, Any]]:
         """Retrieve PII for a list of MD5 objects."""

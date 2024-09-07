@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, Future
 from dotenv import load_dotenv
 
 from real_intent.client import BigDBMClient
+from real_intent.schemas import IABJob
 
 
 # Load environment variables
@@ -40,3 +41,25 @@ def test_bigdbm_client_thread_safety(bigdbm_client: BigDBMClient) -> None:
         # Wait for all threads to complete and check for any exceptions
         for future in futures:
             future.result()  # This will raise an exception if one occurred in the thread
+
+
+def test_check_numbers(bigdbm_client: BigDBMClient) -> None:
+    # Create a sample IABJob
+    sample_iab_job = IABJob(
+        intent_categories=["Real Estate>Real Estate Buying and Selling"],
+        domains=[],
+        keywords=[],
+        zips=["22101"],
+        n_hems=3
+    )
+
+    result = bigdbm_client.check_numbers(sample_iab_job)
+
+    assert isinstance(result, dict), "Result should be a dictionary"
+    assert "total" in result, "Result should contain 'total' key"
+    assert "unique" in result, "Result should contain 'unique' key"
+    assert isinstance(result["total"], int), "'total' value should be an integer"
+    assert isinstance(result["unique"], int), "'unique' value should be an integer"
+    assert result["total"] >= 0, "'total' should be non-negative"
+    assert result["unique"] >= 0, "'unique' should be non-negative"
+    assert result["unique"] <= result["total"], "'unique' should not exceed 'total'"
