@@ -304,7 +304,7 @@ class BigDBMClient:
         Returns a dictionary with the keys "total" and "unique". All values are
         integers.
         """
-        with log_span("Checking numbers", _level="info"):
+        with log_span(f"Checking numbers for job: {iab_job}", _level="info"):
             config_dates: ConfigDates = self.get_config_dates()
 
             job_payload: dict[str, str] = iab_job.as_payload()
