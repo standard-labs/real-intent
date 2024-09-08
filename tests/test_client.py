@@ -88,6 +88,6 @@ def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
 
 def test_pii_to_pii(bigdbm_client: BigDBMClient) -> None:
     
-    result = bigdbm_client.piis_to_pii("IVORY", "HOWARD", "7462 RACE RD", "21076-1114", "519")
+    result = bigdbm_client.pii_to_pii("IVORY", "HOWARD", "7462 RACE RD", "21076-1114", "519")
 
     assert isinstance(result, dict), "Result should be a dictionary"

@@ -425,7 +425,7 @@ class BigDBMClient:
                     "Content-Type": "application/json"
                 },
                 json={
-                    "RequestId": "gfedcba",
+                    "RequestId": "abcdefg",
                     "ObjectList": phones,
                     "OutputId": 10026
                 }
@@ -461,7 +461,7 @@ class BigDBMClient:
                     "Content-Type": "application/json"
                 },
                 json={
-                    "RequestId": "nmlkjih",
+                    "RequestId": "abcdefg",
                     "ObjectList": ips,
                     "OutputId": 10026
                 }
@@ -512,7 +512,7 @@ class BigDBMClient:
                 "Content-Type": "application/json"
             },
             json={
-                "requestId": "zyxwvu",
+                "requestId": "abcdefg",
                 "ObjectList": [info_given],
                 "OutputId": 10026
             }
