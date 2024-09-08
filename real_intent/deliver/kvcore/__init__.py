@@ -49,6 +49,9 @@ class KVCoreDeliverer(BaseOutputDeliverer):
         Returns True if the lead was delivered successfully.
         Otherwise, returns False.
         """
+        if not (email_body := self._email_body(pii_md5)):
+            return False
+
         response = requests.post(
             "https://api.postmarkapp.com/email",
             headers={
@@ -60,7 +63,7 @@ class KVCoreDeliverer(BaseOutputDeliverer):
                 "From": self.from_email,
                 "To": self.inboxing_address,
                 "Subject": "Add Contact",
-                "TextBody": self._email_body(pii_md5)
+                "TextBody": email_body
             }
         )
 
@@ -72,9 +75,10 @@ class KVCoreDeliverer(BaseOutputDeliverer):
 
     def _email_body(self, pii_md5: MD5WithPII) -> str:
         """Create the email body."""
-        assert pii_md5.pii.first_name, "First name is required."
-        assert pii_md5.pii.last_name, "Last name is required."
-        assert pii_md5.pii.emails, "Email is required."
+        # Check for required PII data. The rest of the data is optional
+        if not (pii_md5.pii.first_name and pii_md5.pii.last_name and pii_md5.pii.emails):
+            log.error(f"Missing required PII data: first name, last name, or email: {pii_md5}")
+            return ""
 
         email_body: str = EMAIL_TEMPLATE.format(
             first_name=pii_md5.pii.first_name,
