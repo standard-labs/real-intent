@@ -19,7 +19,13 @@ class KVCoreDeliverer(BaseOutputDeliverer):
     The tag is the hashtag that kvCORE uses to tag leads.
     """
 
-    def __init__(self, postmark_server_token: str, from_email: str, inboxing_address: str, tag: str):
+    def __init__(
+            self, 
+            postmark_server_token: str, 
+            from_email: str, 
+            inboxing_address: str, 
+            tag: str = ""
+        ):
         """Initialize the deliverer."""
         # Postmark setup
         self.postmark_server_token = postmark_server_token
