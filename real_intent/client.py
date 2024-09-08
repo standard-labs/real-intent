@@ -409,3 +409,134 @@ class BigDBMClient:
         )
 
         return return_md5s
+
+
+    ''' Can refactor to avoid redudancy in the following functions by using a private function that deals with request and initial processing'''
+
+    def phones_to_pii(self, phones: list[str]) -> list[PII]:
+        """Pull PII for a list of phone numbers."""
+
+        log("trace", f"Requesting PII for {len(phones)} phone numbers.")
+
+        request = Request(
+                method="POST",
+                url="https://aws-prod-dataapi-v09.bigdbm.com/GetDataBy/Phone",
+                headers={
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "RequestId": "gfedcba",
+                    "ObjectList": phones,
+                    "OutputId": 10026
+                }
+            )
+        
+        data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
+    
+        for key in data:
+            data[key] = data[key][0]
+
+        return_piis: list[PII] = []
+        pii: PII
+        
+        for phone in phones:
+            if phone in data:
+                pii = PII.from_api_dict(data[phone])
+                return_piis.append(pii)
+
+        log("trace", f"Retrieved PII for {len(return_piis)} of {len(phones)} phone numbers.")
+
+        return return_piis
+
+
+    def ips_to_pii(self, ips: list[str]) -> list[PII]:
+        """Pull PII for a list of IP addresses."""
+
+        log("trace", f"Requesting PII for {len(ips)} IP addresses.")
+
+        request = Request(
+                method="POST",
+                url="https://aws-prod-dataapi-v09.bigdbm.com/GetDataBy/IP",
+                headers={
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "RequestId": "nmlkjih",
+                    "ObjectList": ips,
+                    "OutputId": 10026
+                }
+            )
+        
+        data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
+    
+        for key in data:
+            data[key] = data[key][0]
+
+        return_piis: list[PII] = []
+        pii: PII
+        
+        for ip in ips:
+            if ip in data:
+                pii = PII.from_api_dict(data[ip])
+                return_piis.append(pii)
+
+        log("trace", f"Retrieved PII for {len(return_piis)} of {len(phones)} phone numbers.")
+        
+
+        return return_piis
+    
+
+    def pii_to_pii(self, first_name: str, last_name: str, address: str, zip_code: str, sequence: str) -> list[PII]:
+        '''
+        Pull PII given ONE object containing first name, last name, address, zip code, and sequence
+        
+        can be refactored to take in a dictionary of the object instead of individual parameters if wanted
+
+        '''
+
+        log("trace", f"Requesting PII for {first_name}, {last_name}, {address}, {zip_code}, {sequence}.")
+        
+
+        info_given = {
+            "FirstName": first_name,
+            "LastName": last_name,
+            "Address": address,
+            "Zip": zip_code,
+            "Sequence": sequence
+        }
+
+        request = Request(
+            method="POST",
+            url="https://aws-prod-dataapi-v09.bigdbm.com/GetDataBy/Pii",
+            headers={
+                "Content-Type": "application/json"
+            },
+            json={
+                "requestId": "zyxwvu",
+                "ObjectList": [info_given],
+                "OutputId": 10026
+            }
+        )
+
+        data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
+    
+        for key in data:
+            data[key] = data[key][0]
+
+        return_piis: list[PII] = []
+        pii: PII
+        
+        if info_given in data:
+            pii = PII.from_api_dict(data[info_given])
+            return_piis.append(pii)
+        
+        log("trace", f"Retrieved PII for {first_name}, {last_name}, {address}, {zip_code}, {sequence}.")
+
+        return return_piis
+    
+
+        
+
+    
+
+    
