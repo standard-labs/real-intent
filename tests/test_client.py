@@ -64,7 +64,8 @@ def test_check_numbers(bigdbm_client: BigDBMClient) -> None:
     assert result["unique"] >= 0, "'unique' should be non-negative"
     assert result["unique"] <= result["total"], "'unique' should not exceed 'total'"
 
-# initial test to check the functionality of the method first, more tests to be added
+
+# initial testS to check the functionality of the methods first, more tests to be added
 def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
     phones = ["2017872909"]
     
@@ -73,23 +74,20 @@ def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
     assert isinstance(result, dict), "Result should be a dictionary"
     assert len(result) <= len(phones), "Result should have the same or less length as input"
     assert result[0].first_name == "Donna", "First name should be 'Donna'"
-    assert result[0].last_name == "Weiss", "Last name should be 'Barnes'"
+    assert result[0].last_name == "Weiss", "Last name should be 'Weiss'"
     
 
 
-# def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
-#     ips = [""]  # Add some IPs here
+def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
+    ips = ["10.91.180.5", "10.91.220.117"] 
 
-#     result = bigdbm_client.ips_to_pii(ips)
+    result = bigdbm_client.ips_to_pii(ips)
 
-#     assert isinstance(result, dict), "Result should be a dictionary"
-#     assert len(result) <= len(ips), "Result should have the same or less length as input"
+    assert isinstance(result, dict), "Result should be a dictionary"
     
 
-# def test_pii_to_pii(bigdbm_client: BigDBMClient) -> None:
-#     piis = [""]  # Add some PII here
+def test_pii_to_pii(bigdbm_client: BigDBMClient) -> None:
+    
+    result = bigdbm_client.piis_to_pii("IVORY", "HOWARD", "7462 RACE RD", "21076-1114", "519")
 
-#     result = bigdbm_client.piis_to_pii(piis)
-
-#     assert isinstance(result, dict), "Result should be a dictionary"
-#     assert len(result) <= len(piis), "Result should have the same or less length as input"
+    assert isinstance(result, dict), "Result should be a dictionary"

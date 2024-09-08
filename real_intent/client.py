@@ -480,7 +480,7 @@ class BigDBMClient:
                 pii = PII.from_api_dict(data[ip])
                 return_piis.append(pii)
 
-        log("trace", f"Retrieved PII for {len(return_piis)} of {len(phones)} phone numbers.")
+        log("trace", f"Retrieved PII for {len(return_piis)} of {len(ips)} phone numbers.")
         
 
         return return_piis
