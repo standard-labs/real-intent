@@ -65,7 +65,7 @@ class KVCoreDeliverer(BaseOutputDeliverer):
         )
 
         if not response.ok:
-            log.error(f"Failed to send email to kvCORE: {response.text}")
+            log.error(f"Failed to send email to kvCORE with status {response.status_code}: {response.text}")
             return False
 
         return True
