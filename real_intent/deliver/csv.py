@@ -135,8 +135,9 @@ class CSVStringFormatter(BaseOutputDeliverer):
 
         # Convert to DataFrame for exporting
         # MD5 should be first column, followed by sentences and then rest of data
-        self.output_columns[1:1] = (list_sentences := list(unique_sentences))
-        pii_df: pd.DataFrame = pd.DataFrame(lead_dicts)[self.output_columns]
+        output_columns: list[str] = self.output_columns.copy()  # ensure instance is reusable
+        output_columns[1:1] = (list_sentences := list(unique_sentences))
+        pii_df: pd.DataFrame = pd.DataFrame(lead_dicts)[output_columns]
         
 
         # Rename intent columns for readability
