@@ -444,26 +444,45 @@ class BigDBMClient:
                     "OutputId": 10026
                 }
             )
+
+            response = response.json()
+
+            data: dict[str, list[dict[str, Any]]] = response["returnData"]
+        
+            for key in data:
+                data[key] = data[key][0]
+
+            return_piis: list[PII] = []
+            pii: PII
             
+            for phone in phones:
+                if phone in data:
+                    pii = PII.from_api_dict(data[phone])
+                    return_piis.append(pii)
+
+            log("trace", f"Retrieved PII for {len(return_piis)} of {len(phones)} phone numbers.")
+
+            return return_piis
+
         except RequestException as e:
             print(f"Request failed. Error: {e}")
         
-        data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
+        # data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
     
-        for key in data:
-            data[key] = data[key][0]
+        # for key in data:
+        #     data[key] = data[key][0]
 
-        return_piis: list[PII] = []
-        pii: PII
+        # return_piis: list[PII] = []
+        # pii: PII
         
-        for phone in phones:
-            if phone in data:
-                pii = PII.from_api_dict(data[phone])
-                return_piis.append(pii)
+        # for phone in phones:
+        #     if phone in data:
+        #         pii = PII.from_api_dict(data[phone])
+        #         return_piis.append(pii)
 
-        log("trace", f"Retrieved PII for {len(return_piis)} of {len(phones)} phone numbers.")
+        # log("trace", f"Retrieved PII for {len(return_piis)} of {len(phones)} phone numbers.")
 
-        return return_piis
+        # return return_piis
 
 
     def ips_to_pii(self, ips: list[str]) -> list[PII]:
