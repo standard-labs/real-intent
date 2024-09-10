@@ -70,6 +70,8 @@ def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
     phones = ["2017872909"]
     
     result = bigdbm_client.phones_to_pii(phones)
+
+    print(result)
     
     assert isinstance(result, dict), "Result should be a dictionary"
     assert len(result) <= len(phones), "Result should have the same or less length as input"
