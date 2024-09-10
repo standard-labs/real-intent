@@ -418,7 +418,21 @@ class BigDBMClient:
 
         log("trace", f"Requesting PII for {len(phones)} phone numbers.")
 
-        request = Request(
+        # request = Request(
+        #         method="POST",
+        #         url="https://aws-prod-dataapi-v09.bigdbm.com/GetDataBy/Phone",
+        #         headers={
+        #             "Content-Type": "application/json"
+        #         },
+        #         json={
+        #             "RequestId": "abcdefg",
+        #             "ObjectList": phones,
+        #             "OutputId": 10026
+        #         }
+        #     )
+        
+        try:
+            response = requests.request(
                 method="POST",
                 url="https://aws-prod-dataapi-v09.bigdbm.com/GetDataBy/Phone",
                 headers={
@@ -430,6 +444,9 @@ class BigDBMClient:
                     "OutputId": 10026
                 }
             )
+            
+        except RequestException as e:
+            print(f"Request failed. Error: {e}")
         
         data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
     
