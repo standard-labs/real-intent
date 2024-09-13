@@ -83,7 +83,7 @@ class KVCoreDeliverer(BaseOutputDeliverer):
         """Create the email body."""
         # Check for required PII data. The rest of the data is optional
         if not (pii_md5.pii.first_name and pii_md5.pii.last_name and pii_md5.pii.emails):
-            log.error(f"Missing required PII data: first name, last name, or email: {pii_md5}")
+            log("warn", f"Missing required PII data: first name, last name, or email: {pii_md5}")
             return ""
 
         email_body: str = EMAIL_TEMPLATE.format(
