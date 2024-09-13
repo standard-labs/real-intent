@@ -93,7 +93,7 @@ class KVCoreDeliverer(BaseOutputDeliverer):
         )
 
         # Add phone number if available
-        if pii_md5.pii.phone_numbers:
+        if pii_md5.pii.mobile_phones:
             if pii_md5.pii.mobile_phones[0].do_not_call:
                 log.warn("Importing a DNC phone number into kvCORE.")
 
