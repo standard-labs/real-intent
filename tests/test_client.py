@@ -80,8 +80,6 @@ def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
     assert result[1].first_name == "Zhang", "First name should be 'Zhang'"
     assert result[1].last_name == "Jiqiang", "Last name should be 'Jiqiang'"
 
-    assert len (result) >= 100, "Failing On Purpose to see output"
-
     
 
 def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
@@ -89,18 +87,14 @@ def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
 
     result = bigdbm_client.ips_to_pii(ips)
 
-    print(result) #not sure how to test this without actual IP addresses?
-
     assert isinstance(result, list), "Result should be a list"
-    assert len (result) >= 100, "Failing On Purpose to see output"
     
 
 def test_pii_to_pii(bigdbm_client: BigDBMClient) -> None:
     
     result = bigdbm_client.pii_to_pii("Donna", "Weiss", "6350 Chowning Pl", "22101-4129", "519")
 
-    print(result)
-
-    assert isinstance(result, list), "Result should be a list "
-    assert len (result) >= 100, "Failing On Purpose to see output"
+    assert isinstance(result, list), "Result should be a list"
+    assert result[0].first_name == "Donna", "First name should be 'Donna'"
+    assert result[0].last_name == "Weiss", "Last name should be 'Weiss'"
 

@@ -411,8 +411,6 @@ class BigDBMClient:
         return return_md5s
 
 
-    ''' Can refactor to avoid redudancy in the following functions by using a private function that deals with request and initial processing'''
-
     def phones_to_pii(self, phones: list[str]) -> list[PII]:
         """Pull PII for a list of phone numbers."""
 
@@ -487,12 +485,7 @@ class BigDBMClient:
     
 
     def pii_to_pii(self, first_name: str, last_name: str, address: str, zip_code: str, sequence: str) -> list[PII]:
-        '''
-        Pull PII given first name, last name, address, zip code, and sequence
-        
-        can be refactored to take in a dictionary of the object instead of individual parameters if wanted
-
-        '''
+        """Pull PII given first name, last name, address, zip code, and sequence. """
 
         log("trace", f"Requesting PII for {first_name}, {last_name}, {address}, {zip_code}, {sequence}.")
         
