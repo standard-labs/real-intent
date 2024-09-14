@@ -70,6 +70,7 @@ def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
     phones = ["2017872909", "5712861350"]
     
     result = bigdbm_client.phones_to_pii(phones)
+    print(result)
     
     assert isinstance(result, list), "Result should be a list"
     # assert len(result) <= len(phones), "Result should have the same or less length as input" (Can 1 phone # correlate to multiple PII?)
@@ -78,6 +79,8 @@ def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
 
     assert result[1].first_name == "Zhang", "First name should be 'Zhang'"
     assert result[1].last_name == "Jiqiang", "Last name should be 'Jiqiang'"
+
+    assert len (result) >= 100, "Failing On Purpose to see output"
 
     
 
@@ -89,6 +92,7 @@ def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
     print(result) #not sure how to test this without actual IP addresses?
 
     assert isinstance(result, list), "Result should be a list"
+    assert len (result) >= 100, "Failing On Purpose to see output"
     
 
 def test_pii_to_pii(bigdbm_client: BigDBMClient) -> None:
@@ -98,3 +102,5 @@ def test_pii_to_pii(bigdbm_client: BigDBMClient) -> None:
     print(result)
 
     assert isinstance(result, list), "Result should be a list "
+    assert len (result) >= 100, "Failing On Purpose to see output"
+

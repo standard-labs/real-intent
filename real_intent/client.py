@@ -482,14 +482,13 @@ class BigDBMClient:
 
         log("trace", f"Retrieved PII for {len(return_piis)} of {len(ips)} phone numbers.")
         
-        print(return_piis) # temp to see output
 
         return return_piis
     
 
     def pii_to_pii(self, first_name: str, last_name: str, address: str, zip_code: str, sequence: str) -> list[PII]:
         '''
-        Pull PII given ONE object containing first name, last name, address, zip code, and sequence
+        Pull PII given first name, last name, address, zip code, and sequence
         
         can be refactored to take in a dictionary of the object instead of individual parameters if wanted
 
@@ -537,8 +536,6 @@ class BigDBMClient:
             ):
                 pii = PII.from_api_dict(info)
                 return_piis.append(pii)
-
-        print(return_piis) # temp to see output
         
         log("trace", f"Retrieved PII for {first_name}, {last_name}, {address}, {zip_code}, {sequence}.")
 
