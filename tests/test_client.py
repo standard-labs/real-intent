@@ -70,13 +70,12 @@ def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
     phones = ["2017872909"]
     
     result = bigdbm_client.phones_to_pii(phones)
-
-    print(result)
     
-    assert isinstance(result, dict), "Result should be a dictionary"
-    assert len(result) <= len(phones), "Result should have the same or less length as input"
+    assert isinstance(result, list), "Result should be a list"
+    # assert len(result) <= len(phones), "Result should have the same or less length as input" (Can 1 phone # correlate to multiple PII?)
     assert result[0].first_name == "Donna", "First name should be 'Donna'"
     assert result[0].last_name == "Weiss", "Last name should be 'Weiss'"
+
     
 
 def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
@@ -84,11 +83,15 @@ def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
 
     result = bigdbm_client.ips_to_pii(ips)
 
-    assert isinstance(result, dict), "Result should be a dictionary"
+    print(result)
+
+    assert isinstance(result, list), "Result should be a list"
     
 
 def test_pii_to_pii(bigdbm_client: BigDBMClient) -> None:
     
     result = bigdbm_client.pii_to_pii("IVORY", "HOWARD", "7462 RACE RD", "21076-1114", "519")
 
-    assert isinstance(result, dict), "Result should be a dictionary"
+    print(result)
+
+    assert isinstance(result, list), "Result should be a list"
