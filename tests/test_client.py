@@ -67,7 +67,7 @@ def test_check_numbers(bigdbm_client: BigDBMClient) -> None:
 
 # initial tests to check the functionality of API first
 def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
-    phones = ["2017872909"]
+    phones = ["2017872909", "5712861350"]
     
     result = bigdbm_client.phones_to_pii(phones)
     
@@ -75,6 +75,9 @@ def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
     # assert len(result) <= len(phones), "Result should have the same or less length as input" (Can 1 phone # correlate to multiple PII?)
     assert result[0].first_name == "Donna", "First name should be 'Donna'"
     assert result[0].last_name == "Weiss", "Last name should be 'Weiss'"
+
+    assert result[1].first_name == "Zhang", "First name should be 'Zhang'"
+    assert result[1].last_name == "Jiqiang", "Last name should be 'Jiqiang'"
 
     
 

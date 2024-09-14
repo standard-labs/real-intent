@@ -521,19 +521,24 @@ class BigDBMClient:
 
         data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
 
-        print(data) # temp to see output
-    
         for key in data:
             data[key] = data[key][0]
 
         return_piis: list[PII] = []
         pii: PII
         
-        print(data) # temp to see output
+        for id, info in data.items():
+            if(
+                info["First_Name"] == first_name and
+                info["Last_Name"] == last_name and
+                info["Address"] == address and
+                f"{info['Zip']}-{info['Zip4']}" == zip_code and
+                info["Sequence"] == sequence
+            ):
+                pii = PII.from_api_dict(info)
+                return_piis.append(pii)
 
-        if info_given in data:
-            pii = PII.from_api_dict(data[[info_given]])
-            return_piis.append(pii)
+        print(return_piis) # temp to see output
         
         log("trace", f"Retrieved PII for {first_name}, {last_name}, {address}, {zip_code}, {sequence}.")
 
