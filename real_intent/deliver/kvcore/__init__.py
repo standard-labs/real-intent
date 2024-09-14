@@ -74,7 +74,7 @@ class KVCoreDeliverer(BaseOutputDeliverer):
         )
 
         if not response.ok:
-            log.error(f"Failed to send email to kvCORE with status {response.status_code}: {response.text}")
+            log("error", f"Failed to send email to kvCORE with status {response.status_code}: {response.text}")
             return False
 
         return True
@@ -83,7 +83,7 @@ class KVCoreDeliverer(BaseOutputDeliverer):
         """Create the email body."""
         # Check for required PII data. The rest of the data is optional
         if not (pii_md5.pii.first_name and pii_md5.pii.last_name and pii_md5.pii.emails):
-            log.error(f"Missing required PII data: first name, last name, or email: {pii_md5}")
+            log("warn", f"Missing required PII data: first name, last name, or email: {pii_md5}")
             return ""
 
         email_body: str = EMAIL_TEMPLATE.format(
@@ -93,7 +93,7 @@ class KVCoreDeliverer(BaseOutputDeliverer):
         )
 
         # Add phone number if available
-        if pii_md5.pii.phone_numbers:
+        if pii_md5.pii.mobile_phones:
             if pii_md5.pii.mobile_phones[0].do_not_call:
                 log.warn("Importing a DNC phone number into kvCORE.")
 
