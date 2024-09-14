@@ -65,7 +65,7 @@ def test_check_numbers(bigdbm_client: BigDBMClient) -> None:
     assert result["unique"] <= result["total"], "'unique' should not exceed 'total'"
 
 
-# initial testS to check the functionality of the methods first, more tests to be added
+# initial tests to check the functionality of API first
 def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
     phones = ["2017872909"]
     
@@ -79,7 +79,6 @@ def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
     assert result[0].last_name == "Weiss", "Last name should be 'Weiss'"
     
 
-@pytest.mark.skip(reason="temp skip")
 def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
     ips = ["10.91.180.5", "10.91.220.117"] 
 
@@ -87,7 +86,7 @@ def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
 
     assert isinstance(result, dict), "Result should be a dictionary"
     
-@pytest.mark.skip(reason="temp skip")
+
 def test_pii_to_pii(bigdbm_client: BigDBMClient) -> None:
     
     result = bigdbm_client.pii_to_pii("IVORY", "HOWARD", "7462 RACE RD", "21076-1114", "519")

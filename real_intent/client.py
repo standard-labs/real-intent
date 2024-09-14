@@ -418,21 +418,7 @@ class BigDBMClient:
 
         log("trace", f"Requesting PII for {len(phones)} phone numbers.")
 
-        # request = Request(
-        #         method="POST",
-        #         url="https://aws-prod-dataapi-v09.bigdbm.com/GetDataBy/Phone",
-        #         headers={
-        #             "Content-Type": "application/json"
-        #         },
-        #         json={
-        #             "RequestId": "abcdefg",
-        #             "ObjectList": phones,
-        #             "OutputId": 10026
-        #         }
-        #     )
-        
-        try:
-            response = requests.request(
+        request = Request(
                 method="POST",
                 url="https://aws-prod-dataapi-v09.bigdbm.com/GetDataBy/Phone",
                 headers={
@@ -444,46 +430,23 @@ class BigDBMClient:
                     "OutputId": 10026
                 }
             )
-
-            response = response.json()
-
-            # data: dict[str, list[dict[str, Any]]] = response["returnData"]
         
-            # for key in data:
-            #     data[key] = data[key][0]
-
-            # return_piis: list[PII] = []
-            # pii: PII
-            
-            # for phone in phones:
-            #     if phone in data:
-            #         pii = PII.from_api_dict(data[phone])
-            #         return_piis.append(pii)
-
-            # log("trace", f"Retrieved PII for {len(return_piis)} of {len(phones)} phone numbers.")
-
-            # return return_piis
-
-            return response
-        except RequestException as e:
-            print(f"Request failed. Error: {e}")
-        
-        # data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
+        data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
     
-        # for key in data:
-        #     data[key] = data[key][0]
+        for key in data:
+            data[key] = data[key][0]
 
-        # return_piis: list[PII] = []
-        # pii: PII
+        return_piis: list[PII] = []
+        pii: PII
         
-        # for phone in phones:
-        #     if phone in data:
-        #         pii = PII.from_api_dict(data[phone])
-        #         return_piis.append(pii)
+        for phone in phones:
+            if phone in data:
+                pii = PII.from_api_dict(data[phone])
+                return_piis.append(pii)
 
-        # log("trace", f"Retrieved PII for {len(return_piis)} of {len(phones)} phone numbers.")
+        log("trace", f"Retrieved PII for {len(return_piis)} of {len(phones)} phone numbers.")
 
-        # return return_piis
+        return return_piis
 
 
     def ips_to_pii(self, ips: list[str]) -> list[PII]:
@@ -540,7 +503,7 @@ class BigDBMClient:
             "Address": address,
             "Zip": zip_code,
             "Sequence": sequence
-        }
+        }t
 
         request = Request(
             method="POST",
