@@ -83,7 +83,7 @@ def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
 
     result = bigdbm_client.ips_to_pii(ips)
 
-    print(result)
+    print(result) #not sure how to test this without actual IP addresses?
 
     assert isinstance(result, list), "Result should be a list"
     

@@ -482,6 +482,7 @@ class BigDBMClient:
 
         log("trace", f"Retrieved PII for {len(return_piis)} of {len(ips)} phone numbers.")
         
+        print(return_piis) # temp to see output
 
         return return_piis
     
@@ -526,8 +527,10 @@ class BigDBMClient:
         return_piis: list[PII] = []
         pii: PII
         
+        print(data) # temp to see output
+
         if info_given in data:
-            pii = PII.from_api_dict(data[info_given])
+            pii = PII.from_api_dict(data[[info_given]])
             return_piis.append(pii)
         
         log("trace", f"Retrieved PII for {first_name}, {last_name}, {address}, {zip_code}, {sequence}.")
