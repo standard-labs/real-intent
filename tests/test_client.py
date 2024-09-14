@@ -90,7 +90,7 @@ def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
 
 def test_pii_to_pii(bigdbm_client: BigDBMClient) -> None:
     
-    result = bigdbm_client.pii_to_pii("IVORY", "HOWARD", "7462 RACE RD", "21076-1114", "519")
+    result = bigdbm_client.pii_to_pii("Donna", "Weiss", "6350 Chowning Pl", "22101-4129", "519")
 
     print(result)
 

@@ -520,6 +520,8 @@ class BigDBMClient:
         )
 
         data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
+
+        print(data) # temp to see output
     
         for key in data:
             data[key] = data[key][0]
