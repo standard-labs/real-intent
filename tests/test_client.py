@@ -94,4 +94,4 @@ def test_pii_to_pii(bigdbm_client: BigDBMClient) -> None:
 
     print(result)
 
-    assert isinstance(result, list), "Result should be a list"
+    assert isinstance(result, list), "Result should be a list "
