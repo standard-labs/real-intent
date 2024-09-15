@@ -24,7 +24,6 @@ def bigdbm_client() -> BigDBMClient:
     return BigDBMClient(client_id, client_secret)
 
 
-
 def test_bigdbm_client_thread_safety(bigdbm_client: BigDBMClient) -> None:
     def access_token_operations() -> None:
         # Simulate multiple operations that could potentially cause race conditions
@@ -79,7 +78,6 @@ def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
 
     assert result[1].first_name == "Zhang", "First name should be 'Zhang'"
     assert result[1].last_name == "Jiqiang", "Last name should be 'Jiqiang'"
-
 
 
 def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
