@@ -72,7 +72,6 @@ def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
     print(result)
     
     assert isinstance(result, list), "Result should be a list"
-    # assert len(result) <= len(phones), "Result should have the same or less length as input" (Can 1 phone # correlate to multiple PII?)
     assert result[0].first_name == "Donna", "First name should be 'Donna'"
     assert result[0].last_name == "Weiss", "Last name should be 'Weiss'"
 
