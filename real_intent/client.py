@@ -516,7 +516,7 @@ class BigDBMClient:
         return_piis: list[PII] = []
         pii: PII
         
-        for id, info in data.items():
+        for _id, info in data.items():
             if(
                 info["First_Name"] == first_name and
                 info["Last_Name"] == last_name and
