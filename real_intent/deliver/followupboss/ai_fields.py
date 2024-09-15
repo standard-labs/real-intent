@@ -112,7 +112,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         """
         try:
             response = requests.get(f"{self.base_url}/identity", headers=self.api_headers)
-            response.raise_for_status()
+            response.raise_for_status() # Raise exception for 4XX or 5XX status codes
             return True
         except requests.RequestException as e:
             log("error", f"Failed to verify API credentials: {str(e)}")

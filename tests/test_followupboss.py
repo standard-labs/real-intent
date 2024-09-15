@@ -5,6 +5,7 @@ import os
 import random
 import string
 from dotenv import load_dotenv
+from requests import RequestException
 
 from real_intent.deliver.followupboss import FollowUpBossDeliverer
 from real_intent.deliver.followupboss.ai_fields import AIFollowUpBossDeliverer
@@ -245,3 +246,19 @@ def test_ai_followupboss_deliverer_success(ai_followupboss_deliverer, sample_pii
 
     # Check that the AI didn't fall back to the non-AI method
     assert len(event_data["person"]) > 4, "AI seems to have fallen back to non-AI method"
+
+
+@pytest.mark.skipif(
+    not os.getenv("FOLLOWUPBOSS_API_KEY")
+    or not os.getenv("FOLLOWUPBOSS_SYSTEM")
+    or not os.getenv("FOLLOWUPBOSS_SYSTEM_KEY")
+    or not os.getenv("OPENAI_API_KEY"),
+    reason="FUB API keys or OpenAI API key not found",
+)
+def test_ai_followupboss_credential_validator(api_key, system, system_key, openai_api_key):
+    # Test valid credentials and ensure that they work correctly
+    AIFollowUpBossDeliverer(api_key, system, system_key, openai_api_key)
+
+    # Test invalid credentials and ensure that they don't throw exception
+    with pytest.raises(RequestException):
+        AIFollowUpBossDeliverer("invalid_api_key", system, system_key, openai_api_key)
