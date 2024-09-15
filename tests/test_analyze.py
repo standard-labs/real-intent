@@ -93,7 +93,7 @@ def create_test_pii() -> PII:
                 Ethnic_Group="Caucasian",
     )
 
-@pytest.mark.skip(reason="temp skip")
+
 def test_base_analyzer() -> None:
     analyzer = TestAnalyzer()
     md5s = [
@@ -104,8 +104,7 @@ def test_base_analyzer() -> None:
     assert result == "Analyzed 2 MD5s"
 
 
-#@pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not found")
-@pytest.mark.skip(reason="temp skip")
+@pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not found")
 def test_openai_insights_generator() -> None:
     api_key = os.getenv("OPENAI_API_KEY")
     generator = OpenAIInsightsGenerator(api_key)
@@ -118,8 +117,7 @@ def test_openai_insights_generator() -> None:
     assert len(result.split("\n")) >= 2  # Expecting at least two insights
 
 
-#@pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not found")
-@pytest.mark.skip(reason="temp skip")
+@pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not found")
 def test_validated_insights_generator(bigdbm_client) -> None:
     api_key = os.getenv("OPENAI_API_KEY")
 

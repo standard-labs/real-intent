@@ -23,7 +23,7 @@ def bigdbm_client() -> BigDBMClient:
 
     return BigDBMClient(client_id, client_secret)
 
-@pytest.mark.skip(reason="temp skip")
+
 def test_bigdbm_client_thread_safety(bigdbm_client: BigDBMClient) -> None:
     def access_token_operations() -> None:
         # Simulate multiple operations that could potentially cause race conditions
@@ -42,7 +42,7 @@ def test_bigdbm_client_thread_safety(bigdbm_client: BigDBMClient) -> None:
         for future in futures:
             future.result()  # This will raise an exception if one occurred in the thread
 
-@pytest.mark.skip(reason="temp skip")
+
 def test_check_numbers(bigdbm_client: BigDBMClient) -> None:
     # Create a sample IABJob
     sample_iab_job = IABJob(
@@ -65,7 +65,6 @@ def test_check_numbers(bigdbm_client: BigDBMClient) -> None:
     assert result["unique"] <= result["total"], "'unique' should not exceed 'total'"
 
 
-# initial tests to check the functionality of API first
 def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
     phones = ["2017872909", "5712861350"]
     
@@ -80,10 +79,9 @@ def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
     assert result[1].first_name == "Zhang", "First name should be 'Zhang'"
     assert result[1].last_name == "Jiqiang", "Last name should be 'Jiqiang'"
 
-    
 
 def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
-    ips = ["10.91.180.5", "10.91.220.117"] 
+    ips = ["10.91.180.5", "10.91.220.117"] # not actual IPs
 
     result = bigdbm_client.ips_to_pii(ips)
 

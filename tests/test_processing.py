@@ -6,7 +6,7 @@ from real_intent.schemas import MD5WithPII, IABJob
 from real_intent.validate.simple import ZipCodeValidator
 from real_intent.validate.pii import HNWValidator, MNWValidator
 
-@pytest.mark.skip(reason="temp skip")
+
 def test_simple_processor(bigdbm_client) -> None:
     job = IABJob(
         intent_categories=["Real Estate>Real Estate Buying and Selling"],
@@ -19,7 +19,7 @@ def test_simple_processor(bigdbm_client) -> None:
     processor = SimpleProcessor(bigdbm_client)
     assert processor.process(job)
 
-@pytest.mark.skip(reason="temp skip")
+
 def test_fill_processor(bigdbm_client) -> None:
     job = IABJob(
         intent_categories=["Real Estate>Real Estate Buying and Selling"],
@@ -36,7 +36,7 @@ def test_fill_processor(bigdbm_client) -> None:
     result: list[MD5WithPII] = FillProcessor(bigdbm_client).process(job)
     assert result
 
-@pytest.mark.skip(reason="temp skip")
+
 def test_hnw_mnw(bigdbm_client) -> None:
     job = IABJob(
         intent_categories=["Real Estate>Real Estate Buying and Selling"],
@@ -53,7 +53,7 @@ def test_hnw_mnw(bigdbm_client) -> None:
     result: list[MD5WithPII] = FillProcessor(bigdbm_client).process(job)
     assert result
 
-@pytest.mark.skip(reason="temp skip")
+
 def test_multiple_priorities(bigdbm_client) -> None:
     job = IABJob(
         intent_categories=["Real Estate>Real Estate Buying and Selling"],
@@ -72,7 +72,7 @@ def test_multiple_priorities(bigdbm_client) -> None:
     assert result
     assert len(result) == 3
 
-@pytest.mark.skip(reason="temp skip")
+
 def test_no_validators(bigdbm_client) -> None:
     job = IABJob(
         intent_categories=["Real Estate>Real Estate Buying and Selling"],
@@ -88,7 +88,7 @@ def test_no_validators(bigdbm_client) -> None:
     assert result
     assert len(result) == 3
 
-@pytest.mark.skip(reason="temp skip")
+
 def test_invalid_priority(bigdbm_client) -> None:
     processor = FillProcessor(bigdbm_client)
 

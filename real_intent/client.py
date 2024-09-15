@@ -349,7 +349,6 @@ class BigDBMClient:
             )
             return count_response
         
-
     def _pull_pii(self, md5s: list[str], output_id: int = 10026) -> dict[str, dict[str, Any]]:
         """Retrieve PII for a list of MD5 objects."""
         log("trace", f"Pulling PII for {len(md5s)} MD5s.")
@@ -410,7 +409,6 @@ class BigDBMClient:
 
         return return_md5s
 
-
     def phones_to_pii(self, phones: list[str]) -> list[PII]:
         """Pull PII for a list of phone numbers."""
 
@@ -445,7 +443,6 @@ class BigDBMClient:
         log("trace", f"Retrieved PII for {len(return_piis)} of {len(phones)} phone numbers.")
 
         return return_piis
-
 
     def ips_to_pii(self, ips: list[str]) -> list[PII]:
         """Pull PII for a list of IP addresses."""
@@ -483,7 +480,6 @@ class BigDBMClient:
 
         return return_piis
     
-
     def pii_to_pii(self, first_name: str, last_name: str, address: str, zip_code: str, sequence: str) -> list[PII]:
         """Pull PII given first name, last name, address, zip code, and sequence. """
 
@@ -533,10 +529,4 @@ class BigDBMClient:
         log("trace", f"Retrieved PII for {first_name}, {last_name}, {address}, {zip_code}, {sequence}.")
 
         return return_piis
-    
-
-        
-
-    
-
     
