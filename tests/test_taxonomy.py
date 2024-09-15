@@ -32,6 +32,7 @@ def test_code_to_category_caching() -> None:
     (228, "Healthy Living>Men's Health"),
     (4455, "Medical Health>Pharmaceutical Drugs>Oncology"),
 ])
+
 def test_code_to_category_specific_codes(code: int, expected: str) -> None:
     result = code_to_category(code)
     assert result == expected

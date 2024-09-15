@@ -63,3 +63,32 @@ def test_check_numbers(bigdbm_client: BigDBMClient) -> None:
     assert result["total"] >= 0, "'total' should be non-negative"
     assert result["unique"] >= 0, "'unique' should be non-negative"
     assert result["unique"] <= result["total"], "'unique' should not exceed 'total'"
+
+
+def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
+    phones = ["2017872909", "5712861350"]
+    
+    result = bigdbm_client.phones_to_pii(phones)
+    print(result)
+    
+    assert isinstance(result, list), "Result should be a list"
+    assert result[0].first_name == "Donna", "First name should be 'Donna'"
+    assert result[0].last_name == "Weiss", "Last name should be 'Weiss'"
+
+    assert result[1].first_name == "Zhang", "First name should be 'Zhang'"
+    assert result[1].last_name == "Jiqiang", "Last name should be 'Jiqiang'"
+
+
+def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
+    ips = ["10.91.180.5", "10.91.220.117"] 
+    result = bigdbm_client.ips_to_pii(ips)
+
+    assert isinstance(result, list), "Result should be a list"
+    
+
+def test_pii_to_pii(bigdbm_client: BigDBMClient) -> None:
+    result = bigdbm_client.pii_to_pii("Donna", "Weiss", "6350 Chowning Pl", "22101-4129", "519")
+
+    assert isinstance(result, list), "Result should be a list"
+    assert result[0].first_name == "Donna", "First name should be 'Donna'"
+    assert result[0].last_name == "Weiss", "Last name should be 'Weiss'"

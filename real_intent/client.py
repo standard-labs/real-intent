@@ -6,8 +6,8 @@ from requests import RequestException
 import time
 import random
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any
 from threading import Lock
+from typing import Any
 
 from real_intent.schemas import (
     ConfigDates,
@@ -19,6 +19,7 @@ from real_intent.schemas import (
 )
 from real_intent.error import BigDBMApiError
 from real_intent.internal_logging import log, log_span
+
 
 class BigDBMClient:
     """
@@ -349,7 +350,6 @@ class BigDBMClient:
             )
             return count_response
         
-
     def _pull_pii(self, md5s: list[str], output_id: int = 10026) -> dict[str, dict[str, Any]]:
         """Retrieve PII for a list of MD5 objects."""
         log("trace", f"Pulling PII for {len(md5s)} MD5s.")
@@ -407,5 +407,119 @@ class BigDBMClient:
                 f"hit rate: {len(return_md5s) / len(unique_md5s):.2f}"
             )
         )
-
         return return_md5s
+
+    def phones_to_pii(self, phones: list[str]) -> list[PII]:
+        """Pull PII for a list of phone numbers."""
+        log("trace", f"Requesting PII for {len(phones)} phone numbers.")
+
+        request = Request(
+                method="POST",
+                url="https://aws-prod-dataapi-v09.bigdbm.com/GetDataBy/Phone",
+                headers={
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "RequestId": "abcdefg",
+                    "ObjectList": phones,
+                    "OutputId": 10026
+                }
+            )
+        
+        data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
+    
+        for key in data:
+            data[key] = data[key][0]
+
+        return_piis: list[PII] = []
+        pii: PII
+        
+        for phone in phones:
+            if phone in data:
+                pii = PII.from_api_dict(data[phone])
+                return_piis.append(pii)
+
+        log("trace", f"Retrieved PII for {len(return_piis)} of {len(phones)} phone numbers.")
+        return return_piis
+
+    def ips_to_pii(self, ips: list[str]) -> list[PII]:
+        """Pull PII for a list of IP addresses."""
+        log("trace", f"Requesting PII for {len(ips)} IP addresses.")
+
+        request = Request(
+                method="POST",
+                url="https://aws-prod-dataapi-v09.bigdbm.com/GetDataBy/IP",
+                headers={
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "RequestId": "abcdefg",
+                    "ObjectList": ips,
+                    "OutputId": 10026
+                }
+            )
+        
+        data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
+    
+        # Remove the list and expose only the object
+        for key in data:
+            data[key] = data[key][0]
+
+        return_piis: list[PII] = []
+        pii: PII
+        
+        for ip in ips:
+            if ip in data:
+                pii = PII.from_api_dict(data[ip])
+                return_piis.append(pii)
+
+        log("trace", f"Retrieved PII for {len(return_piis)} of {len(ips)} phone numbers.")
+        return return_piis
+    
+    def pii_to_pii(self, first_name: str, last_name: str, address: str, zip_code: str, sequence: str) -> list[PII]:
+        """Pull PII given first name, last name, address, zip code, and sequence. """
+        log("trace", f"Requesting PII for {first_name}, {last_name}, {address}, {zip_code}, {sequence}.")
+
+        info_given = {
+            "FirstName": first_name,
+            "LastName": last_name,
+            "Address": address,
+            "Zip": zip_code,
+            "Sequence": sequence
+        }
+
+        request = Request(
+            method="POST",
+            url="https://aws-prod-dataapi-v09.bigdbm.com/GetDataBy/Pii",
+            headers={
+                "Content-Type": "application/json"
+            },
+            json={
+                "requestId": "abcdefg",
+                "ObjectList": [info_given],
+                "OutputId": 10026
+            }
+        )
+
+        data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
+
+        # Remove the list and expose only the object
+        for key in data:
+            data[key] = data[key][0]
+
+        return_piis: list[PII] = []
+        pii: PII
+        
+        for info in data.values():
+            if(
+                info["First_Name"] == first_name and
+                info["Last_Name"] == last_name and
+                info["Address"] == address and
+                f"{info['Zip']}-{info['Zip4']}" == zip_code and
+                info["Sequence"] == sequence
+            ):
+                pii = PII.from_api_dict(info)
+                return_piis.append(pii)
+        
+        log("trace", f"Retrieved PII for {first_name}, {last_name}, {address}, {zip_code}, {sequence}.")
+        return return_piis
