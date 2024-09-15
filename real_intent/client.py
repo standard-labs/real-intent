@@ -530,5 +530,3 @@ class BigDBMClient:
         log("trace", f"Retrieved PII for {first_name}, {last_name}, {address}, {zip_code}, {sequence}.")
 
         return return_piis
-
-    
