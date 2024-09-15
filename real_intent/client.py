@@ -461,6 +461,7 @@ class BigDBMClient:
         
         data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
     
+        # Remove the list and expose only the object
         for key in data:
             data[key] = data[key][0]
 
@@ -502,13 +503,14 @@ class BigDBMClient:
 
         data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
 
+        # Remove the list and expose only the object
         for key in data:
             data[key] = data[key][0]
 
         return_piis: list[PII] = []
         pii: PII
         
-        for _id, info in data.items():
+        for info in data.values():
             if(
                 info["First_Name"] == first_name and
                 info["Last_Name"] == last_name and
