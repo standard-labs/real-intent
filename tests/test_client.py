@@ -24,7 +24,7 @@ def bigdbm_client() -> BigDBMClient:
     return BigDBMClient(client_id, client_secret)
 
 
-@pytest.mark.skip(reason="temp skip")
+
 def test_bigdbm_client_thread_safety(bigdbm_client: BigDBMClient) -> None:
     def access_token_operations() -> None:
         # Simulate multiple operations that could potentially cause race conditions
