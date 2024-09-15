@@ -6,8 +6,8 @@ from requests import RequestException
 import time
 import random
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any
 from threading import Lock
+from typing import Any
 
 from real_intent.schemas import (
     ConfigDates,
@@ -19,6 +19,7 @@ from real_intent.schemas import (
 )
 from real_intent.error import BigDBMApiError
 from real_intent.internal_logging import log, log_span
+
 
 class BigDBMClient:
     """
@@ -529,4 +530,5 @@ class BigDBMClient:
         log("trace", f"Retrieved PII for {first_name}, {last_name}, {address}, {zip_code}, {sequence}.")
 
         return return_piis
+
     
