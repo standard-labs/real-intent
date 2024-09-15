@@ -407,12 +407,10 @@ class BigDBMClient:
                 f"hit rate: {len(return_md5s) / len(unique_md5s):.2f}"
             )
         )
-
         return return_md5s
 
     def phones_to_pii(self, phones: list[str]) -> list[PII]:
         """Pull PII for a list of phone numbers."""
-
         log("trace", f"Requesting PII for {len(phones)} phone numbers.")
 
         request = Request(
@@ -442,12 +440,10 @@ class BigDBMClient:
                 return_piis.append(pii)
 
         log("trace", f"Retrieved PII for {len(return_piis)} of {len(phones)} phone numbers.")
-
         return return_piis
 
     def ips_to_pii(self, ips: list[str]) -> list[PII]:
         """Pull PII for a list of IP addresses."""
-
         log("trace", f"Requesting PII for {len(ips)} IP addresses.")
 
         request = Request(
@@ -477,15 +473,11 @@ class BigDBMClient:
                 return_piis.append(pii)
 
         log("trace", f"Retrieved PII for {len(return_piis)} of {len(ips)} phone numbers.")
-        
-
         return return_piis
     
     def pii_to_pii(self, first_name: str, last_name: str, address: str, zip_code: str, sequence: str) -> list[PII]:
         """Pull PII given first name, last name, address, zip code, and sequence. """
-
         log("trace", f"Requesting PII for {first_name}, {last_name}, {address}, {zip_code}, {sequence}.")
-        
 
         info_given = {
             "FirstName": first_name,
@@ -528,5 +520,4 @@ class BigDBMClient:
                 return_piis.append(pii)
         
         log("trace", f"Retrieved PII for {first_name}, {last_name}, {address}, {zip_code}, {sequence}.")
-
         return return_piis
