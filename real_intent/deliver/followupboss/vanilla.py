@@ -62,7 +62,6 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         if not self._verify_api_credentials():
             raise ValueError("Invalid API credentials provided.")
         
-
     @property
     def api_headers(self) -> dict:
         """
