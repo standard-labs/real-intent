@@ -142,6 +142,30 @@ class DNCValidator(BaseValidator):
             ]
 
 
+class DNCPhoneRemover(BaseValidator):
+    """
+    Removes phone numbers on the DNC list in-place.
+    Does not remove leads, simply removes phone numbers from leads.
+    """
+
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """
+        Remove phone numbers on the DNC list.
+
+        Args:
+            md5s (list[MD5WithPII]): List of MD5WithPII objects to remove phone numbers from.
+
+        Returns:
+            list[MD5WithPII]: List of MD5WithPII objects with DNC phone numbers removed.
+        """
+        for md5 in md5s:
+            md5.pii.mobile_phones = [
+                phone for phone in md5.pii.mobile_phones if not phone.do_not_call
+            ]
+
+        return md5s
+
+
 class CallableValidator(BaseValidator):
     """Remove leads without a phone or with primary phone on DNC list."""
 
