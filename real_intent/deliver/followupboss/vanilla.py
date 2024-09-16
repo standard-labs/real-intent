@@ -92,7 +92,8 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             f"{self.base_url}/identity",
             headers=self.api_headers
         )
-        return response.status_code == 200
+
+        return response.ok
     
     def _warn_dnc(self, pii_md5s: list[MD5WithPII]) -> None:
         """Log a warning if any of the leads are on the DNC list."""
