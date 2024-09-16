@@ -79,9 +79,6 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             event_type (EventType, optional): The event type for adding a lead. Defaults to Registration.
             **kwargs: Additional keyword arguments to be passed to the parent class.
         """
-        # Make sure API credentials are valid
-        if not self._verify_api_credentials():
-            raise ValueError("Invalid API credentials for FollowUpBoss")
 
         super().__init__(
             api_key=api_key,
@@ -102,12 +99,6 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             )
 
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
-
-        # Make sure API credentials are valid
-        if not self._get_custom_fields():
-            raise ValueError("Invalid FollowUpBoss API Credentials")
-
-   
 
     def _deliver_single_lead(self, md5_with_pii: MD5WithPII) -> dict:
         """
