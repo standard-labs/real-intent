@@ -79,7 +79,6 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             event_type (EventType, optional): The event type for adding a lead. Defaults to Registration.
             **kwargs: Additional keyword arguments to be passed to the parent class.
         """
-
         super().__init__(
             api_key=api_key,
             system=system,
