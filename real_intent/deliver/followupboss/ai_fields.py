@@ -80,7 +80,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             **kwargs: Additional keyword arguments to be passed to the parent class.
         """
         # Make sure API credentials are valid
-        if not self._verify_credentials():
+        if not self._verify_api_credentials():
             raise ValueError("Invalid API credentials for FollowUpBoss")
 
         super().__init__(
