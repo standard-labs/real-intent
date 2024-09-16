@@ -255,10 +255,24 @@ def test_ai_followupboss_deliverer_success(ai_followupboss_deliverer, sample_pii
     or not os.getenv("OPENAI_API_KEY"),
     reason="FUB API keys or OpenAI API key not found",
 )
-def test_ai_followupboss_credential_validator(api_key, system, system_key, openai_api_key):
+def test_ai_followupboss_credential_validation(api_key, system, system_key, openai_api_key):
     # Test valid credentials and ensure that they work correctly
     AIFollowUpBossDeliverer(api_key, system, system_key, openai_api_key)
 
     # Test invalid credentials and ensure that they don't throw exception
-    with pytest.raises(RequestException):
+    with pytest.raises(ValueError):
         AIFollowUpBossDeliverer("invalid_api_key", system, system_key, openai_api_key)
+
+@pytest.mark.skipif(
+    not os.getenv("FOLLOWUPBOSS_API_KEY")
+    or not os.getenv("FOLLOWUPBOSS_SYSTEM")
+    or not os.getenv("FOLLOWUPBOSS_SYSTEM_KEY"),
+    reason="FUB API keys not found",
+)
+def test_vanilla_followupboss_credential_validation(api_key, system, system_key):
+    # Test valid credentials and ensure that they work correctly
+    FollowUpBossDeliverer(api_key, system, system_key)
+
+    # Test invalid credentials and ensure that they don't throw exception
+    with pytest.raises(ValueError):
+        FollowUpBossDeliverer("invalid_api_key", system, system_key)
