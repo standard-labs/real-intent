@@ -5,7 +5,6 @@ import os
 import random
 import string
 from dotenv import load_dotenv
-from requests import RequestException
 
 from real_intent.deliver.followupboss import FollowUpBossDeliverer
 from real_intent.deliver.followupboss.ai_fields import AIFollowUpBossDeliverer
