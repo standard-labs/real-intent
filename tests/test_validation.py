@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 from real_intent.schemas import Gender, MD5WithPII, PII, MobilePhone
 from real_intent.validate.email import EmailValidator, HasEmailValidator
-from real_intent.validate.phone import PhoneValidator, DNCValidator
+from real_intent.validate.phone import PhoneValidator, DNCValidator, DNCPhoneRemover
 
 
 # Load environment variables from .env file
@@ -203,3 +203,38 @@ def test_dnc_validator() -> None:
     assert result_strict[1].md5 == "456"  # Keep: no phone
     assert all(md5.md5 != "789" for md5 in result_strict)  # Remove: has DNC phone
     assert all(md5.md5 != "101" for md5 in result_strict)  # Remove: has DNC phone (secondary)
+
+
+def test_dnc_phone_remover() -> None:
+    remover = DNCPhoneRemover()
+    
+    md5s = [
+        create_md5_with_pii("123", [], ["1234567890", "9876543210"]),  # Both not on DNC
+        create_md5_with_pii("456", [], ["1112223333", "4445556666"]),  # First on DNC, second not
+        create_md5_with_pii("789", [], ["7778889999", "1231231234"]),  # Both on DNC
+        create_md5_with_pii("101", [], [])  # No phones
+    ]
+    
+    # Set DNC status
+    md5s[1].pii.mobile_phones[0].do_not_call = True
+    md5s[2].pii.mobile_phones[0].do_not_call = True
+    md5s[2].pii.mobile_phones[1].do_not_call = True
+    
+    result = remover.validate(md5s)
+    
+    assert len(result) == 4  # All MD5s should be kept
+    
+    # Check MD5 with both phones not on DNC
+    assert len(result[0].pii.mobile_phones) == 2
+    assert result[0].pii.mobile_phones[0].phone == "1234567890"
+    assert result[0].pii.mobile_phones[1].phone == "9876543210"
+    
+    # Check MD5 with one phone on DNC
+    assert len(result[1].pii.mobile_phones) == 1
+    assert result[1].pii.mobile_phones[0].phone == "4445556666"
+    
+    # Check MD5 with both phones on DNC
+    assert len(result[2].pii.mobile_phones) == 0
+    
+    # Check MD5 with no phones
+    assert len(result[3].pii.mobile_phones) == 0
