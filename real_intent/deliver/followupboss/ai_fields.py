@@ -209,7 +209,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         # Prepare the PII data
         filtered_pii_data: dict[str, Any] = {
             key: val for key, val in md5_with_pii.pii.model_dump().items() 
-            if key not in {"first_name", "last_name", "emails", "mobile_phones"}
+            if key not in {"first_name", "last_name", "emails", "mobile_phones", "addresses"}
         }
         filtered_pii_data_str: str = json.dumps(filtered_pii_data, indent=4)
 

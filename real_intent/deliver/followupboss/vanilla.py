@@ -148,6 +148,14 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             person_data["emails"] = [{"value": email} for email in md5_with_pii.pii.emails]
         if md5_with_pii.pii.mobile_phones:
             person_data["phones"] = [{"value": phone.phone} for phone in md5_with_pii.pii.mobile_phones]
+        if md5_with_pii.pii.address and md5_with_pii.pii.city and md5_with_pii.pii.state and md5_with_pii.pii.zip_code:
+            person_data["addresses"] = [{
+                "type": "home",
+                "street": md5_with_pii.pii.address,
+                "city": md5_with_pii.pii.city,
+                "state": md5_with_pii.pii.state,
+                "code": md5_with_pii.pii.zip_code
+            }]
 
         # Prepare sentences
         sentences: list[str] = []
