@@ -201,6 +201,13 @@ def test_prepare_event_data(followupboss_deliverer, sample_pii_md5s):
     assert event_data["person"]["lastName"] == sample_pii_md5s[0].pii.last_name
     assert event_data["person"]["emails"] == [{"value": sample_pii_md5s[0].pii.emails[0]}]
     assert event_data["person"]["phones"] == [{"value": "1234567890"}]
+    assert event_data["person"]["addresses"] == [{
+        "type": "home",
+        "street": sample_pii_md5s[0].pii.address,
+        "city": sample_pii_md5s[0].pii.city,
+        "state": sample_pii_md5s[0].pii.state,
+        "code": sample_pii_md5s[0].pii.zip_code
+    }]
 
 
 @pytest.mark.skipif(not os.getenv("FOLLOWUPBOSS_API_KEY") or not os.getenv("OPENAI_API_KEY"), reason="FUB API key or OpenAI API key not found")
