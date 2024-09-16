@@ -6,7 +6,7 @@ import random
 import string
 from dotenv import load_dotenv
 
-from real_intent.deliver.followupboss import FollowUpBossDeliverer
+from real_intent.deliver.followupboss import FollowUpBossDeliverer, InvalidAPICredentialsError
 from real_intent.deliver.followupboss.ai_fields import AIFollowUpBossDeliverer
 from real_intent.schemas import MD5WithPII, PII, MobilePhone, Gender
 
@@ -266,8 +266,12 @@ def test_ai_followupboss_credential_validation(api_key, system, system_key, open
     AIFollowUpBossDeliverer(api_key, system, system_key, openai_api_key)
 
     # Test invalid credentials and ensure that they don't throw exception
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidAPICredentialsError):
         AIFollowUpBossDeliverer("invalid_api_key", system, system_key, openai_api_key)
+
+    # Test OpenAI API key validation
+    with pytest.raises(InvalidAPICredentialsError):
+        AIFollowUpBossDeliverer(api_key, system, system_key, "invalid_openai_api_key")
 
 
 @pytest.mark.skipif(
@@ -281,5 +285,5 @@ def test_vanilla_followupboss_credential_validation(api_key, system, system_key)
     FollowUpBossDeliverer(api_key, system, system_key)
 
     # Test invalid credentials and ensure that they don't throw exception
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidAPICredentialsError):
         FollowUpBossDeliverer("invalid_api_key", system, system_key)
