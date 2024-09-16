@@ -27,6 +27,10 @@ class EventType(StrEnum):
     VIEWED_PAGE = "Viewed Page"
 
 
+class InvalidAPICredentialsError(Exception):
+    """Raised when invalid API credentials are provided."""
+
+
 class FollowUpBossDeliverer(BaseOutputDeliverer):
     """Delivers data to FollowUpBoss CRM."""
 
@@ -60,7 +64,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
 
         # Make sure API credentials are valid
         if not self._verify_api_credentials():
-            raise ValueError("Invalid API credentials provided.")
+            raise InvalidAPICredentialsError("Invalid API credentials provided for FollowUpBoss.")
         
     @property
     def api_headers(self) -> dict:
