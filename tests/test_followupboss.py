@@ -263,6 +263,7 @@ def test_ai_followupboss_credential_validation(api_key, system, system_key, open
     with pytest.raises(ValueError):
         AIFollowUpBossDeliverer("invalid_api_key", system, system_key, openai_api_key)
 
+
 @pytest.mark.skipif(
     not os.getenv("FOLLOWUPBOSS_API_KEY")
     or not os.getenv("FOLLOWUPBOSS_SYSTEM")
@@ -276,4 +277,3 @@ def test_vanilla_followupboss_credential_validation(api_key, system, system_key)
     # Test invalid credentials and ensure that they don't throw exception
     with pytest.raises(ValueError):
         FollowUpBossDeliverer("invalid_api_key", system, system_key)
-
