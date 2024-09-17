@@ -27,6 +27,10 @@ class EventType(StrEnum):
     VIEWED_PAGE = "Viewed Page"
 
 
+class InvalidAPICredentialsError(Exception):
+    """Raised when invalid API credentials are provided."""
+
+
 class FollowUpBossDeliverer(BaseOutputDeliverer):
     """Delivers data to FollowUpBoss CRM."""
 
@@ -58,6 +62,10 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         # Configuration stuff
         self.event_type: EventType = EventType(event_type)
 
+        # Make sure API credentials are valid
+        if not self._verify_api_credentials():
+            raise InvalidAPICredentialsError("Invalid API credentials provided for FollowUpBoss.")
+        
     @property
     def api_headers(self) -> dict:
         """
@@ -72,6 +80,20 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             "X-System": self.system,
             "X-System-Key": self.system_key
         }
+    
+    def _verify_api_credentials(self) -> bool:
+        """
+        Verify that the API credentials are valid.
+
+        Returns:
+            bool: True if the credentials are valid, False otherwise.
+        """
+        response = requests.get(
+            f"{self.base_url}/identity",
+            headers=self.api_headers
+        )
+
+        return response.ok
     
     def _warn_dnc(self, pii_md5s: list[MD5WithPII]) -> None:
         """Log a warning if any of the leads are on the DNC list."""

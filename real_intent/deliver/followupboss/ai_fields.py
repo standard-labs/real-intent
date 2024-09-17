@@ -6,7 +6,7 @@ import json
 from typing import Literal, Any
 
 from real_intent.schemas import MD5WithPII
-from real_intent.deliver.followupboss.vanilla import FollowUpBossDeliverer, EventType
+from real_intent.deliver.followupboss.vanilla import FollowUpBossDeliverer, EventType, InvalidAPICredentialsError
 from real_intent.deliver.followupboss.ai_prompt import SYSTEM_PROMPT
 from real_intent.internal_logging import log, log_span
 
@@ -97,7 +97,20 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
                 "OpenAI is required for AI FollowUpBoss deliverer. pip install real-intent[ai]."
             )
 
+        # Set the OpenAI client and verify the credentials
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
+
+        if not self._verify_openai_credentials():
+            raise InvalidAPICredentialsError("Invalid API credentials provided for OpenAI.")
+
+    def _verify_openai_credentials(self) -> bool:
+        """Make sure the OpenAI API key is valid."""
+        response = requests.get(
+            "https://api.openai.com/v1/models",
+            headers={"Authorization": f"Bearer {self.openai_client.api_key}"}
+        )
+
+        return response.ok
 
     def _deliver_single_lead(self, md5_with_pii: MD5WithPII) -> dict:
         """
