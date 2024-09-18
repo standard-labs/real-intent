@@ -17,6 +17,10 @@ load_dotenv()
 
 
 class TestAnalyzer(BaseAnalyzer):
+    """
+    Dummy analyzer for structural that simply returns the number of MD5s analyzed.
+    """
+
     def _analyze(self, md5s: list[MD5WithPII]) -> str:
         return f"Analyzed {len(md5s)} MD5s"
 
