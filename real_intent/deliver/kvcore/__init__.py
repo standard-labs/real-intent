@@ -83,8 +83,8 @@ class KVCoreDeliverer(BaseOutputDeliverer):
 
     def _email_body(self, pii_md5: MD5WithPII) -> str:
         """Create the email body."""
-        # Check for required PII data. The rest of the data is optional
-        if not (pii_md5.pii.first_name and pii_md5.pii.last_name and pii_md5.pii.emails):
+        # Check for required first name, last name, and either an email or a phone number
+        if not (pii_md5.pii.first_name and pii_md5.pii.last_name and any([pii_md5.pii.emails, pii_md5.pii.mobile_phones])):
             log("warn", f"Missing required PII data: first name, last name, or email: {pii_md5}")
             return ""
 
