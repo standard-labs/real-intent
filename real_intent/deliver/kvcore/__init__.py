@@ -7,8 +7,7 @@ from real_intent.schemas import MD5WithPII
 
 
 EMAIL_TEMPLATE: str = """First Name: {first_name}
-Last Name: {last_name}
-Email: {email}"""
+Last Name: {last_name}"""
 
 
 class KVCoreDeliverer(BaseOutputDeliverer):
@@ -93,6 +92,10 @@ class KVCoreDeliverer(BaseOutputDeliverer):
             last_name=pii_md5.pii.last_name,
             email=pii_md5.pii.emails[0],
         )
+
+        # Add email if available
+        if pii_md5.pii.emails:
+            email_body += f"\nEmail: {pii_md5.pii.emails[0].email}"
 
         # Add phone number if available
         if pii_md5.pii.mobile_phones:
