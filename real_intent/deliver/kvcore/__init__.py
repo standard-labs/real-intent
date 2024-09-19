@@ -42,11 +42,13 @@ class KVCoreDeliverer(BaseOutputDeliverer):
         Returns True if all leads were delivered successfully.
         Otherwise, returns False.
         """
+        all_good: bool = True
         for pii_md5 in pii_md5s:
             if not self._deliver_one(pii_md5):
-                return False
+                all_good = False
+                continue
 
-        return True
+        return all_good
 
     def _deliver_one(self, pii_md5: MD5WithPII) -> bool:
         """
