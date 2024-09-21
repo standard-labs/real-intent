@@ -144,9 +144,7 @@ class PII(BaseModel):
     credit_range: str = Field(..., alias="Credit_Range")
     household_income: str = Field(..., alias="Income_HH", description="Descriptor of household income")
     household_net_worth: str = Field(..., alias="Net_Worth_HH", description="Descriptor of household net worth")
-    home_owner_status: str = Field(
-        ..., alias="Home_Owner", description="Descriptor of home ownership status"
-    )
+    home_owner_status: str = Field(..., alias="Home_Owner", description="Descriptor of home ownership status")
     marital_status: str = Field(..., alias="Marital_Status", description="Descriptor of marital status")
     occupation: str = Field(..., alias="Occupation_Detail")
     median_home_value: int | str = Field(..., alias="Median_Home_Value")
