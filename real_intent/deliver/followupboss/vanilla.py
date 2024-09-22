@@ -41,7 +41,8 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             system_key: str, 
             tags: list[str] = [],
             base_url: str = "https://api.followupboss.com/v1",
-            event_type: EventType = EventType.REGISTRATION
+            event_type: EventType = EventType.REGISTRATION,
+            per_lead_insights: dict[str, str] = {}
         ):
         """
         Initialize the FollowUpBossDeliverer.
