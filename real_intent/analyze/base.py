@@ -23,7 +23,7 @@ class BaseAnalyzer(ABC):
             return result
 
     @abstractmethod
-    def _analyze(self, pii_md5s: list[MD5WithPII]) -> str:
+    def _analyze(self, pii_md5s: list[MD5WithPII]) -> str | dict[str, str]:
         """
         Internal method to be implemented by subclasses to perform the actual analysis.
         """
