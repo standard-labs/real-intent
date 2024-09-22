@@ -100,5 +100,3 @@ def test_csv_string_formatter_empty_input() -> None:
     
     # Check if the CSV is empty for empty input
     assert csv_content == ""
-
-# Add more specific tests for other formatting scenarios as needed
