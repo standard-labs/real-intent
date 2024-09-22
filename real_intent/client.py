@@ -325,11 +325,7 @@ class BigDBMClient:
             response_json: dict = self._request(request)
             list_queue_id: int = response_json["listQueueId"]
 
-            while (status := self.get_list_status(list_queue_id)) != 100:
-                if status > 100:
-                    raise BigDBMApiError(f"List ID {list_queue_id} had an error.")
-
-                time.sleep(3)
+            self.wait_until_completion(list_queue_id)
         
             request_count = Request(
                 method="POST",
