@@ -84,7 +84,11 @@ class PerLeadInsightGenerator(BaseAnalyzer):
 
         if not lead_insight:
             log("error", "OpenAI response did not provide a lead insight.")
-            return "No insight on this lead."
+            return LeadInsight(
+                thinking="OpenAI response did not provide a lead insight.",
+                md5=pii_md5.md5,
+                insight="No insight on this lead."
+            )
 
         # Only one lead is provided, so assume the MD5 can be overriden
         lead_insight.md5 = pii_md5.md5
