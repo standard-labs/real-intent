@@ -174,7 +174,8 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         def _format_validator_info(validator: BaseValidator) -> str:
             """Format the information for a single validator."""
             return (
-                f"- {validator.__class__.__name__}: {validator.__class__.__doc__.strip()}\n"
+                doc = validator.__class__.__doc__ or ""
+                f"- {validator.__class__.__name__}: {doc.strip()}\n"
                 f"\tArgs: {_remove_keys(validator.__dict__)}"
             )
 
