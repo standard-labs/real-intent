@@ -309,6 +309,8 @@ class BigDBMClient:
             config_dates: ConfigDates = self.get_config_dates()
 
             job_payload: dict[str, str] = iab_job.as_payload()
+            
+            # Remove unnecessary key in checking numbers
             del job_payload["NumberOfHems"]
             
             request = Request(
@@ -327,6 +329,7 @@ class BigDBMClient:
 
             self.wait_until_completion(list_queue_id)
         
+            # After job completion, fetch the result count
             request_count = Request(
                 method="POST",
                 url="https://aws-prod-intent-api.bigdbm.com/intent/resultCount",
@@ -335,6 +338,7 @@ class BigDBMClient:
             )
             response_count_json: dict = self._request(request_count)
 
+            # Extract total and unique counts from the response
             count_response: dict[str, int] = {
                 "total": response_count_json["count"],
                 "unique": response_count_json["distinctCount"]
