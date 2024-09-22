@@ -16,3 +16,4 @@ def test_kvcore_email_body(sample_pii_md5s) -> None:
     assert "Last Name" in email_body, "Last Name should be in email body"
     assert "Email" in email_body, "Email should be in email body"
     assert "Phone" in email_body, "Phone should be in email body"
+    assert "Agent Notes" in email_body, "Agent Notes should be in email body"
