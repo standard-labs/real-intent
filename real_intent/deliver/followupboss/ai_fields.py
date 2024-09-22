@@ -185,6 +185,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             requests.RequestException: If there's an error in the API request.
         """
         log("debug", f"Creating custom field: {custom_field.label}")
+
         # Create the custom field
         response = requests.post(
             f"{self.base_url}/customFields",
