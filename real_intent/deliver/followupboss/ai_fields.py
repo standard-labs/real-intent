@@ -65,6 +65,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         tags: list[str] = [],
         base_url: str = "https://api.followupboss.com/v1",
         event_type: EventType = EventType.REGISTRATION,
+        per_lead_insights: dict[str, str] = {},
         **kwargs
     ):
         """
@@ -97,6 +98,9 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
                 "OpenAI is required for AI FollowUpBoss deliverer. pip install real-intent[ai]."
             )
 
+        # Per-lead insights
+        self.per_lead_insights: dict[str, str] = per_lead_insights
+
         # Set the OpenAI client and verify the credentials
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
 
@@ -125,6 +129,12 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         try:
             event_data = self._prepare_event_data(md5_with_pii)
             response = self._send_event(event_data)
+
+            # Per-lead insight
+            person_id: int = int(response["id"])
+            if (insight := self.per_lead_insights.get(md5_with_pii.md5)):
+                self._add_note(person_id=person_id, body=insight, subject="Real Intent Insight")
+
             log(
                 "trace", 
                 (
@@ -194,6 +204,36 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         created_field = CustomField(**response.json())
         log("debug", f"Created custom field: {created_field.label} with ID: {created_field.id}")
         return created_field
+    
+    def _add_note(self, person_id: int, body: str, subject: str = "") -> bool:
+        """
+        Add a note to a person in Follow Up Boss.
+
+        Args:
+            person_id (str): The ID of the person to add the note to.
+            body (str): The body of the note.
+            subject (str, optional): The subject of the note. Defaults to "".
+
+        Returns:
+            bool: True if the note was added successfully, False otherwise.
+        """
+        note_data = {
+            "personId": int(person_id),
+            "body": body,
+            "subject": subject
+        }
+
+        response = requests.post(
+            f"{self.base_url}/notes",
+            headers=self.api_headers,
+            json=note_data
+        )
+
+        if response.ok:
+            return True
+
+        log("error", f"Failed to add note to person {person_id}: {response.text}")
+        return False
 
     def _prepare_event_data(self, md5_with_pii: MD5WithPII) -> dict:
         """
