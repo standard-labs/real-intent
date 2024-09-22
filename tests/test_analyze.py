@@ -166,5 +166,4 @@ def test_individual_insights_generator(bigdbm_client) -> None:
         assert isinstance(md5, str)
         assert isinstance(insight, str)
         assert len(insight) > 0
-
         
