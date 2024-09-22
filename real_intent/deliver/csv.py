@@ -113,13 +113,12 @@ class CSVStringFormatter(BaseOutputDeliverer):
 
         return intent_columns
 
-    def _deliver(self, pii_md5s: list[MD5WithPII]) -> str:
+    def _as_dataframe(self, pii_md5s: list[MD5WithPII]) -> pd.DataFrame:
         """
-        Convert the unique MD5s into a CSV string.
-        Returns empty string if no result.
+        Convert the unique MD5s into a DataFrame ready to be converted to a CSV.
         """
         if not pii_md5s:
-            return ""
+            return pd.DataFrame()
             
         # Calculate the unique sentences
         unique_sentences: set[str] = self._unique_sentences(pii_md5s)
@@ -145,6 +144,18 @@ class CSVStringFormatter(BaseOutputDeliverer):
             columns={sentence: sentence.split(">")[-1] for sentence in list_sentences}, 
             inplace=True
         )
+
+        return pii_df
+
+    def _deliver(self, pii_md5s: list[MD5WithPII]) -> str:
+        """
+        Convert the unique MD5s into a CSV string.
+        Returns empty string if no result.
+        """
+        pii_df: pd.DataFrame = self._as_dataframe(pii_md5s)
+
+        if pii_df.empty:
+            return ""
 
         # Convert to CSV string
         string_io = StringIO()
