@@ -47,7 +47,7 @@ class PerLeadInsightGenerator(BaseAnalyzer):
         Dictionary key is the MD5 of the lead's PII. Value is the string insight.
         """
         with ThreadPoolExecutor(max_workers=5) as executor:
-            insights: list[LeadInsight] = executor.map(self._analyze_one, pii_md5s)
+            insights: list[LeadInsight] = list(executor.map(self._analyze_one, pii_md5s))
 
         return {insight.md5: insight.insight for insight in insights}
 
