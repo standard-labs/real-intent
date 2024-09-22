@@ -95,7 +95,7 @@ class KVCoreDeliverer(BaseOutputDeliverer):
 
         # Add email if available
         if pii_md5.pii.emails:
-            email_body += f"\nEmail: {pii_md5.pii.emails[0].email}"
+            email_body += f"\nEmail: {pii_md5.pii.emails[0]}"
 
         # Add phone number if available
         if pii_md5.pii.mobile_phones:
