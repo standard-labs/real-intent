@@ -1,6 +1,8 @@
 """Deliver to kvCORE."""
 import requests
 
+from typing import Any
+
 from real_intent.internal_logging import log
 from real_intent.deliver.base import BaseOutputDeliverer
 from real_intent.schemas import MD5WithPII
@@ -80,6 +82,18 @@ class KVCoreDeliverer(BaseOutputDeliverer):
 
         return True
 
+    def _agent_notes(self, pii_md5: MD5WithPII) -> str:
+        """Generate custom agent notes for a single lead."""
+        attrs: dict[str | Any] = {}
+
+        if pii_md5.pii.household_income:
+            attrs["Household Income"] = pii_md5.pii.household_income
+        
+        if pii_md5.pii.household_net_worth:
+            attrs["Household Net Worth"] = pii_md5.pii.household_net_worth
+
+        return "\n".join([f"{k}: {v}" for k, v in attrs.items()])
+
     def _email_body(self, pii_md5: MD5WithPII) -> str:
         """Create the email body."""
         # Check for required first name, last name, and either an email or a phone number
@@ -111,5 +125,9 @@ class KVCoreDeliverer(BaseOutputDeliverer):
         # Add tag if specified
         if self.tag:
             email_body += f"\nHashtag: {self.tag}"
+
+        # Add custom agent notes
+        if agent_notes := self._agent_notes(pii_md5):
+            email_body += f"\nAgent Notes: {agent_notes}"
 
         return email_body
