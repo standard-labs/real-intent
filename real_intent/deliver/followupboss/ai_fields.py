@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 import json
 from typing import Literal, Any
+import time
 
 from real_intent.schemas import MD5WithPII
 from real_intent.deliver.followupboss.vanilla import FollowUpBossDeliverer, EventType, InvalidAPICredentialsError
@@ -115,7 +116,14 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             headers={"Authorization": f"Bearer {self.openai_client.api_key}"}
         )
 
-        return response.ok
+        if not response.ok:
+            time.sleep(2)
+            return requests.get(
+                "https://api.openai.com/v1/models",
+                headers={"Authorization": f"Bearer {self.openai_client.api_key}"}
+            ).ok
+
+        return True
 
     def _deliver_single_lead(self, md5_with_pii: MD5WithPII) -> dict:
         """
