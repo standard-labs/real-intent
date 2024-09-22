@@ -3,6 +3,8 @@ import pytest
 
 import os
 from dotenv import load_dotenv
+import string
+import random
 
 from real_intent.deliver.followupboss import FollowUpBossDeliverer, InvalidAPICredentialsError
 from real_intent.deliver.followupboss.ai_fields import AIFollowUpBossDeliverer
@@ -196,3 +198,22 @@ def test_ai_followupboss_credential_validation(api_key, system, system_key, open
     # Test OpenAI API key validation
     with pytest.raises(InvalidAPICredentialsError):
         AIFollowUpBossDeliverer(api_key, system, system_key, "invalid_openai_api_key")
+
+
+@pytest.mark.skipif(not os.getenv("FOLLOWUPBOSS_API_KEY"), reason="FUB API key not found")
+def test_followupboss_deliverer_perlead_insights(api_key, system, system_key, openai_api_key, sample_pii_md5s):
+    per_lead_insights: dict[str, str] = {
+        p.md5: "".join(random.choices(string.ascii_letters, k=10)) for p in sample_pii_md5s
+    }
+
+    deliverer = AIFollowUpBossDeliverer(
+        api_key, 
+        system, 
+        system_key, 
+        openai_api_key, 
+        per_lead_insights=per_lead_insights
+    )
+    response = deliverer.deliver(sample_pii_md5s)
+
+    for person in response:
+        assert deliverer._add_note(person["id"], body="Test", subject="Test")

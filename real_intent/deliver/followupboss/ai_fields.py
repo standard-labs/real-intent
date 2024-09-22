@@ -65,6 +65,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         tags: list[str] = [],
         base_url: str = "https://api.followupboss.com/v1",
         event_type: EventType = EventType.REGISTRATION,
+        per_lead_insights: dict[str, str] = {},
         **kwargs
     ):
         """
@@ -77,6 +78,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             openai_api_key (str): The API key for OpenAI.
             base_url (str, optional): The base URL for the FollowUpBoss API. Defaults to "https://api.followupboss.com/v1".
             event_type (EventType, optional): The event type for adding a lead. Defaults to Registration.
+            per_lead_insights (dict[str, str], optional): Per-lead insights to be added as notes. Defaults to {}.
             **kwargs: Additional keyword arguments to be passed to the parent class.
         """
         super().__init__(
@@ -96,6 +98,9 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             raise ImportError(
                 "OpenAI is required for AI FollowUpBoss deliverer. pip install real-intent[ai]."
             )
+
+        # Per-lead insights
+        self.per_lead_insights: dict[str, str] = per_lead_insights
 
         # Set the OpenAI client and verify the credentials
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
@@ -125,6 +130,12 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         try:
             event_data = self._prepare_event_data(md5_with_pii)
             response = self._send_event(event_data)
+
+            # Per-lead insight
+            person_id: int = int(response["id"])
+            if (insight := self.per_lead_insights.get(md5_with_pii.md5)):
+                self._add_note(person_id=person_id, body=insight, subject="Real Intent Insight")
+
             log(
                 "trace", 
                 (
@@ -175,6 +186,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             requests.RequestException: If there's an error in the API request.
         """
         log("debug", f"Creating custom field: {custom_field.label}")
+
         # Create the custom field
         response = requests.post(
             f"{self.base_url}/customFields",
@@ -194,7 +206,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         created_field = CustomField(**response.json())
         log("debug", f"Created custom field: {created_field.label} with ID: {created_field.id}")
         return created_field
-
+    
     def _prepare_event_data(self, md5_with_pii: MD5WithPII) -> dict:
         """
         Prepare the event data for a single MD5WithPII object using AI field mapping.

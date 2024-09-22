@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 from real_intent.analyze.base import BaseAnalyzer
 from real_intent.analyze.insights import OpenAIInsightsGenerator, ValidatedInsightsGenerator
+from real_intent.analyze.insights.per_lead import PerLeadInsightGenerator
 from real_intent.schemas import Gender, MD5WithPII, PII, MobilePhone
 
 from real_intent.process.fill import FillProcessor
@@ -138,3 +139,31 @@ def test_validated_insights_generator(bigdbm_client) -> None:
     assert isinstance(result, str)
     assert "On validation:" in result
     assert len(result.split("\n")) >= 3  # Expecting validation insight and at least two regular insights
+
+
+@pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not found")
+def test_individual_insights_generator(bigdbm_client) -> None:
+    api_key = os.getenv("OPENAI_API_KEY")
+
+    processor = FillProcessor(bigdbm_client)
+    processor.add_validator(SamePersonValidator())
+    processor.add_validator(MNWValidator(), priority=2)
+
+    generator = ValidatedInsightsGenerator(api_key, processor)
+    md5s = [
+        MD5WithPII(md5="123", sentences=["Interested in buying a new car"], pii=create_test_pii()),
+        MD5WithPII(md5="456", sentences=["Looking for auto insurance"], pii=create_test_pii())
+    ]
+    result = generator.analyze(md5s)
+
+    individual_generator = PerLeadInsightGenerator(api_key, result)
+    insights = individual_generator.analyze(md5s)
+
+    assert isinstance(insights, dict)
+    assert len(insights) == 2
+
+    for md5, insight in insights.items():
+        assert isinstance(md5, str)
+        assert isinstance(insight, str)
+        assert len(insight) > 0
+        

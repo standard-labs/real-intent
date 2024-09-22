@@ -25,7 +25,8 @@ class KVCoreDeliverer(BaseOutputDeliverer):
             postmark_server_token: str, 
             from_email: str, 
             inboxing_address: str, 
-            tag: str = ""
+            tag: str = "",
+            per_lead_insights: dict[str, str] = {}
         ):
         """Initialize the deliverer."""
         # Postmark setup
@@ -35,6 +36,9 @@ class KVCoreDeliverer(BaseOutputDeliverer):
         # kvCORE setup
         self.inboxing_address = inboxing_address
         self.tag = tag
+
+        # Per-lead insights
+        self.per_lead_insights: dict[str, str] = per_lead_insights
 
     def _deliver(self, pii_md5s: list[MD5WithPII]) -> bool:
         """
@@ -91,6 +95,9 @@ class KVCoreDeliverer(BaseOutputDeliverer):
         
         if pii_md5.pii.household_net_worth:
             attrs["Household Net Worth"] = pii_md5.pii.household_net_worth
+
+        if (insight := self.per_lead_insights.get(pii_md5.md5)):
+            attrs["Insight"] = insight
 
         return "\n".join([f"{k}: {v}" for k, v in attrs.items()])
 
