@@ -243,3 +243,33 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         
         response.raise_for_status()
         return response.json()
+
+    def _add_note(self, person_id: int, body: str, subject: str = "") -> bool:
+        """
+        Add a note to a person in Follow Up Boss.
+
+        Args:
+            person_id (str): The ID of the person to add the note to.
+            body (str): The body of the note.
+            subject (str, optional): The subject of the note. Defaults to "".
+
+        Returns:
+            bool: True if the note was added successfully, False otherwise.
+        """
+        note_data = {
+            "personId": int(person_id),
+            "body": body,
+            "subject": subject
+        }
+
+        response = requests.post(
+            f"{self.base_url}/notes",
+            headers=self.api_headers,
+            json=note_data
+        )
+
+        if response.ok:
+            return True
+
+        log("error", f"Failed to add note to person {person_id}: {response.text}")
+        return False
