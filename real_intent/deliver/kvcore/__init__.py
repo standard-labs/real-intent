@@ -2,6 +2,7 @@
 import requests
 
 from typing import Any
+from concurrent.futures import ThreadPoolExecutor
 
 from real_intent.internal_logging import log
 from real_intent.deliver.base import BaseOutputDeliverer
@@ -47,13 +48,8 @@ class KVCoreDeliverer(BaseOutputDeliverer):
         Returns True if all leads were delivered successfully.
         Otherwise, returns False.
         """
-        all_good: bool = True
-        for pii_md5 in pii_md5s:
-            if not self._deliver_one(pii_md5):
-                all_good = False
-                continue
-
-        return all_good
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            return all(executor.map(self._deliver_one, pii_md5s))
 
     def _deliver_one(self, pii_md5: MD5WithPII) -> bool:
         """

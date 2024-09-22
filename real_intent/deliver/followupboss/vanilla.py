@@ -3,6 +3,7 @@ import requests
 
 from enum import StrEnum
 import base64
+from concurrent.futures import ThreadPoolExecutor
 
 from real_intent.deliver.base import BaseOutputDeliverer
 from real_intent.schemas import MD5WithPII
@@ -122,13 +123,8 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         # Log if any of the leads are on the DNC list
         self._warn_dnc(pii_md5s)
 
-        responses: list[dict] = []
-
-        for md5_with_pii in pii_md5s:
-            response = self._deliver_single_lead(md5_with_pii)
-            responses.append(response)
-
-        return responses
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            return list(executor.map(self._deliver_single_lead, pii_md5s))
 
     def _deliver_single_lead(self, md5_with_pii: MD5WithPII) -> dict:
         """
