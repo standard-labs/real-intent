@@ -106,8 +106,7 @@ class KVCoreDeliverer(BaseOutputDeliverer):
 
         email_body: str = EMAIL_TEMPLATE.format(
             first_name=pii_md5.pii.first_name,
-            last_name=pii_md5.pii.last_name,
-            email=pii_md5.pii.emails[0],
+            last_name=pii_md5.pii.last_name
         )
 
         # Add email if available
