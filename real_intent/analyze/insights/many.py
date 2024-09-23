@@ -1,5 +1,5 @@
 """Use an LLM to generate insights from PII data."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from real_intent.analyze.base import BaseAnalyzer
 from real_intent.schemas import MD5WithPII
@@ -11,6 +11,7 @@ from real_intent.deliver.csv import CSVStringFormatter
 from real_intent.validate.base import BaseValidator
 from real_intent.process.base import BaseProcessor, ProcessValidator
 from real_intent.internal_logging import log
+from real_intent.utils import retry_with_backoff
 
 
 class LeadInsights(BaseModel):
@@ -46,49 +47,66 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
     """Generates insights from PII data using OpenAI."""
 
     def __init__(self, openai_api_key: str):
+        """
+        Initialize the OpenAIInsightsGenerator.
+
+        Args:
+            openai_api_key: The API key for OpenAI.
+
+        Raises:
+            ImportError: If the OpenAI package is not installed.
+        """
         try:
-            from openai import OpenAI
+            from openai import OpenAI, OpenAIError
         except ImportError:
             log("error", "Failed to import OpenAI. Make sure to install the package with the 'ai' extra.")
             raise ImportError("Please install this package with the 'ai' extra.")
         
         self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
+        self._OpenAI_Error = OpenAIError
 
     def _analyze(self, pii_md5s: list[MD5WithPII]) -> str:
         """
         Internal method to analyze the list of MD5s with PII and generate insights using an LLM.
 
         Args:
-            pii_md5s (list[MD5WithPII]): List of MD5 hashes with associated PII data.
+            pii_md5s: List of MD5 hashes with associated PII data.
 
         Returns:
-            str: Generated insights as a string.
+            Generated insights as a string.
         """
         log("debug", f"Starting analysis for {len(pii_md5s)} MD5s")
         csv_data = CSVStringFormatter().deliver(pii_md5s)
         log("trace", f"CSV data prepared, length: {len(csv_data)}")
         
-        result = self.openai_client.beta.chat.completions.parse(
-            model="gpt-4o-2024-08-06",
-            messages=[
-                {
-                    "role": "system",
-                    "content": SYSTEM_PROMPT
-                },
-                {
-                    "role": "user",
-                    "content": csv_data
-                }
-            ],
-            max_tokens=4095,
-            temperature=1,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-            response_format=LeadInsights
-        )
+        @retry_with_backoff()
+        def generate_insights():
+            return self.openai_client.beta.chat.completions.parse(
+                model="gpt-4o-2024-08-06",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": SYSTEM_PROMPT
+                    },
+                    {
+                        "role": "user",
+                        "content": csv_data
+                    }
+                ],
+                max_tokens=4095,
+                temperature=1,
+                top_p=1,
+                frequency_penalty=0,
+                presence_penalty=0,
+                response_format=LeadInsights
+            )
 
-        lead_insights: LeadInsights | None = result.choices[0].message.parsed
+        try:
+            result = generate_insights()
+            lead_insights: LeadInsights | None = result.choices[0].message.parsed
+        except (self._OpenAI_Error, ValidationError) as e:
+            log("error", f"Failed to generate insights after retries. Error: {e}")
+            return "Failed to generate insights. Please try again later."
 
         if not lead_insights:
             log("error", "OpenAI response did not contain valid insights")
@@ -155,6 +173,16 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
             openai_api_key: str, 
             processor: BaseProcessor,
         ):
+        """
+        Initialize the ValidatedInsightsGenerator.
+
+        Args:
+            openai_api_key: The API key for OpenAI.
+            processor: The processor containing validators.
+
+        Raises:
+            ImportError: If the OpenAI package is not installed.
+        """
         try:
             from openai import OpenAI
         except ImportError:
@@ -165,7 +193,12 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         self.processor: BaseProcessor = processor
 
     def extract_validation_info(self) -> str:
-        """Pull validation information from the validators."""
+        """
+        Pull validation information from the validators.
+
+        Returns:
+            A string containing formatted validation information.
+        """
         log("trace", "Extracting validation information")
         def _remove_keys(vd: dict) -> dict:
             """Remove instance variables from the dictionary that are API creds."""
@@ -209,10 +242,10 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         Internal method to analyze the list of MD5s with PII and generate insights using an LLM.
 
         Args:
-            pii_md5s (list[MD5WithPII]): List of MD5 hashes with associated PII data.
+            pii_md5s: List of MD5 hashes with associated PII data.
 
         Returns:
-            str: Generated insights as a string.
+            Generated insights as a string.
         """
         log("debug", f"Starting analysis for {len(pii_md5s)} MD5s")
         validation_info = self.extract_validation_info()
@@ -220,33 +253,40 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         csv_data = CSVStringFormatter().deliver(pii_md5s)
         log("trace", f"CSV data prepared, length: {len(csv_data)}")
         
-        result = self.openai_client.beta.chat.completions.parse(
-            model="gpt-4o-2024-08-06",
-            messages=[
-                {
-                    "role": "system",
-                    "content": VALIDATOR_PROMPT
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Validations:\n\n{validation_info}\n\n"
-                        f"Leads:\n\n{csv_data}"
-                    )
-                }
-            ],
-            max_tokens=4095,
-            temperature=1,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-            response_format=ValidatedLeadInsights
-        )
+        @retry_with_backoff()
+        def generate_insights():
+            return self.openai_client.beta.chat.completions.parse(
+                model="gpt-4o-2024-08-06",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": VALIDATOR_PROMPT
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Validations:\n\n{validation_info}\n\n"
+                            f"Leads:\n\n{csv_data}"
+                        )
+                    }
+                ],
+                max_tokens=4095,
+                temperature=1,
+                top_p=1,
+                frequency_penalty=0,
+                presence_penalty=0,
+                response_format=ValidatedLeadInsights
+            )
 
-        lead_insights: ValidatedLeadInsights | None = result.choices[0].message.parsed
+        try:
+            result = generate_insights()
+            lead_insights: ValidatedLeadInsights | None = result.choices[0].message.parsed
+        except (self._OpenAI_Error, ValidationError) as e:
+            log("error", f"Failed to generate insights after retries. Error: {e}")
+            return "Failed to generate insights. Please try again later."
 
         if not lead_insights:
-            log("error", "OpenAI response did not contain valid insights")
+            log("error", "OpenAI response did not contain valid insights.")
             return "No insights on these leads at the moment."
 
         log("info", f"Generated {len(lead_insights.insights)} insights")
