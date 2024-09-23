@@ -1,7 +1,6 @@
 """Generate insights for each lead."""
 from pydantic import BaseModel, Field, ValidationError
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any
 
 from real_intent.deliver.csv import CSVStringFormatter
 from real_intent.schemas import MD5WithPII
@@ -82,7 +81,7 @@ class PerLeadInsightGenerator(BaseAnalyzer):
         lead_csv: str = CSVStringFormatter().deliver([pii_md5])
 
         @retry_with_backoff()
-        def generate_insight() -> Any:
+        def generate_insight():
             return self.openai_client.beta.chat.completions.parse(
                 model="gpt-4o-2024-08-06",
                 messages=[
