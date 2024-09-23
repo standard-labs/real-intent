@@ -15,6 +15,8 @@ class CSVWithInsightsFormatter(CSVStringFormatter):
 
     def _as_dataframe(self, pii_md5s: list[MD5WithPII]) -> DataFrame:
         df = super()._as_dataframe(pii_md5s)
-        df["insight"] = df["md5"].map(self.per_lead_insights)
+        if df.empty:
+            return df
 
+        df["insight"] = df["md5"].map(self.per_lead_insights)
         return df
