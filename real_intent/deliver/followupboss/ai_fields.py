@@ -7,7 +7,7 @@ from typing import Literal, Any
 import time
 
 from real_intent.schemas import MD5WithPII
-from real_intent.deliver.followupboss.vanilla import FollowUpBossDeliverer, EventType, InvalidAPICredentialsError
+from real_intent.deliver.followupboss.vanilla import FollowUpBossDeliverer, EventType, InvalidAPICredentialsError, fub_rate_limited
 from real_intent.deliver.followupboss.ai_prompt import SYSTEM_PROMPT
 from real_intent.internal_logging import log, log_span
 
@@ -157,6 +157,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             log("error", f"Error in AI field mapping delivery for lead {md5_with_pii.md5}: {str(e)}. Falling back to standard delivery.")
             return super()._deliver_single_lead(md5_with_pii)
 
+    @fub_rate_limited
     def _get_custom_fields(self) -> list[CustomField]:
         """
         Get the custom fields from the user's Follow Up Boss account.
@@ -180,6 +181,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             
             return custom_fields
 
+    @fub_rate_limited
     def _create_custom_field(self, custom_field: CustomFieldCreation) -> CustomField:
         """
         Create a custom field in the user's Follow Up Boss account.
