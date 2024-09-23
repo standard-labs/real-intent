@@ -1,6 +1,5 @@
 """Use an LLM to generate insights from PII data."""
 from pydantic import BaseModel, Field, ValidationError
-from typing import Any
 
 from real_intent.analyze.base import BaseAnalyzer
 from real_intent.schemas import MD5WithPII
@@ -81,7 +80,7 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
         log("trace", f"CSV data prepared, length: {len(csv_data)}")
         
         @retry_with_backoff()
-        def generate_insights() -> Any:
+        def generate_insights():
             return self.openai_client.beta.chat.completions.parse(
                 model="gpt-4o-2024-08-06",
                 messages=[
@@ -255,7 +254,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         log("trace", f"CSV data prepared, length: {len(csv_data)}")
         
         @retry_with_backoff()
-        def generate_insights() -> Any:
+        def generate_insights():
             return self.openai_client.beta.chat.completions.parse(
                 model="gpt-4o-2024-08-06",
                 messages=[
