@@ -3,6 +3,7 @@ import requests
 import time
 from functools import wraps
 
+import random
 from enum import StrEnum
 import base64
 from concurrent.futures import ThreadPoolExecutor
@@ -46,8 +47,9 @@ def fub_rate_limited(func):
             except requests.exceptions.HTTPError as e:
                 if e.response.status_code == 429:  # Too Many Requests
                     retry_after = int(e.response.headers.get('Retry-After', 10))
-                    log("warn", f"Rate limit hit. Retrying in {retry_after} seconds.")
-                    time.sleep(retry_after)
+                    sleep_delay: float = retry_after + (random.randint(50, 100) / 100)
+                    log("warn", f"Rate limit hit. Retrying in {sleep_delay} seconds.")
+                    time.sleep(sleep_delay)
                 else:
                     raise
         raise Exception("Max retries (5) exceeded due to rate limiting.")
