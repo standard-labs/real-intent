@@ -146,7 +146,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         # Log if any of the leads are on the DNC list
         self._warn_dnc(pii_md5s)
 
-        with ThreadPoolExecutor(max_workers=3) as executor:
+        with ThreadPoolExecutor(max_workers=1) as executor:
             return list(executor.map(self._deliver_single_lead, pii_md5s))
 
     def _deliver_single_lead(self, md5_with_pii: MD5WithPII) -> dict:
