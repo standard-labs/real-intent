@@ -2,6 +2,7 @@
 import time
 from typing import Callable, TypeVar
 from functools import wraps
+import random
 
 from real_intent.internal_logging import log
 
@@ -29,8 +30,10 @@ def retry_with_backoff(max_retries: int = 1, initial_delay: float = 2):
                 except Exception as e:
                     if attempt == max_retries:
                         raise e
-                    log("warning", f"Function {func.__name__} failed. Attempt {attempt + 1}. Retrying in {delay} seconds. Error: {e}")
-                    time.sleep(delay)
+
+                    jitter = delay * random.uniform(0.5, 1.5)
+                    log("warning", f"Function {func.__name__} failed. Attempt {attempt + 1}. Retrying in {jitter:.2f} seconds. Error: {e}")
+                    time.sleep(jitter)
                     delay *= 2  # exponential backoff
         return wrapper
     return decorator
