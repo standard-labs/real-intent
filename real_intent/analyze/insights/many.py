@@ -12,7 +12,7 @@ from real_intent.deliver.csv import CSVStringFormatter
 from real_intent.validate.base import BaseValidator
 from real_intent.process.base import BaseProcessor, ProcessValidator
 from real_intent.internal_logging import log
-from real_intent.analyze.insights.utils import retry_openai_with_backoff
+from real_intent.utils import retry_with_backoff
 
 
 class LeadInsights(BaseModel):
@@ -79,7 +79,7 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
         csv_data = CSVStringFormatter().deliver(pii_md5s)
         log("trace", f"CSV data prepared, length: {len(csv_data)}")
         
-        @retry_openai_with_backoff()
+        @retry_with_backoff()
         def generate_insights() -> Any:
             return self.openai_client.beta.chat.completions.parse(
                 model="gpt-4o-2024-08-06",
@@ -253,7 +253,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         csv_data = CSVStringFormatter().deliver(pii_md5s)
         log("trace", f"CSV data prepared, length: {len(csv_data)}")
         
-        @retry_openai_with_backoff()
+        @retry_with_backoff()
         def generate_insights() -> Any:
             return self.openai_client.beta.chat.completions.parse(
                 model="gpt-4o-2024-08-06",

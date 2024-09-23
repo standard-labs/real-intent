@@ -7,7 +7,7 @@ from real_intent.deliver.csv import CSVStringFormatter
 from real_intent.schemas import MD5WithPII
 from real_intent.analyze.base import BaseAnalyzer
 from real_intent.internal_logging import log
-from real_intent.analyze.insights.utils import retry_openai_with_backoff
+from real_intent.utils import retry_with_backoff
 
 
 PROMPT = """You are an analyzer of lead data. You're given a list of insights pertaining to an entire set of leads. Your job is to keep the overall insights in mind and generate an insight for an individual lead that came from the full set.
@@ -80,7 +80,7 @@ class PerLeadInsightGenerator(BaseAnalyzer):
         """
         lead_csv: str = CSVStringFormatter().deliver([pii_md5])
 
-        @retry_openai_with_backoff()
+        @retry_with_backoff()
         def generate_insight() -> Any:
             return self.openai_client.beta.chat.completions.parse(
                 model="gpt-4o-2024-08-06",
