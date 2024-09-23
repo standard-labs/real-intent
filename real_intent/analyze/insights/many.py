@@ -220,33 +220,37 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         csv_data = CSVStringFormatter().deliver(pii_md5s)
         log("trace", f"CSV data prepared, length: {len(csv_data)}")
         
-        result = self.openai_client.beta.chat.completions.parse(
-            model="gpt-4o-2024-08-06",
-            messages=[
-                {
-                    "role": "system",
-                    "content": VALIDATOR_PROMPT
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Validations:\n\n{validation_info}\n\n"
-                        f"Leads:\n\n{csv_data}"
-                    )
-                }
-            ],
-            max_tokens=4095,
-            temperature=1,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-            response_format=ValidatedLeadInsights
-        )
+        try:
+            result = self.openai_client.beta.chat.completions.parse(
+                model="gpt-4o-2024-08-06",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": VALIDATOR_PROMPT
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Validations:\n\n{validation_info}\n\n"
+                            f"Leads:\n\n{csv_data}"
+                        )
+                    }
+                ],
+                max_tokens=4095,
+                temperature=1,
+                top_p=1,
+                frequency_penalty=0,
+                presence_penalty=0,
+                response_format=ValidatedLeadInsights
+            )
 
-        lead_insights: ValidatedLeadInsights | None = result.choices[0].message.parsed
+            lead_insights: ValidatedLeadInsights | None = result.choices[0].message.parsed
+        except Exception as e:
+            log("error", f"Failed to generate insight for leads. Error: {e}", exc_info=e)
+            return "Failed to generate insights for these leads. Please try again later."
 
         if not lead_insights:
-            log("error", "OpenAI response did not contain valid insights")
+            log("error", "OpenAI response did not contain valid insights.")
             return "No insights on these leads at the moment."
 
         log("info", f"Generated {len(lead_insights.insights)} insights")

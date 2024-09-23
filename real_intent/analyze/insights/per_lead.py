@@ -57,30 +57,38 @@ class PerLeadInsightGenerator(BaseAnalyzer):
         """
         lead_csv: str = CSVStringFormatter().deliver([pii_md5])
 
-        result = self.openai_client.beta.chat.completions.parse(
-            model="gpt-4o-2024-08-06",
-            messages=[
-                {
-                    "role": "system",
-                    "content": PROMPT
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Overall Insights:\n\n{self.global_insights}\n\n"
-                        f"Lead:\n\n{lead_csv}"
-                    )
-                }
-            ],
-            max_tokens=2000,
-            temperature=1,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-            response_format=LeadInsight
-        )
+        try:
+            result = self.openai_client.beta.chat.completions.parse(
+                model="gpt-4o-2024-08-06",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": PROMPT
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Overall Insights:\n\n{self.global_insights}\n\n"
+                            f"Lead:\n\n{lead_csv}"
+                        )
+                    }
+                ],
+                max_tokens=2000,
+                temperature=1,
+                top_p=1,
+                frequency_penalty=0,
+                presence_penalty=0,
+                response_format=LeadInsight
+            )
 
-        lead_insight: LeadInsight | None = result.choices[0].message.parsed
+            lead_insight: LeadInsight | None = result.choices[0].message.parsed
+        except Exception as e:
+            log("error", f"Failed to generate insight for lead {pii_md5.md5}. Error: {e}")
+            return LeadInsight(
+                thinking=f"Failed to generate insight for lead {pii_md5.md5}. Error: {e}",
+                md5=pii_md5.md5,
+                insight="No insight on this lead."
+            )
 
         if not lead_insight:
             log("error", "OpenAI response did not provide a lead insight.")
