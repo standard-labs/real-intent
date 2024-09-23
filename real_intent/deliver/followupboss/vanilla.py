@@ -146,7 +146,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         # Log if any of the leads are on the DNC list
         self._warn_dnc(pii_md5s)
 
-        with ThreadPoolExecutor(max_workers=3) as executor:
+        with ThreadPoolExecutor(max_workers=1) as executor:
             return list(executor.map(self._deliver_single_lead, pii_md5s))
 
     def _deliver_single_lead(self, md5_with_pii: MD5WithPII) -> dict:
@@ -290,8 +290,13 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             json=note_data
         )
 
+        # If rate limited, raise the exception so the caller can handle it
+        if response.status_code == 429:
+            response.raise_for_status()
+
         if response.ok:
             return True
 
+        # Otherwise log the error and proceed
         log("error", f"Failed to add note to person {person_id}: {response.text}")
         return False
