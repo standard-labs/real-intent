@@ -1,5 +1,5 @@
 """Use an LLM to generate insights from PII data."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from typing import Any
 
 from real_intent.analyze.base import BaseAnalyzer
@@ -58,12 +58,13 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
             ImportError: If the OpenAI package is not installed.
         """
         try:
-            from openai import OpenAI
+            from openai import OpenAI, OpenAIError
         except ImportError:
             log("error", "Failed to import OpenAI. Make sure to install the package with the 'ai' extra.")
             raise ImportError("Please install this package with the 'ai' extra.")
         
         self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
+        self._OpenAI_Error = OpenAIError
 
     def _analyze(self, pii_md5s: list[MD5WithPII]) -> str:
         """
@@ -104,7 +105,7 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
         try:
             result = generate_insights()
             lead_insights: LeadInsights | None = result.choices[0].message.parsed
-        except Exception as e:
+        except (self._OpenAI_Error, ValidationError) as e:
             log("error", f"Failed to generate insights after retries. Error: {e}")
             return "Failed to generate insights. Please try again later."
 
@@ -281,7 +282,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         try:
             result = generate_insights()
             lead_insights: ValidatedLeadInsights | None = result.choices[0].message.parsed
-        except Exception as e:
+        except (self._OpenAI_Error, ValidationError) as e:
             log("error", f"Failed to generate insights after retries. Error: {e}")
             return "Failed to generate insights. Please try again later."
 
