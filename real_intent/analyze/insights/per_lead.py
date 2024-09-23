@@ -1,5 +1,5 @@
 """Generate insights for each lead."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
@@ -45,12 +45,13 @@ class PerLeadInsightGenerator(BaseAnalyzer):
         self.global_insights = global_insights
 
         try:
-            from openai import OpenAI
+            from openai import OpenAI, OpenAIError
         except ImportError:
             log("error", "Failed to import OpenAI. Make sure to install the package with the 'ai' extra.")
             raise ImportError("Please install this package with the 'ai' extra.")
         
         self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
+        self._OpenAI_Error = OpenAIError
 
     def _analyze(self, pii_md5s: list[MD5WithPII]) -> dict[str, str]:
         """
@@ -116,8 +117,7 @@ class PerLeadInsightGenerator(BaseAnalyzer):
             lead_insight.md5 = pii_md5.md5
 
             return lead_insight
-
-        except Exception as e:
+        except (self._OpenAI_Error, ValidationError) as e:
             log("error", f"Failed to generate insight for lead {pii_md5.md5} after retries. Error: {e}")
             return LeadInsight(
                 thinking=f"Failed to generate insight for lead {pii_md5.md5} after retries. Error: {e}",
