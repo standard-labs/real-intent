@@ -1,5 +1,7 @@
 """Deliverer for FollowUpBoss CRM."""
 import requests
+import time
+from functools import wraps
 
 from enum import StrEnum
 import base64
@@ -30,6 +32,26 @@ class EventType(StrEnum):
 
 class InvalidAPICredentialsError(Exception):
     """Raised when invalid API credentials are provided."""
+
+
+def fub_rate_limited(func):
+    """
+    Decorator to handle rate limiting.
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        for _ in range(5):
+            try:
+                return func(*args, **kwargs)
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 429:  # Too Many Requests
+                    retry_after = int(e.response.headers.get('Retry-After', 10))
+                    log("warn", f"Rate limit hit. Retrying in {retry_after} seconds.")
+                    time.sleep(retry_after)
+                else:
+                    raise
+        raise Exception("Max retries (5) exceeded due to rate limiting.")
+    return wrapper
 
 
 class FollowUpBossDeliverer(BaseOutputDeliverer):
@@ -83,6 +105,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             "X-System-Key": self.system_key
         }
     
+    @fub_rate_limited
     def _verify_api_credentials(self) -> bool:
         """
         Verify that the API credentials are valid.
@@ -199,6 +222,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             "person": person_data
         }
 
+    @fub_rate_limited
     def _send_event(self, event_data: dict) -> dict:
         """
         Send an event to the FollowUpBoss API.
@@ -241,6 +265,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         response.raise_for_status()
         return response.json()
 
+    @fub_rate_limited
     def _add_note(self, person_id: int, body: str, subject: str = "") -> bool:
         """
         Add a note to a person in Follow Up Boss.
