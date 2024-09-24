@@ -138,27 +138,28 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         Returns:
             dict: A response dictionary from the FollowUpBoss API for the delivered event.
         """
-        try:
-            event_data = self._prepare_event_data(md5_with_pii)
-            response = self._send_event(event_data)
+        with log_span(f"Delivering lead with AI field mapping: {md5_with_pii}", _level="trace"):
+            try:
+                event_data = self._prepare_event_data(md5_with_pii)
+                response = self._send_event(event_data)
 
-            # Per-lead insight
-            person_id: int = int(response["id"])
-            if (insight := self.per_lead_insights.get(md5_with_pii.md5)):
-                self._add_note(person_id=person_id, body=insight, subject="Real Intent Insight")
+                # Per-lead insight
+                person_id: int = int(response["id"])
+                if (insight := self.per_lead_insights.get(md5_with_pii.md5)):
+                    self._add_note(person_id=person_id, body=insight, subject="Real Intent Insight")
 
-            log(
-                "trace", 
-                (
-                    f"Delivered lead with AI mapping: {md5_with_pii.md5}, "
-                    f"event_type: {self.event_type.value}, "
-                    f"response_status: {response.get('status', 'unknown')}"
+                log(
+                    "trace", 
+                    (
+                        f"Delivered lead with AI mapping: {md5_with_pii.md5}, "
+                        f"event_type: {self.event_type.value}, "
+                        f"response_status: {response.get('status', 'unknown')}"
+                    )
                 )
-            )
-            return response
-        except Exception as e:
-            log("error", f"Error in AI field mapping delivery for lead {md5_with_pii.md5}: {str(e)}. Falling back to standard delivery.")
-            return super()._deliver_single_lead(md5_with_pii)
+                return response
+            except Exception as e:
+                log("error", f"Error in AI field mapping delivery for lead {md5_with_pii.md5}: {str(e)}. Falling back to standard delivery.")
+                return super()._deliver_single_lead(md5_with_pii)
 
     @fub_rate_limited
     def _get_custom_fields(self) -> list[CustomField]:
