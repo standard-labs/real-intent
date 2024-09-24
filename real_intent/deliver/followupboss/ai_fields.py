@@ -109,6 +109,9 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         if not self._verify_openai_credentials():
             raise InvalidAPICredentialsError("Invalid API credentials provided for OpenAI.")
 
+        # Cache the custom fields
+        self.custom_fields: list[CustomField] = []
+
     def _verify_openai_credentials(self) -> bool:
         """Make sure the OpenAI API key is valid."""
         response = requests.get(
@@ -168,7 +171,11 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         Raises:
             requests.RequestException: If there's an error in the API request.
         """
-        with log_span("Fetching custom fields from Follow Up Boss", _level="debug"):
+        if self.custom_fields:
+            log("trace", f"Using cached custom fields: {self.custom_fields}")
+            return self.custom_fields
+
+        with log_span("Fetching custom fields from Follow Up Boss", _level="trace"):
             response = requests.get(f"{self.base_url}/customFields", headers=self.api_headers)
             response.raise_for_status()
             raw_res = response.json()["customfields"]
@@ -178,8 +185,9 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             # Trace logging for custom fields
             for field in custom_fields:
                 log("trace", f"Custom field: id={field.id}, name='{field.name}', label='{field.label}', type='{field.type}'")
-            
-            return custom_fields
+
+            self.custom_fields = custom_fields
+            return self.custom_fields
 
     @fub_rate_limited
     def _create_custom_field(self, custom_field: CustomFieldCreation) -> CustomField:
