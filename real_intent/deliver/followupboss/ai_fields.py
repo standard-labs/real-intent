@@ -109,6 +109,9 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         if not self._verify_openai_credentials():
             raise InvalidAPICredentialsError("Invalid API credentials provided for OpenAI.")
 
+        # Cache the custom fields
+        self.custom_fields: list[CustomField] = []
+
     def _verify_openai_credentials(self) -> bool:
         """Make sure the OpenAI API key is valid."""
         response = requests.get(
@@ -135,27 +138,28 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         Returns:
             dict: A response dictionary from the FollowUpBoss API for the delivered event.
         """
-        try:
-            event_data = self._prepare_event_data(md5_with_pii)
-            response = self._send_event(event_data)
+        with log_span(f"Delivering lead with AI field mapping: {md5_with_pii}", _level="trace"):
+            try:
+                event_data = self._prepare_event_data(md5_with_pii)
+                response = self._send_event(event_data)
 
-            # Per-lead insight
-            person_id: int = int(response["id"])
-            if (insight := self.per_lead_insights.get(md5_with_pii.md5)):
-                self._add_note(person_id=person_id, body=insight, subject="Real Intent Insight")
+                # Per-lead insight
+                person_id: int = int(response["id"])
+                if (insight := self.per_lead_insights.get(md5_with_pii.md5)):
+                    self._add_note(person_id=person_id, body=insight, subject="Real Intent Insight")
 
-            log(
-                "trace", 
-                (
-                    f"Delivered lead with AI mapping: {md5_with_pii.md5}, "
-                    f"event_type: {self.event_type.value}, "
-                    f"response_status: {response.get('status', 'unknown')}"
+                log(
+                    "trace", 
+                    (
+                        f"Delivered lead with AI mapping: {md5_with_pii.md5}, "
+                        f"event_type: {self.event_type.value}, "
+                        f"response_status: {response.get('status', 'unknown')}"
+                    )
                 )
-            )
-            return response
-        except Exception as e:
-            log("error", f"Error in AI field mapping delivery for lead {md5_with_pii.md5}: {str(e)}. Falling back to standard delivery.")
-            return super()._deliver_single_lead(md5_with_pii)
+                return response
+            except Exception as e:
+                log("error", f"Error in AI field mapping delivery for lead {md5_with_pii.md5}: {str(e)}. Falling back to standard delivery.")
+                return super()._deliver_single_lead(md5_with_pii)
 
     @fub_rate_limited
     def _get_custom_fields(self) -> list[CustomField]:
@@ -168,7 +172,11 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         Raises:
             requests.RequestException: If there's an error in the API request.
         """
-        with log_span("Fetching custom fields from Follow Up Boss", _level="debug"):
+        if self.custom_fields:
+            log("trace", f"Using cached custom fields: {self.custom_fields}")
+            return self.custom_fields
+
+        with log_span("Fetching custom fields from Follow Up Boss", _level="trace"):
             response = requests.get(f"{self.base_url}/customFields", headers=self.api_headers)
             response.raise_for_status()
             raw_res = response.json()["customfields"]
@@ -178,8 +186,9 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             # Trace logging for custom fields
             for field in custom_fields:
                 log("trace", f"Custom field: id={field.id}, name='{field.name}', label='{field.label}', type='{field.type}'")
-            
-            return custom_fields
+
+            self.custom_fields = custom_fields
+            return self.custom_fields
 
     @fub_rate_limited
     def _create_custom_field(self, custom_field: CustomFieldCreation) -> CustomField:

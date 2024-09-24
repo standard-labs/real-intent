@@ -41,7 +41,7 @@ def fub_rate_limited(func):
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
-        for _ in range(5):
+        for _ in range(10):
             try:
                 return func(*args, **kwargs)
             except requests.exceptions.HTTPError as e:
@@ -52,7 +52,7 @@ def fub_rate_limited(func):
                     time.sleep(sleep_delay)
                 else:
                     raise
-        raise Exception("Max retries (5) exceeded due to rate limiting.")
+        raise Exception("Max retries (10) exceeded due to rate limiting.")
     return wrapper
 
 
