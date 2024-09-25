@@ -39,6 +39,30 @@ class AgeValidator(BaseValidator):
         return [md5 for md5 in md5s if is_valid(md5)]
 
 
+class MidIncomeValidator(BaseValidator):
+    """Remove leads below $30k income."""
+
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove leads that do not match the MNW requirement."""
+        income_levels = {
+            "D. $30,000-$39,999",
+            "E. $40,000-$49,999",
+            "F. $50,000-$59,999",
+            "G. $60,000-$74,999",
+            "H. $75,000-$99,999",
+            "K. $100,000-$149,999", 
+            "L. $150,000-$174,999", 
+            "M. $175,000-$199,999", 
+            "N. $200,000-$249,999", 
+            "O. $250K +"
+        }
+        
+        return [
+            md5 for md5 in md5s 
+            if md5.pii.household_income in income_levels
+        ]
+        
+
 class MNWValidator(BaseValidator):
     """Remove leads below Medium Net Worth (MNW): $100k+ income and $100k+ net worth."""
 
