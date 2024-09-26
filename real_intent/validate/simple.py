@@ -62,9 +62,10 @@ class SamePersonValidator(BaseValidator):
         unique_leads: dict[str, MD5WithPII] = {}
 
         lead: MD5WithPII
+        lead_hash: str
         for lead in md5s:
-            if lead.hash() in unique_leads:
-                unique_leads[lead.hash()].sentences += lead.sentences
+            if (lead_hash := lead.hash()) in unique_leads:
+                unique_leads[lead_hash].sentences += lead.sentences
                 continue
                 
             unique_leads[lead.hash()] = lead
