@@ -4,7 +4,12 @@ from real_intent.validate.base import BaseValidator
 
 
 class ZipCodeValidator(BaseValidator):
-    """Remove leads not matching specified zip codes."""
+    """
+    Remove leads not matching specified zip codes.
+
+    Args:
+        zip_codes: List of zip codes to keep.
+    """
 
     def __init__(self, zip_codes: list[str]) -> None:
         """Initialize with a list of zip codes."""
@@ -28,7 +33,12 @@ class ContactableValidator(BaseValidator):
 
 
 class MD5Validator(BaseValidator):
-    """Remove leads with specific MD5 hashes."""
+    """
+    Remove leads with specific MD5 hashes.
+
+    Args:
+        md5_strings: List of MD5 strings to remove.
+    """
 
     def __init__(self, md5_strings: list[str]) -> None:
         """Initialize with a list of blacklisted MD5s."""
@@ -63,7 +73,12 @@ class SamePersonValidator(BaseValidator):
 
 
 class NumSentencesValidator(BaseValidator):
-    """Remove leads with fewer than the specified number of sentences."""
+    """
+    Remove leads with fewer than the specified number of sentences.
+
+    Args:
+        min_sentences: Minimum number of intent events (sentences) required.
+    """
     
     def __init__(self, min_sentences: int) -> None:
         """Initialize with a minimum number of sentences."""
