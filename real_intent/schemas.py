@@ -1,5 +1,5 @@
 """Datatypes for working with the API."""
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, model_validator, field_validator
 
 from typing import Any, Optional, Self
 from enum import Enum
@@ -75,6 +75,7 @@ class UniqueMD5(BaseModel):
     """
     md5: str
     sentences: list[str]
+    _raw_sentences: list[str] = Field(default_factory=list)
 
     @field_validator("sentences", mode="after")
     def transform_iab_codes(sentences: list[str]) -> list[str]:
