@@ -95,7 +95,10 @@ class UniqueMD5(BaseModel):
         """Total number of unique sentences."""
         return len(self.sentences)
 
-        return sentences
+    @property
+    def total_sentences(self) -> int:
+        """Total number of sentences (non-unique)."""
+        return len(self._raw_sentences)
     
 
 class MobilePhone(BaseModel):
