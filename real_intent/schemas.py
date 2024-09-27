@@ -75,12 +75,12 @@ class UniqueMD5(BaseModel):
     """
     md5: str
     sentences: list[str]
-    _raw_sentences: list[str] = Field(default_factory=list)
+    raw_sentences: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def transform_iab_codes(self) -> Self:
         """Convert any valid IAB codes into strings and count total sentences."""
-        self._raw_sentences = self.sentences
+        self.raw_sentences = self.sentences
         unique_sentences = list(set(self.sentences))
 
         for pos, sentence in enumerate(unique_sentences):
@@ -98,7 +98,7 @@ class UniqueMD5(BaseModel):
     @property
     def total_sentence_count(self) -> int:
         """Total number of sentences (non-unique)."""
-        return len(self._raw_sentences)
+        return len(self.raw_sentences)
     
 
 class MobilePhone(BaseModel):

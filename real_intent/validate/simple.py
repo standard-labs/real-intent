@@ -66,7 +66,7 @@ class SamePersonValidator(BaseValidator):
         for lead in md5s:
             if (lead_hash := lead.hash()) in unique_leads:
                 unique_leads[lead_hash].sentences += lead.sentences
-                unique_leads[lead_hash]._raw_sentences += lead._raw_sentences
+                unique_leads[lead_hash].raw_sentences += lead.raw_sentences
                 continue
                 
             unique_leads[lead_hash] = lead
