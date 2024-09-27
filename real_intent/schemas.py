@@ -77,14 +77,23 @@ class UniqueMD5(BaseModel):
     sentences: list[str]
     _raw_sentences: list[str] = Field(default_factory=list)
 
-    @field_validator("sentences", mode="after")
-    def transform_iab_codes(sentences: list[str]) -> list[str]:
-        """Convert any valid IAB codes into strings."""
-        sentences = list(set(sentences))
+    @model_validator(mode="after")
+    def transform_iab_codes(self) -> Self:
+        """Convert any valid IAB codes into strings and count total sentences."""
+        self._raw_sentences = self.sentences
+        unique_sentences = list(set(self.sentences))
 
-        for pos, sentence in enumerate(sentences):
+        for pos, sentence in enumerate(unique_sentences):
             if sentence.isnumeric():
-                sentences[pos] = code_to_category(sentence)
+                unique_sentences[pos] = code_to_category(sentence)
+
+        self.sentences = unique_sentences
+        return self
+
+    @property
+    def total_unique_sentences(self) -> int:
+        """Total number of unique sentences."""
+        return len(self.sentences)
 
         return sentences
     
