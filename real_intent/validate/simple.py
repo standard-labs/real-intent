@@ -97,5 +97,5 @@ class NumSentencesValidator(BaseValidator):
             ]
 
         return [
-            md5 for md5 in md5s if md5.total_sentences >= self.min_sentences
+            md5 for md5 in md5s if md5.total_sentence_count >= self.min_sentences
         ]
