@@ -237,3 +237,10 @@ def test_dnc_phone_remover() -> None:
     
     # Check MD5 with no phones
     assert len(result[3].pii.mobile_phones) == 0
+
+
+def test_sentence_count() -> None:
+    md5 = create_md5_with_pii("123", [], [], sentences=["sentence1", "sentence2", "sentence1", "sentence3"])
+    
+    assert md5.total_sentence_count == 4
+    assert md5.unique_sentence_count == 3
