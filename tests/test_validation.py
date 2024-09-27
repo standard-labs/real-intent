@@ -242,15 +242,15 @@ def test_dnc_phone_remover() -> None:
 def test_sentence_count() -> None:
     # Check for different sentence calculation methods
     md5 = create_md5_with_pii("123", [], [], sentences=["sentence1", "sentence2", "sentence1", "sentence3"])
-    assert md5.total_sentences == 4
-    assert md5.total_unique_sentences == 3
+    assert md5.total_sentence_count == 4
+    assert md5.unique_sentence_count == 3
 
     # Check for single sentence
     md5_single = create_md5_with_pii("456", [], [], sentences=["single sentence"])
-    assert md5_single.total_sentences == 1
-    assert md5_single.total_unique_sentences == 1
+    assert md5_single.total_sentence_count == 1
+    assert md5_single.unique_sentence_count == 1
 
     # Check for empty sentences
     md5_empty = create_md5_with_pii("789", [], [], sentences=[])
-    assert md5_empty.total_sentences == 0
-    assert md5_empty.total_unique_sentences == 0
+    assert md5_empty.total_sentence_count == 0
+    assert md5_empty.unique_sentence_count == 0
