@@ -91,7 +91,7 @@ class UniqueMD5(BaseModel):
         return self
 
     @property
-    def total_unique_sentences(self) -> int:
+    def unique_sentences_count(self) -> int:
         """Total number of unique sentences."""
         return len(self.sentences)
 

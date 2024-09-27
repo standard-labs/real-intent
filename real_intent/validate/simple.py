@@ -93,7 +93,7 @@ class NumSentencesValidator(BaseValidator):
         """Remove leads with fewer than the minimum number of sentences."""
         if self.use_unique:
             return [
-                md5 for md5 in md5s if md5.total_unique_sentences >= self.min_sentences
+                md5 for md5 in md5s if md5.unique_sentences_count >= self.min_sentences
             ]
 
         return [
