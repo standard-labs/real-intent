@@ -91,6 +91,11 @@ class NumSentencesValidator(BaseValidator):
 
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove leads with fewer than the minimum number of sentences."""
+        if self.use_unique:
+            return [
+                md5 for md5 in md5s if md5.total_unique_sentences >= self.min_sentences
+            ]
+
         return [
-            md5 for md5 in md5s if len(md5.sentences) >= self.min_sentences
+            md5 for md5 in md5s if md5.total_sentences >= self.min_sentences
         ]
