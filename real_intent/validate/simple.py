@@ -80,6 +80,8 @@ class NumSentencesValidator(BaseValidator):
 
     Args:
         min_sentences: Minimum number of intent events (sentences) required.
+        use_unique: If True, use unique sentences count; if False, use total sentences count.
+            If True, counts the number of _types_ of events, as duplicates are removed.
     """
     
     def __init__(self, min_sentences: int) -> None:
