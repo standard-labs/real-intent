@@ -84,9 +84,10 @@ class NumSentencesValidator(BaseValidator):
             If True, counts the number of _types_ of events, as duplicates are removed.
     """
     
-    def __init__(self, min_sentences: int) -> None:
-        """Initialize with a minimum number of sentences."""
+    def __init__(self, min_sentences: int, use_unique: bool = False) -> None:
+        """Initialize with a minimum number of sentences and counting method."""
         self.min_sentences: int = min_sentences
+        self.use_unique: bool = use_unique
 
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove leads with fewer than the minimum number of sentences."""
