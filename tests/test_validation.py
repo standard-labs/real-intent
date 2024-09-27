@@ -11,7 +11,7 @@ from real_intent.validate.phone import PhoneValidator, DNCValidator, DNCPhoneRem
 load_dotenv()
 
 
-def create_md5_with_pii(md5: str, emails: list[str], phones: list[str]) -> MD5WithPII:
+def create_md5_with_pii(md5: str, emails: list[str], phones: list[str], sentences: list[str] = ["test sentence"]) -> MD5WithPII:
     pii = PII(
         Id="test_id",
         First_Name="Tuna",
@@ -84,7 +84,7 @@ def create_md5_with_pii(md5: str, emails: list[str], phones: list[str]) -> MD5Wi
     )
 
     pii.mobile_phones = [MobilePhone(phone=phone, do_not_call=False) for phone in phones]
-    return MD5WithPII(md5=md5, sentences=["test sentence"], pii=pii)
+    return MD5WithPII(md5=md5, sentences=sentences, pii=pii)
 
 
 def test_email_validator() -> None:
