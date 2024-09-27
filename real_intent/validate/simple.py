@@ -66,6 +66,7 @@ class SamePersonValidator(BaseValidator):
         for lead in md5s:
             if (lead_hash := lead.hash()) in unique_leads:
                 unique_leads[lead_hash].sentences += lead.sentences
+                unique_leads[lead_hash].raw_sentences += lead.raw_sentences
                 continue
                 
             unique_leads[lead_hash] = lead
@@ -79,14 +80,22 @@ class NumSentencesValidator(BaseValidator):
 
     Args:
         min_sentences: Minimum number of intent events (sentences) required.
+        use_unique: If True, use unique sentences count; if False, use total sentences count.
+            If True, counts the number of _types_ of events, as duplicates are removed.
     """
     
-    def __init__(self, min_sentences: int) -> None:
-        """Initialize with a minimum number of sentences."""
+    def __init__(self, min_sentences: int, use_unique: bool = False) -> None:
+        """Initialize with a minimum number of sentences and counting method."""
         self.min_sentences: int = min_sentences
+        self.use_unique: bool = use_unique
 
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove leads with fewer than the minimum number of sentences."""
+        if self.use_unique:
+            return [
+                md5 for md5 in md5s if md5.unique_sentence_count >= self.min_sentences
+            ]
+
         return [
-            md5 for md5 in md5s if len(md5.sentences) >= self.min_sentences
+            md5 for md5 in md5s if md5.total_sentence_count >= self.min_sentences
         ]

@@ -1,5 +1,5 @@
 """Datatypes for working with the API."""
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, model_validator, field_validator
 
 from typing import Any, Optional, Self
 from enum import Enum
@@ -75,17 +75,30 @@ class UniqueMD5(BaseModel):
     """
     md5: str
     sentences: list[str]
+    raw_sentences: list[str] = Field(default_factory=list)
 
-    @field_validator("sentences", mode="after")
-    def transform_iab_codes(sentences: list[str]) -> list[str]:
-        """Convert any valid IAB codes into strings."""
-        sentences = list(set(sentences))
+    @model_validator(mode="after")
+    def transform_iab_codes(self) -> Self:
+        """Convert any valid IAB codes into strings and count total sentences."""
+        self.raw_sentences = self.sentences
+        unique_sentences = list(set(self.sentences))
 
-        for pos, sentence in enumerate(sentences):
+        for pos, sentence in enumerate(unique_sentences):
             if sentence.isnumeric():
-                sentences[pos] = code_to_category(sentence)
+                unique_sentences[pos] = code_to_category(sentence)
 
-        return sentences
+        self.sentences = unique_sentences
+        return self
+
+    @property
+    def unique_sentence_count(self) -> int:
+        """Total number of unique sentences."""
+        return len(self.sentences)
+
+    @property
+    def total_sentence_count(self) -> int:
+        """Total number of sentences (non-unique)."""
+        return len(self.raw_sentences)
     
 
 class MobilePhone(BaseModel):
