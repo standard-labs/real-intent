@@ -14,7 +14,8 @@ class BaseAnalyzer(ABC):
         of the analyzer.
 
         Returns:
-            str: The result of the analysis as a string.
+            str | dict[str, str]: The result of the analysis as a string or dictionary
+                mapping MD5s to strings.
         """
         with log_span(f"Analyzing {len(pii_md5s)} MD5s with {self.__class__.__name__}", _level="debug"):
             log("debug", f"Starting analysis with {self.__class__.__name__}")
