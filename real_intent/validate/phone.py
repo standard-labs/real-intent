@@ -113,13 +113,6 @@ class DNCValidator(BaseValidator):
     """
 
     def __init__(self, strict_mode: bool = False):
-        """
-        Initialize the DNCValidator.
-
-        Args:
-            strict_mode (bool): If True, enables strict mode validation.
-                Defaults to False.
-        """
         self.strict_mode = strict_mode
 
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
