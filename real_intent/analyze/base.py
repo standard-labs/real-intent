@@ -8,7 +8,7 @@ from real_intent.internal_logging import log, log_span
 class BaseAnalyzer(ABC):
     """Base class for analyzers."""
 
-    def analyze(self, pii_md5s: list[MD5WithPII]) -> str:
+    def analyze(self, pii_md5s: list[MD5WithPII]) -> str | dict[str, str]:
         """
         Take a list of MD5s with PII and perform analysis according to the purpose
         of the analyzer.
