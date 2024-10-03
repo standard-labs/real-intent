@@ -79,6 +79,7 @@ def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
     assert result[1].last_name == "Jiqiang", "Last name should be 'Jiqiang'"
 
 
+@pytest.mark.skip(reason="Temporary issue with BigDBM API.")
 def test_ips_to_pii(bigdbm_client: BigDBMClient) -> None:
     ips = ["10.91.180.5", "10.91.220.117"] 
     result = bigdbm_client.ips_to_pii(ips)
