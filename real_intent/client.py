@@ -441,40 +441,6 @@ class BigDBMClient:
 
         log("trace", f"Retrieved PII for {len(return_piis)} of {len(phones)} phone numbers.")
         return return_piis
-
-    def ips_to_pii(self, ips: list[str]) -> list[PII]:
-        """Pull PII for a list of IP addresses."""
-        log("trace", f"Requesting PII for {len(ips)} IP addresses.")
-
-        request = Request(
-                method="POST",
-                url="https://aws-prod-dataapi-v09.bigdbm.com/GetDataBy/IP",
-                headers={
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "RequestId": "abcdefg",
-                    "ObjectList": ips,
-                    "OutputId": 10026
-                }
-            )
-        
-        data: dict[str, list[dict[str, Any]]] = self._request(request)["returnData"]
-    
-        # Remove the list and expose only the object
-        for key in data:
-            data[key] = data[key][0]
-
-        return_piis: list[PII] = []
-        pii: PII
-        
-        for ip in ips:
-            if ip in data:
-                pii = PII.from_api_dict(data[ip])
-                return_piis.append(pii)
-
-        log("trace", f"Retrieved PII for {len(return_piis)} of {len(ips)} phone numbers.")
-        return return_piis
     
     def pii_to_pii(self, first_name: str, last_name: str, address: str, zip_code: str, sequence: str) -> list[PII]:
         """Pull PII given first name, last name, address, zip code, and sequence. """
