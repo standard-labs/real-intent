@@ -75,7 +75,7 @@ def test_get_submissions(fillout_dns_validator):
 )
 def test_all_emails(fillout_dns_validator):
     emails = fillout_dns_validator.all_emails()
-    assert isinstance(emails, list)
+    assert isinstance(emails, set)
     assert len(emails) > 0
     assert all(isinstance(email, str) for email in emails)
 
@@ -89,5 +89,5 @@ def test_validate(fillout_dns_validator, dns_test_md5s):
     result = fillout_dns_validator.validate(dns_test_md5s)
     assert isinstance(result, list)
     assert len(result) == 1  # Expecting 1 out of 2 to pass validation
-    assert all(md5.pii.emails[0] != "preritdas@gmail.com" for md5 in result)
+    assert all("preritdas@gmail.com" not in md5.pii.emails for md5 in result)
     assert result[0].md5 == dns_test_md5s[0].md5
