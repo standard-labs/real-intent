@@ -55,9 +55,9 @@ class FilloutDNSValidator(BaseValidator):
         email_answer: dict = next(q for q in question_answers if q["id"] == self.question_id)
         return str(email_answer["value"])
 
-    def all_emails(self) -> list[str]:
+    def all_emails(self) -> set[str]:
         """Get all emails from Fillout submissions."""
-        return [self._email_from_submission(s) for s in self._get_submissions()]
+        return set(self._email_from_submission(s) for s in self._get_submissions())
 
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove leads with an email on the Do Not Sell (DNS) blacklist."""
