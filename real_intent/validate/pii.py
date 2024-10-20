@@ -39,6 +39,28 @@ class AgeValidator(BaseValidator):
         return [md5 for md5 in md5s if is_valid(md5)]
 
 
+class RemoveOccupationsValidator(BaseValidator):
+    """Remove leads with specified occupations."""
+
+    def __init__(self, *occupations: str) -> None:
+        """Initialize with the filtered occupations."""
+        self.occupations: set[str] = set(occupations)
+
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Only return leads whose occupation does not exist in the initialized list of occupations."""
+        return [
+            md5 for md5 in md5s if md5.pii.occupation not in self.occupations
+        ]
+
+
+class NoRealEstateAgentValidator(RemoveOccupationsValidator):
+    """Remove leads that are real estate agents."""
+
+    def __init__(self) -> None:
+        """Initialize with the filtered occupation."""
+        super().__init__("Real Estate/Realtor")
+
+
 class MidIncomeValidator(BaseValidator):
     """Remove leads below $30k income."""
 

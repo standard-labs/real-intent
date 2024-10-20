@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from real_intent.schemas import Gender, MD5WithPII, PII, MobilePhone
 from real_intent.validate.email import EmailValidator, HasEmailValidator
 from real_intent.validate.phone import PhoneValidator, DNCValidator, DNCPhoneRemover
+from real_intent.validate.pii import RemoveOccupationsValidator
 
 
 # Load environment variables from .env file
@@ -258,3 +259,24 @@ def test_sentence_count() -> None:
     md5_empty = create_md5_with_pii("789", [], [], sentences=[])
     assert md5_empty.total_sentence_count == 0
     assert md5_empty.unique_sentence_count == 0
+
+
+def test_remove_occupations_validator() -> None:
+    piis = [
+        create_md5_with_pii("123", [], ["1234567890"], sentences=["sentence1"]),
+        create_md5_with_pii("456", [], ["9876543210"], sentences=["sentence2"]),
+        create_md5_with_pii("789", [], ["5556667777"], sentences=["sentence3"]),
+        create_md5_with_pii("101", [], ["9998887777"], sentences=["sentence4"])
+    ]
+
+    # Set occupations
+    piis[0].pii.occupation = "Bad Occupation"
+
+    # Initialize validator
+    validator = RemoveOccupationsValidator("Bad Occupation")
+
+    # Validate
+    result = validator.validate(piis)
+
+    # Check results
+    assert len(result) == 3
