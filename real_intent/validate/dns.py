@@ -45,6 +45,10 @@ class FilloutDNSValidator(BaseValidator):
 
         return submissions
 
+    def _update_submissions_cache(self) -> None:
+        """Update the local cache of submissions."""
+        self.submissions = self._get_submissions()
+
     def _email_from_submission(self, submission: dict) -> str:
         """Extract the requested email from a Fillout submission."""
         question_answers: list[dict] = submission["questions"]
