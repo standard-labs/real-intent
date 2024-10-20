@@ -53,6 +53,14 @@ class RemoveOccupationsValidator(BaseValidator):
         ]
 
 
+class NoRealEstateAgentValidator(RemoveOccupationsValidator):
+    """Remove leads that are real estate agents."""
+
+    def __init__(self) -> None:
+        """Initialize with the filtered occupation."""
+        super().__init__("Real Estate/Realtor")
+
+
 class MidIncomeValidator(BaseValidator):
     """Remove leads below $30k income."""
 
