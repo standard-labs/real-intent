@@ -14,7 +14,7 @@ class FilloutDNSValidator(BaseValidator):
         self.question_id: str = question_id
 
         # Create a local cache of the DNS list (submissions)
-        self.submissions: list[dict] = self._get_submissions()
+        self.emails_cache: set[str] = self.all_emails()
 
     @property
     def fillout_api_headers(self) -> dict[str, str]:
@@ -45,9 +45,9 @@ class FilloutDNSValidator(BaseValidator):
 
         return submissions
 
-    def _update_submissions_cache(self) -> None:
+    def _update_emails_cache(self) -> None:
         """Update the local cache of submissions."""
-        self.submissions = self._get_submissions()
+        self.emails_cache = self.all_emails()
 
     def _email_from_submission(self, submission: dict) -> str:
         """Extract the requested email from a Fillout submission."""
@@ -64,13 +64,12 @@ class FilloutDNSValidator(BaseValidator):
 
     def all_emails(self) -> set[str]:
         """Get all emails from Fillout submissions."""
-        submissions: list[dict] = self.submissions or self._get_submissions()
-        return set(self._email_from_submission(s) for s in submissions)
+        return set(self._email_from_submission(s) for s in self._get_submissions())
 
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove leads with an email on the Do Not Sell (DNS) blacklist."""
         return [
             md5 for md5 in md5s if all(
-                email not in self.all_emails() for email in md5.pii.emails
+                email not in self.emails_cache for email in md5.pii.emails
             )
         ]
