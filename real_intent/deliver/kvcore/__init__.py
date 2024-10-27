@@ -82,6 +82,11 @@ class KVCoreDeliverer(BaseOutputDeliverer):
 
         return True
 
+    @staticmethod
+    def _address_str(pii_md5: MD5WithPII) -> str:
+        """Generate a string representation of the address."""
+        
+
     def _agent_notes(self, pii_md5: MD5WithPII) -> str:
         """Generate custom agent notes for a single lead."""
         attrs: dict[str | Any] = {}
