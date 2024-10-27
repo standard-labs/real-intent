@@ -122,6 +122,9 @@ class KVCoreDeliverer(BaseOutputDeliverer):
         if (insight := self.per_lead_insights.get(pii_md5.md5)):
             attrs["Insight"] = insight
 
+        if (address := self._address_str(pii_md5)):
+            attrs["Address"] = address
+
         return "\n".join([f"{k}: {v}" for k, v in attrs.items()])
 
     def _email_body(self, pii_md5: MD5WithPII) -> str:
