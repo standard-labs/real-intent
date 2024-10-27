@@ -85,7 +85,29 @@ class KVCoreDeliverer(BaseOutputDeliverer):
     @staticmethod
     def _address_str(pii_md5: MD5WithPII) -> str:
         """Generate a string representation of the address."""
-        
+        address_parts = []
+
+        # Add street address if available
+        if pii_md5.pii.address:
+            address_parts.append(pii_md5.pii.address)
+
+        # Add city if available
+        if pii_md5.pii.city:
+            address_parts.append(pii_md5.pii.city)
+
+        # Add state if available
+        if pii_md5.pii.state:
+            address_parts.append(pii_md5.pii.state)
+
+        # Add zip code and zip4 if available
+        if pii_md5.pii.zip_code:
+            zip_str = pii_md5.pii.zip_code
+            if pii_md5.pii.zip4:
+                zip_str += f"-{pii_md5.pii.zip4}"
+            address_parts.append(zip_str)
+
+        # Join all parts with appropriate separators
+        return ", ".join(address_parts)
 
     def _agent_notes(self, pii_md5: MD5WithPII) -> str:
         """Generate custom agent notes for a single lead."""
