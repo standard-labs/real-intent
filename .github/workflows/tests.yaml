@@ -37,4 +37,4 @@ jobs:
         run: docker build -t real-intent .
         
       - name: Run tests inside container
-        run: docker run real-intent sh -c "pip install --no-cache-dir -r tests/requirements.txt && pytest tests/test_logging.py"
+        run: docker run real-intent sh -c "pip install --no-cache-dir -r tests/requirements.txt && pytest"
