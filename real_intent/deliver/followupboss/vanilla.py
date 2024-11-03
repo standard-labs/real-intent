@@ -48,7 +48,7 @@ def fub_rate_limited(func):
                 if e.response.status_code == 429:  # Too Many Requests
                     retry_after = int(e.response.headers.get('Retry-After', 10))
                     sleep_delay: float = retry_after + (random.randint(50, 100) / 100)
-                    log("warn", f"Rate limit hit. Retrying in {sleep_delay} seconds.")
+                    log("warn", f"FUB rate limit hit. Retrying in {sleep_delay} seconds.")
                     time.sleep(sleep_delay)
                 else:
                     raise
