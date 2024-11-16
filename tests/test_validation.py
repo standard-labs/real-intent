@@ -100,14 +100,12 @@ def test_email_validator() -> None:
     validator = EmailValidator(million_verifier_key)
     
     real_emails = [
-        "matsn@outlook.com",
-        "dogdude@hotmail.com",
-        "harryh@live.com"
+        "aaron@standarddao.finance"
     ]
     fake_emails = [
-        "rfisher@yahoo.com",
-        "djupedal@yahoo.com",
-        "khris@aol.com"
+        "rfisascasdcabsdasdcabsjhdcher@yahoo.com",
+        "dju123123123123123pedal@yahoo.com",
+        "khris678asdc678asdc@aol.com"
     ]
     
     md5s = [
