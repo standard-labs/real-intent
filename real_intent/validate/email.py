@@ -4,6 +4,7 @@ import requests
 from concurrent.futures import ThreadPoolExecutor
 import time
 import random
+import hashlib
 
 from real_intent.schemas import MD5WithPII
 from real_intent.validate.base import BaseValidator
@@ -88,3 +89,14 @@ class HasEmailValidator(BaseValidator):
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove leads without an email address."""
         return [md5 for md5 in md5s if md5.pii.emails]
+
+
+class RelevantEmailValidator(BaseValidator):
+    """Remove any emails in-place that don't directly match the md5 of the intent event."""
+
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove any emails that don't match the md5 of the intent event."""
+        for md5 in md5s:
+            md5.pii.emails = [email for email in md5.pii.emails if md5.md5 == hashlib.md5(email.lower().encode()).hexdigest()]
+
+        return md5s
