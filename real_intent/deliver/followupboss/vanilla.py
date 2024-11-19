@@ -67,6 +67,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             tags: list[str] = [],
             base_url: str = "https://api.followupboss.com/v1",
             event_type: EventType = EventType.REGISTRATION,
+            n_threads: int = 1,
             per_lead_insights: dict[str, str] = {}
         ):
         """
@@ -78,6 +79,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             system_key (str): The system key.
             base_url (str, optional): The base URL for the FollowUpBoss API. Defaults to "https://api.followupboss.com/v1".
             event_type (EventType, optional): The event type for adding a lead. Defaults to EventType.REGISTRATION.
+            n_threads (int, optional): The number of threads to use for delivering leads. Defaults to 1.
         """
         self.api_key: str = api_key
         self.base_url: str = base_url
@@ -87,6 +89,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
 
         # Configuration stuff
         self.event_type: EventType = EventType(event_type)
+        self.n_threads: int = n_threads
 
         # Make sure API credentials are valid
         if not self._verify_api_credentials():
@@ -148,7 +151,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         # Log if any of the leads are on the DNC list
         self._warn_dnc(pii_md5s)
 
-        with ThreadPoolExecutor(max_workers=1) as executor:
+        with ThreadPoolExecutor(max_workers=self.n_threads) as executor:
             return list(executor.map(self._deliver_single_lead, pii_md5s))
 
     def _deliver_single_lead(self, md5_with_pii: MD5WithPII) -> dict:

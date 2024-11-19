@@ -66,6 +66,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         tags: list[str] = [],
         base_url: str = "https://api.followupboss.com/v1",
         event_type: EventType = EventType.REGISTRATION,
+        n_threads: int = 1,
         per_lead_insights: dict[str, str] = {},
         **kwargs
     ):
@@ -79,6 +80,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             openai_api_key (str): The API key for OpenAI.
             base_url (str, optional): The base URL for the FollowUpBoss API. Defaults to "https://api.followupboss.com/v1".
             event_type (EventType, optional): The event type for adding a lead. Defaults to Registration.
+            n_threads (int, optional): The number of threads to use for delivering leads. Defaults to 1.
             per_lead_insights (dict[str, str], optional): Per-lead insights to be added as notes. Defaults to {}.
             **kwargs: Additional keyword arguments to be passed to the parent class.
         """
@@ -89,6 +91,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             tags=tags,
             base_url=base_url,
             event_type=event_type,
+            n_threads=n_threads,
             **kwargs
         )
 
