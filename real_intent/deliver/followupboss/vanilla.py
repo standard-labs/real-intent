@@ -298,6 +298,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             response.raise_for_status()
 
         if response.ok:
+            log("trace", f"Successfully added note to person {person_id}")
             return True
 
         # Retry on contact not found error
