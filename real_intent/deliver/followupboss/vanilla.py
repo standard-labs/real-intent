@@ -268,7 +268,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         return response.json()
 
     @fub_rate_limited
-    def _add_note(self, person_id: int, body: str, subject: str = "") -> bool:
+    def _add_note(self, person_id: int, body: str, subject: str = "", retry: bool = True) -> bool:
         """
         Add a note to a person in Follow Up Boss.
 
@@ -276,6 +276,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             person_id (str): The ID of the person to add the note to.
             body (str): The body of the note.
             subject (str, optional): The subject of the note. Defaults to "".
+            retry (bool, optional): Whether to retry on failure. Defaults to True.
 
         Returns:
             bool: True if the note was added successfully, False otherwise.
@@ -297,7 +298,14 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             response.raise_for_status()
 
         if response.ok:
+            log("trace", f"Successfully added note to person {person_id}")
             return True
+
+        # Retry on contact not found error
+        if retry and "contact not found" in response.text.lower():
+            log("warn", f"Contact not found for person {person_id}. Retrying...")
+            time.sleep(random.uniform(5, 7))
+            return self._add_note(person_id, body, subject, retry=False)
 
         # Otherwise log the error and proceed
         log("error", f"Failed to add note to person {person_id}: {response.text}")
