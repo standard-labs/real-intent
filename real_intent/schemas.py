@@ -1,5 +1,5 @@
 """Datatypes for working with the API."""
-from pydantic import BaseModel, Field, model_validator, field_validator
+from pydantic import BaseModel, Field, model_validator, field_validator, ConfigDict
 
 from typing import Any, Optional, Self
 from enum import Enum
@@ -123,6 +123,8 @@ class PII(BaseModel):
     Instantiate with `.from_api_dict` to ensure correct pre-processing of 
     mobile phone data.
     """
+    model_config = ConfigDict(populate_by_name=True)  # allow instantiating with python var names
+
     id: str = Field(..., alias="Id", description="BigDBM person ID")
     first_name: str = Field(..., alias="First_Name")
     last_name: str = Field(..., alias="Last_Name")
