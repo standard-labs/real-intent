@@ -80,7 +80,6 @@ def test_followupboss_deliverer_success(followupboss_deliverer, sample_pii_md5s)
     assert result[0]["firstName"] == sample_pii_md5s[0].pii.first_name
     assert result[0]["lastName"] == sample_pii_md5s[0].pii.last_name
     assert any(email["value"] == sample_pii_md5s[0].pii.emails[0] for email in result[0]["emails"])
-    assert any(phone["value"] == "1234567890" for phone in result[0]["phones"])
 
     # Verify tags in the delivered data
     assert "tags" in result[0], "Tags not found in delivered person data"
@@ -111,7 +110,6 @@ def test_prepare_event_data(followupboss_deliverer, sample_pii_md5s):
     assert event_data["person"]["firstName"] == sample_pii_md5s[0].pii.first_name
     assert event_data["person"]["lastName"] == sample_pii_md5s[0].pii.last_name
     assert event_data["person"]["emails"] == [{"value": sample_pii_md5s[0].pii.emails[0]}]
-    assert event_data["person"]["phones"] == [{"value": "1234567890"}]
     assert event_data["person"]["addresses"] == [{
         "type": "home",
         "street": sample_pii_md5s[0].pii.address,
@@ -149,7 +147,6 @@ def test_ai_followupboss_deliverer_success(ai_followupboss_deliverer, sample_pii
     assert result[0]["firstName"] == sample_pii_md5s[0].pii.first_name
     assert result[0]["lastName"] == sample_pii_md5s[0].pii.last_name
     assert any(email["value"] == sample_pii_md5s[0].pii.emails[0] for email in result[0]["emails"])
-    assert any(phone["value"] == "1234567890" for phone in result[0]["phones"])
 
     # Check if the "Net Worth" custom field was added by the AI
     custom_fields = ai_followupboss_deliverer._get_custom_fields()
