@@ -3,6 +3,9 @@ from pydantic import BaseModel, Field, model_validator, field_validator, ConfigD
 
 from typing import Any, Optional, Self
 from enum import Enum
+import random
+import string
+from datetime import datetime, timedelta
 
 from real_intent.taxonomy import code_to_category
 
@@ -284,6 +287,124 @@ class PII(BaseModel):
         export_dict["gender"] = export_dict["gender"].value
 
         return export_dict
+
+    @classmethod
+    def create_fake(cls, seed: Optional[int] = None) -> Self:
+        """Create a fake PII object with realistic-looking data."""
+        if seed is not None:
+            random.seed(seed)
+
+        # Lists for generating realistic data
+        first_names = ["James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda", "William", "Elizabeth"]
+        last_names = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez"]
+        streets = ["Main", "Oak", "Maple", "Cedar", "Pine", "Elm", "Washington", "Lake", "Hill", "Park"]
+        cities = ["Springfield", "Franklin", "Clinton", "Madison", "Georgetown", "Salem", "Greenville", "Bristol", "Manchester", "Oxford"]
+        states = ["CA", "TX", "FL", "NY", "IL", "PA", "OH", "GA", "NC", "MI"]
+        occupations = ["Engineer", "Teacher", "Doctor", "Lawyer", "Accountant", "Manager", "Developer", "Designer", "Analyst", "Consultant"]
+        education_levels = ["High School", "Some College", "Bachelors", "Masters", "Doctorate"]
+        political_parties = ["Republican", "Democrat", "Independent", "None"]
+        ethnicities = ["Caucasian", "African American", "Hispanic", "Asian", "Other"]
+        marital_statuses = ["Single", "Married", "Divorced", "Widowed"]
+        credit_ranges = ["Poor", "Fair", "Good", "Very Good", "Excellent"]
+        income_ranges = ["0-25000", "25000-50000", "50000-75000", "75000-100000", "100000-150000", "150000+"]
+        net_worth_ranges = ["0-100000", "100000-250000", "250000-500000", "500000-1000000", "1000000+"]
+
+        # Generate a random date in the past 60 years
+        today = datetime.now()
+        birth_date = today - timedelta(days=random.randint(365*18, 365*80))  # Between 18 and 80 years old
+        age = str((today - birth_date).days // 365)
+        birth_month_year = birth_date.strftime("%m/%Y")
+
+        # Generate random coordinates in continental US
+        lat = random.uniform(24.396308, 49.384358)  # Approximate US boundaries
+        lon = random.uniform(-125.000000, -66.934570)
+
+        # Generate random email and phone
+        email = f"{random.choice(string.ascii_lowercase)}{random.choice(string.ascii_lowercase)}{random.randint(100,999)}@example.com"
+        phone = f"{random.randint(100,999)}{random.randint(100,999)}{random.randint(1000,9999)}"
+
+        # Create fake PII data
+        fake_data = {
+            "Id": f"TEST_{random.randint(10000,99999)}",
+            "First_Name": random.choice(first_names),
+            "Last_Name": random.choice(last_names),
+            "Address": f"{random.randint(100,9999)} {random.choice(streets)} St",
+            "City": random.choice(cities),
+            "State": random.choice(states),
+            "Zip": f"{random.randint(10000,99999)}",
+            "Zip4": f"{random.randint(1000,9999)}",
+            "Fips_State_Code": f"{random.randint(1,56):02d}",
+            "Fips_County_Code": f"{random.randint(1,999):03d}",
+            "County_Name": f"{random.choice(['North', 'South', 'East', 'West'])} County",
+            "Latitude": str(lat),
+            "Longitude": str(lon),
+            "Address_Type": random.choice(["Residential", "Business"]),
+            "Cbsa": str(random.randint(10000,99999)),
+            "Census_Tract": str(random.randint(100000,999999)),
+            "Census_Block_Group": str(random.randint(1,9)),
+            "Census_Block": str(random.randint(1000,9999)),
+            "Gender": random.choice([Gender.MALE, Gender.FEMALE]),
+            "SCF": str(random.randint(100,999)),
+            "DMA": str(random.randint(100,999)),
+            "MSA": str(random.randint(100,999)),
+            "Congressional_District": str(random.randint(1,435)),
+            "HeadOfHousehold": random.choice(["Yes", "No"]),
+            "Birth_Month_and_Year": birth_month_year,
+            "Age": age,
+            "Prop_Type": random.choice(["Single Family", "Multi Family", "Condo", "Apartment"]),
+            "Email_Array": [email],
+            "Children_HH": str(random.randint(0,5)),
+            "Credit_Range": random.choice(credit_ranges),
+            "Income_HH": random.choice(income_ranges),
+            "Net_Worth_HH": random.choice(net_worth_ranges),
+            "Home_Owner": random.choice(["Yes", "No"]),
+            "Marital_Status": random.choice(marital_statuses),
+            "Occupation_Detail": random.choice(occupations),
+            "Median_Home_Value": str(random.randint(100000,1000000)),
+            "Education": random.choice(education_levels),
+            "Length_of_Residence": str(random.randint(1,30)),
+            "Num_Adults_HH": str(random.randint(1,5)),
+            "Political_Party": random.choice(political_parties),
+            "Health_Beauty_Products": random.choice(["0", "1"]),
+            "Cosmetics": random.choice(["0", "1"]),
+            "Jewelry": random.choice(["0", "1"]),
+            "Investment_Type": random.choice(["", "0", "1"]),
+            "Investments": random.choice(["0", "1"]),
+            "Pet_Owner": random.choice(["0", "1"]),
+            "Pets_Affinity": str(random.randint(0,5)),
+            "Health_Affinity": str(random.randint(0,5)),
+            "Diet_Affinity": str(random.randint(0,5)),
+            "Fitness_Affinity": str(random.randint(0,5)),
+            "Outdoors_Affinity": str(random.randint(0,5)),
+            "Boating_Sailing_Affinity": str(random.randint(0,5)),
+            "Camping_Hiking_Climbing_Affinity": str(random.randint(0,5)),
+            "Fishing_Affinity": str(random.randint(0,5)),
+            "Hunting_Affinity": str(random.randint(0,5)),
+            "Aerobics": str(random.randint(0,5)),
+            "NASCAR": str(random.randint(0,5)),
+            "Scuba": str(random.randint(0,5)),
+            "Weight_Lifting": str(random.randint(0,5)),
+            "Healthy_Living_Interest": str(random.randint(0,5)),
+            "Motor_Racing": str(random.randint(0,5)),
+            "Travel_Foreign": str(random.randint(0,5)),
+            "Self_Improvement": str(random.randint(0,5)),
+            "Walking": str(random.randint(0,5)),
+            "Fitness": str(random.randint(0,5)),
+            "Ethnicity_Detail": random.choice(ethnicities),
+            "Ethnic_Group": random.choice(ethnicities),
+        }
+
+        # Create mobile phones
+        mobile_phones = [
+            MobilePhone(phone=phone, do_not_call=random.choice([True, False]))
+        ]
+
+        # Add 0-2 additional phone numbers
+        for _ in range(random.randint(0, 2)):
+            additional_phone = f"{random.randint(100,999)}{random.randint(100,999)}{random.randint(1000,9999)}"
+            mobile_phones.append(MobilePhone(phone=additional_phone, do_not_call=random.choice([True, False])))
+
+        return cls(**fake_data, mobile_phones=mobile_phones)  
 
 
 class MD5WithPII(UniqueMD5):
