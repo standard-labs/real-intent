@@ -137,8 +137,8 @@ def test_ai_followupboss_deliverer_success(ai_followupboss_deliverer, sample_pii
 
     Raises:
         AssertionError: If any of the assertions fail, indicating that the AI-powered delivery was not successful,
-                        the returned data does not match the expected values, the "Net Worth" field was not added,
-                        or the AI fell back to the non-AI method.
+            the returned data does not match the expected values, the "Net Worth" field was not added,
+            or the AI fell back to the non-AI method.
     """
     result = ai_followupboss_deliverer.deliver(sample_pii_md5s)
 
