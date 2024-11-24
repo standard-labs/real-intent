@@ -90,8 +90,13 @@ OUTPUT_COLUMNS: list[str] = [
 class CSVStringFormatter(BaseOutputDeliverer):
     """Format into CSV strings."""
 
-    def __init__(self, output_columns: list[str] = OUTPUT_COLUMNS):
+    def __init__(
+        self, 
+        output_columns: list[str] = OUTPUT_COLUMNS, 
+        renames: dict[str, str] | None = None
+    ):
         self.output_columns = [] + output_columns
+        self.renames = renames or {}
 
     @staticmethod
     def _unique_sentences(all_md5s: list[MD5WithPII]) -> set[str]:
@@ -144,6 +149,9 @@ class CSVStringFormatter(BaseOutputDeliverer):
             columns={sentence: sentence.split(">")[-1] for sentence in list_sentences}, 
             inplace=True
         )
+
+        # Execute renames if any
+        pii_df.rename(columns=self.renames, inplace=True)
 
         return pii_df
 

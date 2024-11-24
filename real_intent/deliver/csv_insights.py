@@ -9,8 +9,13 @@ class CSVWithInsightsFormatter(CSVStringFormatter):
     Format into CSV strings with insights.
     """
 
-    def __init__(self, per_lead_insights: dict[str, str], output_columns: list[str] = OUTPUT_COLUMNS):
-        super().__init__(output_columns)
+    def __init__(
+        self, 
+        per_lead_insights: dict[str, str], 
+        output_columns: list[str] = OUTPUT_COLUMNS,
+        renames: dict[str, str] | None = None
+    ):
+        super().__init__(output_columns, renames)
         self.per_lead_insights: dict[str, str] = per_lead_insights
 
     def _as_dataframe(self, pii_md5s: list[MD5WithPII]) -> DataFrame:
