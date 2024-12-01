@@ -31,5 +31,5 @@ Homepage = "https://standarddao.finance"
 Repository = "https://github.com/Standard-Labs/real-intent.git"
 
 [project.optional-dependencies]
-logfire = ["logfire>=0.51.0"]
+logfire = ["logfire>=2.5.0"]
 ai = ["openai>=1.42.0"]
