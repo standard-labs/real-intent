@@ -83,6 +83,26 @@ class MidIncomeValidator(BaseValidator):
             md5 for md5 in md5s 
             if md5.pii.household_income in income_levels
         ]
+
+
+class HighIncomeValidator(BaseValidator):
+    """Remove leads below $75k income."""
+
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove leads that do not match the high income requirement."""
+        income_levels = {
+            "H. $75,000-$99,999",
+            "K. $100,000-$149,999", 
+            "L. $150,000-$174,999", 
+            "M. $175,000-$199,999", 
+            "N. $200,000-$249,999", 
+            "O. $250K +"
+        }
+        
+        return [
+            md5 for md5 in md5s 
+            if md5.pii.household_income in income_levels
+        ]
         
 
 class MNWValidator(BaseValidator):
