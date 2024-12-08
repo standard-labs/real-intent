@@ -242,9 +242,18 @@ class BigDBMClient:
     def _retrieve_md5s(self, list_queue_id: int, n_threads: int = 30) -> list[IntentEvent]:
         """Pull all MD5s from an intent job with multithreads."""
         # First page
+        PER_PAGE_COUNT: int = 100
         response_json: dict = self._fetch_result_response(list_queue_id, 1)
-        page_count: int = response_json["totalCount"]
+        total_count: int = int(response_json["totalCount"])
+        page_count: int = (total_count // PER_PAGE_COUNT) + 1
         intent_events: list[IntentEvent] = self._extract_intent_events(response_json)
+
+        # Check for logical error in per page count
+        if page_count > 1 and len(intent_events) != PER_PAGE_COUNT:
+            raise ValueError(
+                f"Expected {PER_PAGE_COUNT} intent events on page 1, "
+                f"but got {len(intent_events)}. Likely need to adjust PER_PAGE_COUNT."
+            )
 
         log("trace", f"Retrieved page 1. Pulling {page_count} pages.")
 
