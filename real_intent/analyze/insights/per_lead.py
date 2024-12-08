@@ -16,7 +16,9 @@ Your individual lead insight should be NO MORE than 2 sentences long.
 It's extremely important that you think deeply and critically. Think like a subject-matter expert, thinking through the overall insights and how this individual lead fits into the bigger picture. 
 Think about how somebody receiving this lead can make the most of it. Actionable insights are key. 
 
-Your response must be valid JSON with the specified keys. Use the "thinking" key FIRST to think thoroughly and critically through your process, before arriving at your final insight.
+You will be given a "Profile" which is a brief descriptor of the overall category of the IAB categories, so you can make assumptions about who the leads are for and how the recipient of the leads should optimize usage of the leads.
+
+Your response must be valid JSON with the specified keys. Use the "thinking" key FIRST to think thoroughly and critically through your process, before arriving at your final insight. Consider the provided profile when generating your insight.
 """
 
 
@@ -30,18 +32,20 @@ class LeadInsight(BaseModel):
 class PerLeadInsightGenerator(BaseAnalyzer):
     """Generate insights for each lead."""
 
-    def __init__(self, openai_api_key: str, global_insights: str = "") -> None:
+    def __init__(self, openai_api_key: str, global_insights: str = "", profile: str = "") -> None:
         """
         Initialize the PerLeadInsightGenerator.
 
         Args:
             openai_api_key: The API key for OpenAI.
             global_insights: Global insights to consider for each lead.
+            profile: Profile to consider for each lead.
 
         Raises:
             ImportError: If the OpenAI package is not installed.
         """
         self.global_insights = global_insights
+        self.profile = profile or "n/a / unclear"
 
         try:
             from openai import OpenAI, OpenAIError
@@ -92,6 +96,7 @@ class PerLeadInsightGenerator(BaseAnalyzer):
                     {
                         "role": "user",
                         "content": (
+                            f"Profile: {self.profile}\n\n"
                             f"Overall Insights:\n\n{self.global_insights}\n\n"
                             f"Lead:\n\n{lead_csv}"
                         )
