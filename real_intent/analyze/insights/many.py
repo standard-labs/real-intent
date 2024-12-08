@@ -172,6 +172,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
             self, 
             openai_api_key: str, 
             processor: BaseProcessor,
+            profile: str = ""
         ):
         """
         Initialize the ValidatedInsightsGenerator.
@@ -191,6 +192,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         
         self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
         self.processor: BaseProcessor = processor
+        self.profile: str = profile or "n/a / unclear"
 
     def extract_validation_info(self) -> str:
         """
@@ -265,6 +267,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
                     {
                         "role": "user",
                         "content": (
+                            f"Profile: {self.profile}\n\n"
                             f"Validations:\n\n{validation_info}\n\n"
                             f"Leads:\n\n{csv_data}"
                         )
