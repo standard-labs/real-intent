@@ -9,7 +9,7 @@ from real_intent.analyze.insights.validator_prompt import SYSTEM_PROMPT as VALID
 
 from real_intent.deliver.csv import CSVStringFormatter
 from real_intent.validate.base import BaseValidator
-from real_intent.process.base import BaseProcessor, ProcessValidator
+from real_intent.process.base import BaseProcessor
 from real_intent.internal_logging import log
 from real_intent.utils import retry_with_backoff
 
@@ -82,7 +82,7 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
         @retry_with_backoff()
         def generate_insights():
             return self.openai_client.beta.chat.completions.parse(
-                model="gpt-4o-2024-08-06",
+                model="gpt-4o",
                 messages=[
                     {
                         "role": "system",
@@ -172,6 +172,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
             self, 
             openai_api_key: str, 
             processor: BaseProcessor,
+            profile: str = ""
         ):
         """
         Initialize the ValidatedInsightsGenerator.
@@ -191,6 +192,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         
         self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
         self.processor: BaseProcessor = processor
+        self.profile: str = profile or "n/a / unclear"
 
     def extract_validation_info(self) -> str:
         """
@@ -256,7 +258,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         @retry_with_backoff()
         def generate_insights():
             return self.openai_client.beta.chat.completions.parse(
-                model="gpt-4o-2024-08-06",
+                model="gpt-4o",
                 messages=[
                     {
                         "role": "system",
@@ -265,6 +267,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
                     {
                         "role": "user",
                         "content": (
+                            f"Profile: {self.profile}\n\n"
                             f"Validations:\n\n{validation_info}\n\n"
                             f"Leads:\n\n{csv_data}"
                         )
