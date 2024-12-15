@@ -338,7 +338,7 @@ class PII(BaseModel):
             "County_Name": f"{random.choice(['North', 'South', 'East', 'West'])} County",
             "Latitude": str(lat),
             "Longitude": str(lon),
-            "Address_Type": random.choice(["Residential", "Business"]),
+            "Address_Type": random.choice(["H", "S", ""]),
             "Cbsa": str(random.randint(10000,99999)),
             "Census_Tract": str(random.randint(100000,999999)),
             "Census_Block_Group": str(random.randint(1,9)),

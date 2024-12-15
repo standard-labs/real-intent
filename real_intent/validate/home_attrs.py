@@ -11,3 +11,13 @@ class NotRenterValidator(BaseValidator):
         return [
             md5 for md5 in md5s if md5.pii.home_owner_status != "Renter"
         ]
+
+
+class NotApartmentValidator(BaseValidator):
+    """Remove leads where address type indicates they're in an apartment."""
+
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove leads that are in an apartment."""
+        return [
+            md5 for md5 in md5s if md5.pii.address_type != "H"  # observed behavior
+        ]
