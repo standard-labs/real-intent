@@ -65,6 +65,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             system: str, 
             system_key: str, 
             tags: list[str] = [],
+            add_zip_tags: bool = True,
             base_url: str = "https://api.followupboss.com/v1",
             event_type: EventType = EventType.REGISTRATION,
             n_threads: int = 1,
@@ -85,7 +86,9 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         self.base_url: str = base_url
         self.system: str = system
         self.tags: list[str] = tags
+        self.add_zip_tags: bool = add_zip_tags
         self.system_key: str = system_key
+        self.per_lead_insights: dict[str, str] = per_lead_insights
 
         # Configuration stuff
         self.event_type: EventType = EventType(event_type)
@@ -216,8 +219,13 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         sentences_str = ", ".join(sentences)
         sentences_str = f"Intents: {sentences_str}."
 
-        # Add tags to be applied to all leads
-        person_data["tags"] = self.tags
+        # Prepare tags: all tags + zip code if available and add_zip_tags is True
+        tags_to_add: list[str] = [] + self.tags
+        if md5_with_pii.pii.zip_code and self.add_zip_tags:
+            tags_to_add.append(md5_with_pii.pii.zip_code)
+
+        # Add tags to person data
+        person_data["tags"] = tags_to_add
 
         return {
             "source": self.system,
