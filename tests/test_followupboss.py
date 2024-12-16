@@ -67,10 +67,15 @@ def test_followupboss_deliverer_success(followupboss_deliverer, sample_pii_md5s)
     tags = ["Test Tag 1", "Test Tag 2"]
     followupboss_deliverer.tags = tags
 
+    # Calculate expected tags based on add_zip_tags setting
+    expected_tags = tags.copy()
+    if followupboss_deliverer.add_zip_tags and sample_pii_md5s[0].pii.zip_code:
+        expected_tags.append(sample_pii_md5s[0].pii.zip_code)
+
     # Test that tags are included in the prepared event data
     event_data = followupboss_deliverer._prepare_event_data(sample_pii_md5s[0])
     assert "tags" in event_data["person"], "Tags not found in prepared event data"
-    assert set(event_data["person"]["tags"]) == set(tags), "Prepared event data does not contain the correct tags"
+    assert set(event_data["person"]["tags"]) == set(expected_tags), "Prepared event data does not contain the correct tags"
 
     # Test delivery and verify tags in the result
     result = followupboss_deliverer.deliver(sample_pii_md5s)
@@ -83,7 +88,7 @@ def test_followupboss_deliverer_success(followupboss_deliverer, sample_pii_md5s)
 
     # Verify tags in the delivered data
     assert "tags" in result[0], "Tags not found in delivered person data"
-    assert set(result[0]["tags"]) == set(tags), "Delivered person data does not contain the correct tags"
+    assert set(result[0]["tags"]) == set(expected_tags), "Delivered person data does not contain the correct tags"
 
 
 @pytest.mark.skipif(not os.getenv("FOLLOWUPBOSS_API_KEY"), reason="FUB API key not found")
