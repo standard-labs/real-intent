@@ -214,3 +214,26 @@ def test_followupboss_deliverer_perlead_insights(api_key, system, system_key, op
 
     for person in response:
         assert deliverer._add_note(person["id"], body="Test", subject="Test")
+
+
+@pytest.mark.skipif(not os.getenv("FOLLOWUPBOSS_API_KEY"), reason="FUB API key not found")
+def test_followupboss_deliverer_zip_tags(followupboss_deliverer, sample_pii_md5s):
+    """Test that ZIP codes are correctly added as tags when add_zip_tags is True."""
+    # Enable ZIP tags (should be True by default)
+    followupboss_deliverer.add_zip_tags = True
+    
+    # Add some regular tags
+    regular_tags = ["Test Tag 1", "Test Tag 2"]
+    followupboss_deliverer.tags = regular_tags
+
+    # Test that ZIP tags are included in the prepared event data
+    event_data = followupboss_deliverer._prepare_event_data(sample_pii_md5s[0])
+    assert "tags" in event_data["person"], "Tags not found in prepared event data"
+    
+    expected_tags = regular_tags + [sample_pii_md5s[0].pii.zip_code]
+    assert set(event_data["person"]["tags"]) == set(expected_tags), "ZIP code not added to tags"
+
+    # Test with add_zip_tags disabled
+    followupboss_deliverer.add_zip_tags = False
+    event_data = followupboss_deliverer._prepare_event_data(sample_pii_md5s[0])
+    assert set(event_data["person"]["tags"]) == set(regular_tags), "Tags include ZIP code when add_zip_tags is False"
