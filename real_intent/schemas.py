@@ -140,8 +140,8 @@ class PII(BaseModel):
     fips_state_code: str = Field(..., alias="Fips_State_Code")
     fips_county_code: str = Field(..., alias="Fips_County_Code")
     county_name: str = Field(..., alias="County_Name")
-    latitude: float = Field(..., alias="Latitude")
-    longitude: float = Field(..., alias="Longitude")
+    latitude: Optional[float] = Field(None, alias="Latitude")
+    longitude: Optional[float] = Field(None, alias="Longitude")
     address_type: str = Field(..., alias="Address_Type")
     cbsa: str = Field(..., alias="Cbsa")
     census_tract: str = Field(..., alias="Census_Tract")
@@ -241,6 +241,13 @@ class PII(BaseModel):
             api_dict['Gender'] = 'Female'
         else:
             api_dict['Gender'] = 'Unknown'
+
+        # Latitude and longitude are sometimes empty strings
+        if api_dict["Latitude"] == "":
+            api_dict["Latitude"] = None
+        
+        if api_dict["Longitude"] == "":
+            api_dict["Longitude"] = None
 
         return cls(**api_dict, mobile_phones=mobile_phones)
 
