@@ -244,10 +244,10 @@ class PII(BaseModel):
 
         # Latitude and longitude are sometimes empty strings
         if api_dict["Latitude"] == "":
-            api_dict["Latitude"] = 0.0
+            api_dict["Latitude"] = None
         
         if api_dict["Longitude"] == "":
-            api_dict["Longitude"] = 0.0
+            api_dict["Longitude"] = None
 
         return cls(**api_dict, mobile_phones=mobile_phones)
 
