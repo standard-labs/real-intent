@@ -3,19 +3,20 @@ import json
 from typing import List
 from pydantic import BaseModel
 import datetime
-from pydantic import BaseModel, ValidationError
-import requests
+from pydantic import BaseModel
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
+import requests
+
 
 class Event(BaseModel):
     title: str
     date: str
     description: str
-    link: str
+    link: str | None = None
 
 class EventsResponse(BaseModel):
     events: List[Event]
@@ -34,39 +35,45 @@ class EventsGenerator():
     def generate_event_prompt(self) -> tuple[str, str]:
 
         system = f"""        
-            You are a helpful assistant specializing in finding local events for users. You are expected to use the provided zip code 
-            to determine the city or area that corresponds to it, and then search for events within that city or area. Your responses 
-            should be relevant, concise, and structured in valid JSON format.  Your responses should 
-            strictly adhere to the user's instructions, without additional commentary or notes. The response must be 
-            structured in valid JSON format only, with no other content included.
+        You are a helpful assistant specializing in finding local events for users. You are expected to use the provided zip code 
+        to determine the city or area that corresponds to it, and then search for events within that city or area. Your responses 
+        should be relevant, concise, and structured in valid JSON format.  Your responses should 
+        strictly adhere to the user's instructions, without additional commentary or notes. The response must be 
+        structured in valid JSON format only, with no other content included. Avoid wrapping them in code blocks or adding formatting like backticks."
         """
 
         user = f"""
-        Based on the zip code {self.zip_code}, determine the city or area that corresponds to this zip code. 
-        Then, search for local events only in that city or area, between {self.start_date} and {self.end_date}. 
-        Focus on events such as public events, community activities, festivals, and major holidays that occur during this period.
+        Based on the zip code {self.zip_code}, determine the city or area that corresponds to this zip code. Then, perform a search 
+        for **all local events happening within the city and surrounding areas, between {self.start_date} and {self.end_date}. Focus on events 
+        such as public events, community activities, festivals, and major holidays that occur during this period.
 
-        The event search should strictly be within the city or area that corresponds to the zip code {self.zip_code}. Ensure that all results 
-        are relevant to this location and within the given date range of ({self.start_date} to {self.end_date}).
+        I am NOT providing you with source data for this task. You must find the information based on the provided zip code and date range.
 
-        
-        Focus on public events, community activities, festivals, and any special events happening 
-        during this time. Pay particular attention to any major holidays like Christmas and New Year's Eve,
-        but if there are no major holidays, feel free to include general events that might appeal to
-        locals during this period.
+        The event search should strictly include events within the city or its surrounding areas that correspond to zip code {self.zip_code}. 
+        Ensure that all results are relevant to this location and within the given date range of ({self.start_date} to {self.end_date}).
 
-        Find at least 3-5 unique local events that are happening in the specified zipcode and within the date range.
+        Focus on public events, community activities, festivals, and any special events happening during this time. Pay particular attention 
+        to any major holidays like Christmas and New Year's Eve. If there are no major holidays, include general events that might appeal 
+        to locals during this period.
 
-        Return the result in a JSON object with one top level key called "events" that contains a list 
-        of events. Each event should have the following keys:
+        Find at least 3-5 local events that are happening in the specified zipcode and within the date range. Do NOT repeat events.
+
+        Return the result in a JSON object with 2 keys 'events' and 'thinking':
+        The key called 'events" contains a list of events. Each event should have the following keys:
             'title' - the name of the event, 
             'date' - the date of the event in ISO 8601 format (YYYY-MM-DD),
             'description' - a description of the event with relevant details and at least 2-3 sentences. Provide
             information about the type of event, any special guests, or activities, and why it's significant to the community.
-            'link' - a URL to the event page or more information.
+            'link' - a URL to the event page or more information. You should list where you found the event information in here.
         
         If there are no events found, return an empty list under the "events" key. Do not add any extra notes, 
         explanations, or surrounding context.
+
+        The second key should be called 'thinking' which is a string. 
+            This key should briefly describe the logic or checks you performed to ensure that the events are 
+            relevant, within the specified zip code, and fall within the given date range. Keep this explanation 
+            short and relevant to the task. Refer back to the thinking key to ensure that you have followed the correct specifications.
+
 
         Ensure that the events are all local to the specified zipcode and within the date range. These events
         should help a real estate agent gain a better understand of the local community. 
@@ -75,6 +82,9 @@ class EventsGenerator():
         Your response should be structured in valid JSON format. Do not include any additional information apart
         from the json object with the list of events. Only include events that*exactly match the provided zip code {self.zip_code}, 
         and ensure that all events are within the given date range. Do not add any other data or information apart from this structured output.
+
+        There should be no additional information, explanations, or context provided in the response. The response should be structured in valid JSON format only. 
+        Do not include any comments, notes, or additional content in the response.
 
         """
 
@@ -93,25 +103,25 @@ class EventsGenerator():
             """
 
         user = f"""
-                    Summarize the events happening in {self.zip_code} between {self.start_date} and {self.end_date} provided to you here.
-                    \n{events}\n
-                    Your summary should be informative and engaging, providing a brief overview of the events, the local community,
-                    and any other relevant details such as weather conditions. Provide a maximum of 5 sentences! 
-                    
-                    You must only include the key events and highlights from the list provided. Do not include any additional events.
-                    
-                    It should be structured in valid JSON format with one top level key called "summary" that contains a string
-                    summarizing the events and the local community during the specified period with a maximum of 5 sentences. 
-                    The summary should be a detailed paragraph that provides an overview of the expected weather conditions for the week, {self.start_date} to {self.end_date},
-                    and highlights the key events happening in {self.zip_code} from the list provided. Include any relevant insights about the local community, 
-                    such as cultural aspects, holiday-specific activities, or any notable attractions during this period.
-                    If there are any major holidays (e.g., Christmas, New Year's), mention how the local events and community activities reflect these.
+            Summarize the events happening in {self.zip_code} between {self.start_date} and {self.end_date} provided to you here.
+            \n{events}\n
+            Your summary should be informative and engaging, providing a brief overview of the events, the local community,
+            and any other relevant details such as weather conditions. Provide a maximum of 5 sentences! 
+            
+            You must only include the key events and highlights from the list provided. Do not include any additional events.
+            
+            It should be structured in valid JSON format with one top level key called "summary" that contains a string
+            summarizing the events and the local community during the specified period with a maximum of 5 sentences. 
+            The summary should be a detailed paragraph that provides an overview of the expected weather conditions for the week, {self.start_date} to {self.end_date},
+            and highlights the key events happening in {self.zip_code} from the list provided. Include any relevant insights about the local community, 
+            such as cultural aspects, holiday-specific activities, or any notable attractions during this period.
+            If there are any major holidays (e.g., Christmas, New Year's), mention how the local events and community activities reflect these.
         """
 
         return system, user
 
 
-    def generate_insight(self, system, user):
+    def generate(self, system, user):
         url = "https://api.perplexity.ai/chat/completions"
 
         payload = {
@@ -150,18 +160,19 @@ class EventsGenerator():
         try:
             # Generate events
             system, user = self.generate_event_prompt()
-            result = self.generate_insight(system, user)['choices'][0]['message']['content']
-            result = result.replace("`", "").replace("json", "")
+            result = self.generate(system, user)['choices'][0]['message']['content']
+            result = result.replace("`", "").replace("json", "") # for some reason, the response is wrapped in code block and is prefixed with "json" for all responses...
             result = json.loads(result)
             events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in result['events']]
             
+            print("THINKING: ", result['thinking'])
+
             print(f"Generated {len(events)} events")
             if len(events) < 3:
                 raise Exception(f"Insufficient events found")
 
-            # Generate summary
             system, user = self.generate_summary_prompt(result)
-            summary = self.generate_insight(system, user)['choices'][0]['message']['content']
+            summary = self.generate(system, user)['choices'][0]['message']['content']
             summary = summary.replace("`", "").replace("json", "").replace("\n", "")
             summary = json.loads(summary)
 
@@ -216,7 +227,7 @@ class EventsGenerator():
             normal_style.fontSize = 10
             normal_style.leading = 12
 
-            bottom_margin = 60
+            bottom_margin = 70
 
             for idx, event in enumerate(events_response.events):
 
@@ -241,7 +252,7 @@ class EventsGenerator():
 
                 c.setFont("Helvetica-Oblique", 10)
                 c.setFillColor(colors.blue)
-                c.drawString(100, y_position, f"More Info: {event.link}")
+                c.drawString(100, y_position, f"Link: {event.link if event.link else 'N/A'}")
                 y_position -= 20
 
                 c.setFillColor(colors.black) 
@@ -257,10 +268,15 @@ class EventsGenerator():
             raise Exception(f"Error generating PDF: {e}")
 
 
-# Example Usage ****************************************************************************************
-try:
-    event_generator = EventsGenerator("PERPLEXITY_KEY", "11801")
-    events_response = event_generator.generate_events()
-    event_generator.generate_pdf(events_response, "events.pdf")
-except Exception as e:
-    print(f"Error: {e}")
+    @staticmethod
+    def main(api_key: str, zip_code: str):
+        try:
+            event_generator = EventsGenerator(api_key, zip_code)
+            events_response = event_generator.generate_events()
+            event_generator.generate_pdf(events_response, f"{zip_code}events.pdf")
+        except Exception as e:
+            raise Exception(f"Error: {e}")
+
+
+# Temporary test structure
+EventsGenerator.main("PERPLEXITY_KEY", 11801)
