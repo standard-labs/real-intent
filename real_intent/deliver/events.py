@@ -33,35 +33,48 @@ class EventsGenerator():
 
     def generate_event_prompt(self) -> tuple[str, str]:
 
-        system = f"""
-                    You are a helpful assistant specializing in finding local events for users. You provide accurate, concise, 
-                    and relevant event information based on the user's provided location and date range. Your responses are 
-                    structured in valid JSON format, adhering strictly to the user's instructions.
-                """
+        system = f"""        
+            You are a helpful assistant specializing in finding local events for users. You are expected to use the provided zip code 
+            to determine the city or area that corresponds to it, and then search for events within that city or area. Your responses 
+            should be relevant, concise, and structured in valid JSON format.  Your responses should 
+            strictly adhere to the user's instructions, without additional commentary or notes. The response must be 
+            structured in valid JSON format only, with no other content included.
+        """
 
         user = f"""
-                    Search for local events in {self.zip_code} between {self.start_date} and {self.end_date}. 
-                    Focus on public events, community activities, festivals, and any special events happening 
-                    during this time. Pay particular attention to any major holidays like Christmas and New Year's Eve,
-                    but if there are no major holidays, feel free to include general events that might appeal to
-                    locals during this period.
+        Based on the zip code {self.zip_code}, determine the city or area that corresponds to this zip code. 
+        Then, search for local events only in that city or area, between {self.start_date} and {self.end_date}. 
+        Focus on events such as public events, community activities, festivals, and major holidays that occur during this period.
 
-                    Find at least 3-5 unique local events that are happening in the specified zipcode and within the date range.
+        The event search should strictly be within the city or area that corresponds to the zip code {self.zip_code}. Ensure that all results 
+        are relevant to this location and within the given date range of ({self.start_date} to {self.end_date}).
 
-                    Return the result in a JSON object with one top level key called "events" that contains a list 
-                    of events. Each event should have the following keys:
-                        'title' - the name of the event, 
-                        'date' - the date of the event in ISO 8601 format (YYYY-MM-DD),
-                        'description' - a description of the event with relevant details and at least 2-3 sentences. Provide
-                        information about the type of event, any special guests, or activities, and why it's significant to the community.
-                        'link' - a URL to the event page or more information.
-                    
-                    Ensure that the events are all local to the specified zipcode and within the date range. These events
-                    should help a real estate agent gain a better understand of the local community. 
-                    You should not include any events that are not relevant to zip code {self.zip_code} or is not within {self.start_date} to {self.end_date}.
+        
+        Focus on public events, community activities, festivals, and any special events happening 
+        during this time. Pay particular attention to any major holidays like Christmas and New Year's Eve,
+        but if there are no major holidays, feel free to include general events that might appeal to
+        locals during this period.
 
-                    Your response should be structured in valid JSON format. Do not include any additional information apart
-                    from the json object with the list of events.
+        Find at least 3-5 unique local events that are happening in the specified zipcode and within the date range.
+
+        Return the result in a JSON object with one top level key called "events" that contains a list 
+        of events. Each event should have the following keys:
+            'title' - the name of the event, 
+            'date' - the date of the event in ISO 8601 format (YYYY-MM-DD),
+            'description' - a description of the event with relevant details and at least 2-3 sentences. Provide
+            information about the type of event, any special guests, or activities, and why it's significant to the community.
+            'link' - a URL to the event page or more information.
+        
+        If there are no events found, return an empty list under the "events" key. Do not add any extra notes, 
+        explanations, or surrounding context.
+
+        Ensure that the events are all local to the specified zipcode and within the date range. These events
+        should help a real estate agent gain a better understand of the local community. 
+        You should not include any events that are not relevant to area of zip code {self.zip_code} or is not within {self.start_date} to {self.end_date}.
+
+        Your response should be structured in valid JSON format. Do not include any additional information apart
+        from the json object with the list of events. Only include events that*exactly match the provided zip code {self.zip_code}, 
+        and ensure that all events are within the given date range. Do not add any other data or information apart from this structured output.
 
         """
 
@@ -102,7 +115,7 @@ class EventsGenerator():
         url = "https://api.perplexity.ai/chat/completions"
 
         payload = {
-        "model": "llama-3.1-sonar-small-128k-online",
+        "model": "llama-3.1-sonar-large-128k-online",
         "messages": [
             {
                 "role": "system",
@@ -113,6 +126,13 @@ class EventsGenerator():
                 "content": user
             }
         ],
+        "temperature": 0.3,
+        "presence_penalty": 0.5,
+        "return_images": False,
+        "return_related_questions": False,
+        "stream": False,
+        "search_recency_filter": "month",
+        "top_k": 0
         }
 
         headers = {
@@ -121,82 +141,126 @@ class EventsGenerator():
         }
 
         response = requests.request("POST", url, json=payload, headers=headers)
-
+        if response.status_code != 200:
+            raise Exception(response.json())
         return response.json()
     
 
     def generate_events(self) -> EventsResponse | None:
         try:
+            # Generate events
             system, user = self.generate_event_prompt()
             result = self.generate_insight(system, user)['choices'][0]['message']['content']
             result = result.replace("`", "").replace("json", "")
             result = json.loads(result)
             events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in result['events']]
+            
+            print(f"Generated {len(events)} events")
+            if len(events) < 3:
+                raise Exception(f"Insufficient events found")
+
+            # Generate summary
             system, user = self.generate_summary_prompt(result)
             summary = self.generate_insight(system, user)['choices'][0]['message']['content']
             summary = summary.replace("`", "").replace("json", "").replace("\n", "")
             summary = json.loads(summary)
+
+            # Return events and summary
             return EventsResponse(events=events, summary=summary['summary'])
-        except (ValidationError) as e:
-            return e.errors()
+        except Exception as e:
+            raise Exception(f"Error generating events: {e}")
 
 
     def generate_pdf(self, events_response: EventsResponse, filename: str):
-        c = canvas.Canvas(filename, pagesize=letter)
-        width, height = letter
-        
-        c.setFont("Helvetica-Bold", 16)
-        c.drawString(100, height - 40, "Upcoming Local Events")
+        try:
 
-        styles = getSampleStyleSheet()
-        normal_style = styles['Normal']
-        normal_style.fontName = 'Helvetica'
-        normal_style.fontSize = 10
-        normal_style.leading = 12  
+            c = canvas.Canvas(filename, pagesize=letter)
+            width, height = letter
 
-        summary_paragraph = Paragraph(events_response.summary, normal_style)
-        paragraph_width = width - 200  
-        summary_height = summary_paragraph.getSpaceBefore() + summary_paragraph.getSpaceAfter() + summary_paragraph.wrap(paragraph_width, 100)[1]
-        summary_paragraph.drawOn(c, 100, height - 60 - summary_height)  
-        y_position = height - 60 - summary_height - 20  
+            # background color
+            c.setFillColor(colors.aliceblue)
+            c.rect(0, 0, width, height, fill=1)  
 
- 
-        normal_style = styles['Normal']
-        normal_style.fontName = 'Helvetica'
-        normal_style.fontSize = 10
-        normal_style.leading = 12 
 
-        bottom_margin = 50  
+            title = "Upcoming Local Events"
+            title_font_size = 16
 
-        for idx, event in enumerate(events_response.events):
+            text_width = c.stringWidth(title, "Helvetica-Bold", title_font_size)
+            x_position = (width - text_width) / 2  
 
-            if y_position < bottom_margin:
-                break
+            # Title
+            c.setFillColor(colors.red)
+            c.rect(0, height - 50, width, 50, fill=1) 
 
-            c.setFont("Helvetica-Bold", 14)
-            c.drawString(100, y_position, f"Event: {event.title}")
-            y_position -= 20
+            c.setFillColor(colors.white)
+            c.setFont("Helvetica-Bold", title_font_size)
 
-            c.setFont("Helvetica", 12)
-            c.drawString(100, y_position, f"Date: {event.date}")
-            y_position -= 20
+            c.drawString(x_position, height - 30, title)
 
-            paragraph = Paragraph(event.description, normal_style)
-            paragraph_width = width - 200 
-            paragraph_height = paragraph.getSpaceBefore() + paragraph.getSpaceAfter() + paragraph.wrap(paragraph_width, 100)[1]
-            paragraph.drawOn(c, 100, y_position - paragraph_height)
-            y_position -= paragraph_height + 20  
 
-            c.setFont("Helvetica-Oblique", 10)
-            c.setFillColor(colors.blue)
-            c.drawString(100, y_position, f"More Info: {event.link}")
-            y_position -= 20  
+            styles = getSampleStyleSheet()
+            normal_style = styles['Normal']
+            normal_style.fontName = 'Helvetica'
+            normal_style.fontSize = 10
+            normal_style.leading = 12
 
-            c.setFillColor(colors.black)
-        c.save()
+            # Summary
+            summary_paragraph = Paragraph(events_response.summary, normal_style)
+            paragraph_width = width - 200
+            summary_height = summary_paragraph.getSpaceBefore() + summary_paragraph.getSpaceAfter() + summary_paragraph.wrap(paragraph_width, 100)[1]
+            summary_paragraph.drawOn(c, 100, height - 60 - summary_height)
+            y_position = height - 60 - summary_height - 20
+
+            normal_style = styles['Normal']
+            normal_style.fontName = 'Helvetica'
+            normal_style.fontSize = 10
+            normal_style.leading = 12
+
+            bottom_margin = 60
+
+            for idx, event in enumerate(events_response.events):
+
+                if y_position < bottom_margin:
+                    break
+
+                c.setFillColor(colors.red) 
+                c.setFont("Helvetica-Bold", 14)
+                c.drawString(100, y_position, f"Event: {event.title}")
+                y_position -= 20
+
+                c.setFillColor(colors.green) 
+                c.setFont("Helvetica", 12)
+                c.drawString(100, y_position, f"Date: {event.date}")
+                y_position -= 20
+
+                paragraph = Paragraph(event.description, normal_style)
+                paragraph_width = width - 200
+                paragraph_height = paragraph.getSpaceBefore() + paragraph.getSpaceAfter() + paragraph.wrap(paragraph_width, 100)[1]
+                paragraph.drawOn(c, 100, y_position - paragraph_height)
+                y_position -= paragraph_height + 20
+
+                c.setFont("Helvetica-Oblique", 10)
+                c.setFillColor(colors.blue)
+                c.drawString(100, y_position, f"More Info: {event.link}")
+                y_position -= 20
+
+                c.setFillColor(colors.black) 
+
+                c.setStrokeColor(colors.gold)
+                c.setLineWidth(1)
+                c.line(100, y_position, width - 100, y_position)
+                y_position -= 20 
+
+            c.save()
+
+        except Exception as e:
+            raise Exception(f"Error generating PDF: {e}")
 
 
 # Example Usage ****************************************************************************************
-event_generator = EventsGenerator("PERPLEXITY_KEY", "11801")
-events_response = event_generator.generate_events()
-event_generator.generate_pdf(events_response, "events.pdf")
+try:
+    event_generator = EventsGenerator("PERPLEXITY_KEY", "11801")
+    events_response = event_generator.generate_events()
+    event_generator.generate_pdf(events_response, "events.pdf")
+except Exception as e:
+    print(f"Error: {e}")
