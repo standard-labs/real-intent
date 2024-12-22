@@ -238,10 +238,10 @@ class EventsGenerator:
             log("debug", f"Received good response from Perplexity: {response_json}")
             return response_json['choices'][0]['message']['content']
         except requests.exceptions.RequestException as e:
-            log("error", f"Error in Perplexity API request: {str(e)}")
+            log("error", f"Error in Perplexity API request: {str(e)}", exc_info=e)
             raise
         except (KeyError, IndexError) as e:
-            log("error", f"Error parsing Perplexity API response: {str(e)}")
+            log("error", f"Error parsing Perplexity API response: {str(e)}", exc_info=e)
             raise
     
     @retry_generation
