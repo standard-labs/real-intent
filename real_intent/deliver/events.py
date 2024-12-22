@@ -14,7 +14,6 @@ import json
 from typing import List
 
 from real_intent.internal_logging import log
-from real_intent.deliver.base import BaseOutputDeliverer
 
 
 class Event(BaseModel):
@@ -246,7 +245,7 @@ class EventsGenerator:
 
             c.setFillColor(colors.red) 
             c.setFont("Helvetica-Bold", 14)
-            c.drawString(100, y_position, f"Event: {event.title}")
+            c.drawString(100, y_position, f"{event.title}")
             y_position -= 20
 
             c.setFillColor(colors.green) 
