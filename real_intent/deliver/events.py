@@ -202,7 +202,7 @@ class EventsGenerator:
         log("debug", f"Events and summary generated successfully. Events: {events}")
         return EventsResponse(events=events, summary=summary['summary'])
 
-    def generate_pdf(self, events_response: EventsResponse) -> BytesIO:
+    def generate_pdf_buffer(self, events_response: EventsResponse) -> BytesIO:
         """
         Generate a PDF file with the events and summary.
         """
