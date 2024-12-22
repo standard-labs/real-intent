@@ -209,10 +209,8 @@ class EventsDeliverer(BaseOutputDeliverer):
         # Title
         c.setFillColor(colors.red)
         c.rect(0, height - 50, width, 50, fill=1) 
-
         c.setFillColor(colors.white)
         c.setFont("Helvetica-Bold", title_font_size)
-
         c.drawString(x_position, height - 30, title)
 
         styles = getSampleStyleSheet()
