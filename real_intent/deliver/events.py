@@ -8,7 +8,7 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 
-from typing import Callable
+from typing import Callable, Any
 import datetime
 import json
 from io import BytesIO
@@ -53,6 +53,21 @@ def retry_generation(func: Callable):
         raise
 
     return wrapper
+
+
+def extract_json_only(response_str: str) -> dict[str, Any]:
+    """
+    Parse a string response and pull out everything between the first { and last }
+    then return it as a dictionary. Allows excess text before and after valid JSON
+    without causing an error.
+    """
+    start_index = response_str.find("{")
+    end_index = response_str.rfind("}")
+
+    if start_index == -1 or end_index == -1:
+        raise ValueError("No valid JSON object found in the response.")
+
+    return json.loads(response_str[start_index:end_index+1])
 
 
 class EventsGenerator:
@@ -217,7 +232,7 @@ class EventsGenerator:
         system, user = self.generate_event_prompt()
         result = self.generate(system, user)
         result = result.replace("`", "").replace("json", "") # for some reason, the response is wrapped in code block and is prefixed with "json" for all responses...
-        result = json.loads(result)
+        result = extract_json_only(result)
         events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in result['events']]
         
         log("debug", f"Thinking process: {result['thinking']}")
@@ -226,7 +241,7 @@ class EventsGenerator:
         system, user = self.generate_summary_prompt(events)
         summary = self.generate(system, user)
         summary = summary.replace("`", "").replace("json", "").replace("\n", "")
-        summary = json.loads(summary)
+        summary = extract_json_only(summary)
 
         # Return events and summary
         log("debug", f"Events and summary generated successfully. Events: {events}")
