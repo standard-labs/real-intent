@@ -171,7 +171,7 @@ class EventsGenerator:
         response.raise_for_status()
         return response.json()
     
-    def generate_events(self) -> EventsResponse | None:
+    def generate_events(self) -> EventsResponse:
         """
         Generate events for a given zip code.
         """
