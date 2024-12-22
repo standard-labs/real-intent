@@ -105,7 +105,7 @@ class EventsGenerator:
 
         return system, user
 
-    def generate_summary_prompt(self, events) -> tuple[str, str]:
+    def generate_summary_prompt(self, events: list[Event]) -> tuple[str, str]:
         """
         Generate the prompt for the summary generation task.
         """
@@ -136,7 +136,7 @@ class EventsGenerator:
 
         return system, user
 
-    def generate(self, system, user):
+    def generate(self, system: str, user: str):
         """
         Generate a response from the Perplexity API.
         """
@@ -193,13 +193,13 @@ class EventsGenerator:
         log("debug", f"Thinking process: {result['thinking']}")
         log("debug", f"Generated {len(events)} events")
 
-        system, user = self.generate_summary_prompt(result)
+        system, user = self.generate_summary_prompt(events)
         summary = self.generate(system, user)['choices'][0]['message']['content']
         summary = summary.replace("`", "").replace("json", "").replace("\n", "")
         summary = json.loads(summary)
 
         # Return events and summary
-        log("debug", "Events and summary generated successfully. Events: {events}")
+        log("debug", f"Events and summary generated successfully. Events: {events}")
         return EventsResponse(events=events, summary=summary['summary'])
 
     def generate_pdf(self, events_response: EventsResponse) -> BytesIO:
