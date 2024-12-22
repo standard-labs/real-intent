@@ -276,6 +276,6 @@ class EventsGenerator:
 
     @staticmethod
     def main(api_key: str, zip_code: str):
-        event_generator = EventsDeliverer(api_key, zip_code)
+        event_generator = EventsGenerator(api_key, zip_code)
         events_response = event_generator.generate_events()
         event_generator.generate_pdf(events_response, f"{zip_code}events.pdf")
