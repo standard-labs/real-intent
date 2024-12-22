@@ -34,6 +34,13 @@ class EventsResponse(BaseModel):
 
 # ---- Helpers ----
 
+class NoValidJSONError(ValueError):
+    """Exception raised when no valid JSON is found in the response."""
+
+    def __init__(self, content: str):
+        super().__init__(content)
+
+
 def retry_generation(func: Callable):
     """Retry the generation four times if it fails validation."""
     MAX_ATTEMPTS: int = 4
@@ -43,7 +50,7 @@ def retry_generation(func: Callable):
         for attempt in range(1, MAX_ATTEMPTS+1):
             try:
                 return func(*args, **kwargs)
-            except (ValidationError, KeyError, json.decoder.JSONDecodeError):
+            except (ValidationError, KeyError, NoValidJSONError, json.decoder.JSONDecodeError):
                 if attempt < 3:  # Log warning for first n-1 attempts
                     log("warn", f"Function {func.__name__} failed validation, attempt {attempt} of {MAX_ATTEMPTS}.")
                 else:  # Log error for the last attempt
@@ -65,7 +72,7 @@ def extract_json_only(response_str: str) -> dict[str, Any]:
     end_index = response_str.rfind("}")
 
     if start_index == -1 or end_index == -1:
-        raise ValueError("No valid JSON object found in the response.")
+        raise NoValidJSONError(response_str)
 
     return json.loads(response_str[start_index:end_index+1])
 
