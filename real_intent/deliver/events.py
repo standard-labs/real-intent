@@ -8,6 +8,7 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 
+from typing import Callable
 import datetime
 import json
 from io import BytesIO
@@ -33,17 +34,23 @@ class EventsResponse(BaseModel):
 
 # ---- Helpers ----
 
-def retry_generation(func):
-    """Retry the generation once if it fails validation."""
+def retry_generation(func: Callable):
+    """Retry the generation four times if it fails validation."""
+    MAX_ATTEMPTS: int = 4
+
     def wrapper(*args, **kwargs):
-        """Run the function, catch error, then run again without catching."""
-        try:
-            result = func(*args, **kwargs)
-        except ValidationError:
-            log("warn", f"Function {func.__name__} failed validation, retrying once.")
-            result = func(*args, **kwargs)
+        """Run the function, catch error, then retry up to four times."""
+        for attempt in range(1, MAX_ATTEMPTS+1):
+            try:
+                return func(*args, **kwargs)
+            except ValidationError:
+                if attempt < 3:  # Log warning for first n-1 attempts
+                    log("warn", f"Function {func.__name__} failed validation, attempt {attempt} of {MAX_ATTEMPTS}.")
+                else:  # Log error for the last attempt
+                    log("error", f"Function {func.__name__} failed validation after {MAX_ATTEMPTS} attempts.")
         
-        return result
+        # If we've exhausted all attempts, raise the last exception
+        raise
 
     return wrapper
 
