@@ -1,5 +1,5 @@
 """Generate events for a given zip code."""
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 import requests
 
 from reportlab.lib.pagesizes import letter
@@ -15,6 +15,8 @@ from io import BytesIO
 from real_intent.internal_logging import log
 
 
+# ---- Models ----
+
 class Event(BaseModel):
     """Event object."""
     title: str
@@ -27,6 +29,23 @@ class EventsResponse(BaseModel):
     """Response object, containing events and summary."""
     events: list[Event]
     summary: str
+
+
+# ---- Helpers ----
+
+def retry_generation(func):
+    """Retry the generation once if it fails validation."""
+    def wrapper(*args, **kwargs):
+        """Run the function, catch error, then run again without catching."""
+        try:
+            result = func(*args, **kwargs)
+        except ValidationError:
+            log("warn", f"Function {func.__name__} failed validation, retrying once.")
+            result = func(*args, **kwargs)
+        
+        return result
+
+    return wrapper
 
 
 class EventsGenerator:
@@ -179,6 +198,7 @@ class EventsGenerator:
             log("error", f"Error in Perplexity API request: {str(e)}")
             raise
     
+    @retry_generation
     def generate_events(self) -> EventsResponse:
         """
         Generate events for a given zip code.
