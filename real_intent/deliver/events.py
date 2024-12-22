@@ -322,7 +322,7 @@ class EventsGenerator:
 
             c.setFillColor(colors.red) 
             c.setFont("Helvetica-Bold", 14)
-            c.drawString(100, y_position, f"{event.truncated_title()}")
+            c.drawString(100, y_position, event.truncated_title())
             y_position -= 20
 
             c.setFillColor(colors.green) 
