@@ -206,24 +206,24 @@ class EventsGenerator:
         url = "https://api.perplexity.ai/chat/completions"
 
         payload = {
-        "model": "llama-3.1-sonar-large-128k-online",
-        "messages": [
-            {
-                "role": "system",
-                "content": system
-            },
-            {
-                "role": "user",
-                "content": user
-            }
-        ],
-        "temperature": 0.3,
-        "presence_penalty": 0.5,
-        "return_images": False,
-        "return_related_questions": False,
-        "stream": False,
-        "search_recency_filter": "month",
-        "top_k": 0
+            "model": "llama-3.1-sonar-large-128k-online",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system
+                },
+                {
+                    "role": "user",
+                    "content": user
+                }
+            ],
+            "temperature": 0.3,
+            "presence_penalty": 0.5,
+            "return_images": False,
+            "return_related_questions": False,
+            "stream": False,
+            "search_recency_filter": "month",
+            "top_k": 0
         }
 
         headers = {
