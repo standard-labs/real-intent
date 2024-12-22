@@ -31,13 +31,20 @@ class EventsResponse(BaseModel):
     summary: str
 
 
-class EventsDeliverer(BaseOutputDeliverer):
+class EventsGenerator:
     """
-    Deliverer for generating events for a given zip code.
+    Class for generating events for a given zip code.
     """
 
-    def __init__(self, perplexity_api_key: str) -> None:
+    def __init__(self, zip_code: str, perplexity_api_key: str) -> None:
+        if not perplexity_api_key and isinstance(perplexity_api_key, str):
+            raise ValueError("Perpelxity API key must be a truthy string.")
+
+        if not zip_code and isinstance(zip_code, str) and len(zip_code) == 5 and zip_code.isnumeric():
+            raise ValueError("Zip code invalid.")
+
         self.key = perplexity_api_key
+        self.zip_code = zip_code
         self.start_date = datetime.datetime.now().strftime("%B %d, %Y")
         self.end_date = (datetime.datetime.now() + datetime.timedelta(days=7)).strftime("%B %d, %Y")
 
