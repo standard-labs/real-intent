@@ -231,7 +231,6 @@ class EventsGenerator:
         # Generate events
         system, user = self.generate_event_prompt()
         result = self.generate(system, user)
-        result = result.replace("`", "").replace("json", "") # for some reason, the response is wrapped in code block and is prefixed with "json" for all responses...
         result = extract_json_only(result)
         events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in result['events']]
         
@@ -240,12 +239,11 @@ class EventsGenerator:
 
         system, user = self.generate_summary_prompt(events)
         summary = self.generate(system, user)
-        summary = summary.replace("`", "").replace("json", "").replace("\n", "")
-        summary = extract_json_only(summary)
+        summary_dict: dict = extract_json_only(summary)
 
         # Return events and summary
         log("debug", f"Events and summary generated successfully. Events: {events}")
-        return EventsResponse(events=events, summary=summary['summary'])
+        return EventsResponse(events=events, summary=summary_dict['summary'])
 
     def generate_pdf_buffer(self, events_response: EventsResponse) -> BytesIO:
         """
