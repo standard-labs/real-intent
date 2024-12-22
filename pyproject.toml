@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "real-intent"
-version = "v2.15.0"
+version = "v2.17.1"
 dependencies = [
   "requests",
   "pandas",
@@ -33,3 +33,4 @@ Repository = "https://github.com/Standard-Labs/real-intent.git"
 [project.optional-dependencies]
 logfire = ["logfire>=2.5.0"]
 ai = ["openai>=1.55.3"]
+pdf = ["reportlab>=4.2.5"]
