@@ -41,6 +41,13 @@ class NoValidJSONError(ValueError):
         super().__init__(content)
 
 
+class NoEventsFoundError(ValueError):
+    """Exception raised when no events are found for a zip code."""
+
+    def __init__(self, zip_code: str):
+        super().__init__(f"No events found for zip code {zip_code}")
+
+
 def retry_generation(func: Callable):
     """Retry the generation four times if it fails validation."""
     MAX_ATTEMPTS: int = 4
@@ -243,6 +250,10 @@ class EventsGenerator:
         
         log("debug", f"Thinking process: {result['thinking']}")
         log("debug", f"Generated {len(events)} events")
+
+        # Make sure we have events
+        if not events:
+            raise NoEventsFoundError(self.zip_code)
 
         system, user = self.generate_summary_prompt(events)
         summary = self.generate(system, user)
