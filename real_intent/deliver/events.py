@@ -1,6 +1,5 @@
 """Generate events for a given zip code."""
 from pydantic import BaseModel
-from pydantic import BaseModel
 import requests
 
 from reportlab.lib.pagesizes import letter
