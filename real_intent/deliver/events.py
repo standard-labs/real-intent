@@ -10,7 +10,6 @@ from reportlab.lib.styles import getSampleStyleSheet
 
 import datetime
 import json
-from typing import List
 
 from real_intent.internal_logging import log
 
@@ -25,7 +24,7 @@ class Event(BaseModel):
 
 class EventsResponse(BaseModel):
     """Response object, containing events and summary."""
-    events: List[Event]
+    events: list[Event]
     summary: str
 
 
