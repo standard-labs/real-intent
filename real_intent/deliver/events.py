@@ -41,7 +41,7 @@ class NoValidJSONError(ValueError):
         super().__init__(content)
 
 
-class NoEventsFoundError(ValueError):
+class NoEventsFoundError(Exception):
     """Exception raised when no events are found for a zip code."""
 
     def __init__(self, zip_code: str):
