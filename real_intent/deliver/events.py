@@ -43,7 +43,7 @@ def retry_generation(func: Callable):
         for attempt in range(1, MAX_ATTEMPTS+1):
             try:
                 return func(*args, **kwargs)
-            except ValidationError:
+            except (ValidationError, KeyError, json.decoder.JSONDecodeError):
                 if attempt < 3:  # Log warning for first n-1 attempts
                     log("warn", f"Function {func.__name__} failed validation, attempt {attempt} of {MAX_ATTEMPTS}.")
                 else:  # Log error for the last attempt
@@ -162,7 +162,7 @@ class EventsGenerator:
 
         return system, user
 
-    def generate(self, system: str, user: str):
+    def generate(self, system: str, user: str) -> dict[str, str]:
         """
         Generate a response from the Perplexity API.
         """
@@ -200,9 +200,12 @@ class EventsGenerator:
             response.raise_for_status()
             response_json = response.json()
             log("debug", f"Received good response from Perplexity: {response_json}")
-            return response_json
+            return response_json['choices'][0]['message']['content']
         except requests.exceptions.RequestException as e:
             log("error", f"Error in Perplexity API request: {str(e)}")
+            raise
+        except (KeyError, IndexError) as e:
+            log("error", f"Error parsing Perplexity API response: {str(e)}")
             raise
     
     @retry_generation
@@ -212,7 +215,7 @@ class EventsGenerator:
         """
         # Generate events
         system, user = self.generate_event_prompt()
-        result = self.generate(system, user)['choices'][0]['message']['content']
+        result = self.generate(system, user)
         result = result.replace("`", "").replace("json", "") # for some reason, the response is wrapped in code block and is prefixed with "json" for all responses...
         result = json.loads(result)
         events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in result['events']]
@@ -221,7 +224,7 @@ class EventsGenerator:
         log("debug", f"Generated {len(events)} events")
 
         system, user = self.generate_summary_prompt(events)
-        summary = self.generate(system, user)['choices'][0]['message']['content']
+        summary = self.generate(system, user)
         summary = summary.replace("`", "").replace("json", "").replace("\n", "")
         summary = json.loads(summary)
 
