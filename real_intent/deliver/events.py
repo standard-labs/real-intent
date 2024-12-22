@@ -159,7 +159,7 @@ class EventsGenerator:
         You should not include any events that are not relevant to area of zip code {self.zip_code} or is not within {self.start_date} to {self.end_date}.
 
         Your response should be structured in valid JSON format. Do not include any additional information apart
-        from the json object with the list of events. Only include events that*exactly match the provided zip code {self.zip_code}, 
+        from the JSON object with the list of events. Only include events that *exactly* match the provided zip code {self.zip_code}, 
         and ensure that all events are within the given date range. Do not add any other data or information apart from this structured output.
 
         There should be no additional information, explanations, or context provided in the response. The response should be structured in valid JSON format only. 
