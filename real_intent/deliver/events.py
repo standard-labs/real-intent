@@ -1,39 +1,50 @@
-import datetime
-import json
-from typing import List
+"""Generate events for a given zip code."""
 from pydantic import BaseModel
-import datetime
 from pydantic import BaseModel
+import requests
+
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
-import requests
+
+import datetime
+import json
+from typing import List
+
+from real_intent.internal_logging import log
+from real_intent.deliver.base import BaseOutputDeliverer
 
 
 class Event(BaseModel):
+    """Event object."""
     title: str
     date: str
     description: str
     link: str | None = None
 
+
 class EventsResponse(BaseModel):
+    """Response object, containing events and summary."""
     events: List[Event]
     summary: str
 
-class EventsGenerator():
 
-    def __init__(self, api_key: str, zip_code: str) -> None:
-        
-        self.key = api_key
-        self.zip_code = zip_code
+class EventsDeliverer(BaseOutputDeliverer):
+    """
+    Deliverer for generating events for a given zip code.
+    """
+
+    def __init__(self, perplexity_api_key: str) -> None:
+        self.key = perplexity_api_key
         self.start_date = datetime.datetime.now().strftime("%B %d, %Y")
         self.end_date = (datetime.datetime.now() + datetime.timedelta(days=7)).strftime("%B %d, %Y")
 
-
     def generate_event_prompt(self) -> tuple[str, str]:
-
+        """
+        Generate the prompt for the event generation task.
+        """
         system = f"""        
         You are a helpful assistant specializing in finding local events for users. You are expected to use the provided zip code 
         to determine the city or area that corresponds to it, and then search for events within that city or area. Your responses 
@@ -85,14 +96,14 @@ class EventsGenerator():
 
         There should be no additional information, explanations, or context provided in the response. The response should be structured in valid JSON format only. 
         Do not include any comments, notes, or additional content in the response.
-
         """
 
         return system, user
-    
 
     def generate_summary_prompt(self, events) -> tuple[str, str]:
-        
+        """
+        Generate the prompt for the summary generation task.
+        """
         system = f"""
             You will be helping the user generate a comprehensive summary of a specific zipcode, including details about 
             local events and general conditions. You will be given a list of events happening in the specified zipcode 
@@ -119,7 +130,6 @@ class EventsGenerator():
         """
 
         return system, user
-
 
     def generate(self, system, user):
         url = "https://api.perplexity.ai/chat/completions"
@@ -151,132 +161,116 @@ class EventsGenerator():
         }
 
         response = requests.request("POST", url, json=payload, headers=headers)
-        if response.status_code != 200:
-            raise Exception(response.json())
+        response.raise_for_status()
         return response.json()
     
-
     def generate_events(self) -> EventsResponse | None:
-        try:
-            # Generate events
-            system, user = self.generate_event_prompt()
-            result = self.generate(system, user)['choices'][0]['message']['content']
-            result = result.replace("`", "").replace("json", "") # for some reason, the response is wrapped in code block and is prefixed with "json" for all responses...
-            result = json.loads(result)
-            events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in result['events']]
-            
-            print("THINKING: ", result['thinking'])
+        """
+        Generate events for a given zip code.
+        """
+        # Generate events
+        system, user = self.generate_event_prompt()
+        result = self.generate(system, user)['choices'][0]['message']['content']
+        result = result.replace("`", "").replace("json", "") # for some reason, the response is wrapped in code block and is prefixed with "json" for all responses...
+        result = json.loads(result)
+        events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in result['events']]
+        
+        print("THINKING: ", result['thinking'])
 
-            print(f"Generated {len(events)} events")
-            if len(events) < 3:
-                raise Exception(f"Insufficient events found")
+        print(f"Generated {len(events)} events")
+        if len(events) < 3:
+            raise Exception(f"Insufficient events found")
 
-            system, user = self.generate_summary_prompt(result)
-            summary = self.generate(system, user)['choices'][0]['message']['content']
-            summary = summary.replace("`", "").replace("json", "").replace("\n", "")
-            summary = json.loads(summary)
+        system, user = self.generate_summary_prompt(result)
+        summary = self.generate(system, user)['choices'][0]['message']['content']
+        summary = summary.replace("`", "").replace("json", "").replace("\n", "")
+        summary = json.loads(summary)
 
-            # Return events and summary
-            return EventsResponse(events=events, summary=summary['summary'])
-        except Exception as e:
-            raise Exception(f"Error generating events: {e}")
-
+        # Return events and summary
+        return EventsResponse(events=events, summary=summary['summary'])
 
     def generate_pdf(self, events_response: EventsResponse, filename: str):
-        try:
+        """
+        Generate a PDF file with the events and summary.
+        """
+        c = canvas.Canvas(filename, pagesize=letter)
+        width, height = letter
 
-            c = canvas.Canvas(filename, pagesize=letter)
-            width, height = letter
+        # background color
+        c.setFillColor(colors.aliceblue)
+        c.rect(0, 0, width, height, fill=1)  
 
-            # background color
-            c.setFillColor(colors.aliceblue)
-            c.rect(0, 0, width, height, fill=1)  
+        title = "Upcoming Local Events"
+        title_font_size = 16
 
+        text_width = c.stringWidth(title, "Helvetica-Bold", title_font_size)
+        x_position = (width - text_width) / 2  
 
-            title = "Upcoming Local Events"
-            title_font_size = 16
+        # Title
+        c.setFillColor(colors.red)
+        c.rect(0, height - 50, width, 50, fill=1) 
 
-            text_width = c.stringWidth(title, "Helvetica-Bold", title_font_size)
-            x_position = (width - text_width) / 2  
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", title_font_size)
 
-            # Title
-            c.setFillColor(colors.red)
-            c.rect(0, height - 50, width, 50, fill=1) 
+        c.drawString(x_position, height - 30, title)
 
-            c.setFillColor(colors.white)
-            c.setFont("Helvetica-Bold", title_font_size)
+        styles = getSampleStyleSheet()
+        normal_style = styles['Normal']
+        normal_style.fontName = 'Helvetica'
+        normal_style.fontSize = 10
+        normal_style.leading = 12
 
-            c.drawString(x_position, height - 30, title)
+        # Summary
+        summary_paragraph = Paragraph(events_response.summary, normal_style)
+        paragraph_width = width - 200
+        summary_height = summary_paragraph.getSpaceBefore() + summary_paragraph.getSpaceAfter() + summary_paragraph.wrap(paragraph_width, 100)[1]
+        summary_paragraph.drawOn(c, 100, height - 60 - summary_height)
+        y_position = height - 60 - summary_height - 20
 
+        normal_style = styles['Normal']
+        normal_style.fontName = 'Helvetica'
+        normal_style.fontSize = 10
+        normal_style.leading = 12
 
-            styles = getSampleStyleSheet()
-            normal_style = styles['Normal']
-            normal_style.fontName = 'Helvetica'
-            normal_style.fontSize = 10
-            normal_style.leading = 12
+        bottom_margin = 70
 
-            # Summary
-            summary_paragraph = Paragraph(events_response.summary, normal_style)
+        for idx, event in enumerate(events_response.events):
+            if y_position < bottom_margin:
+                break
+
+            c.setFillColor(colors.red) 
+            c.setFont("Helvetica-Bold", 14)
+            c.drawString(100, y_position, f"Event: {event.title}")
+            y_position -= 20
+
+            c.setFillColor(colors.green) 
+            c.setFont("Helvetica", 12)
+            c.drawString(100, y_position, f"Date: {event.date}")
+            y_position -= 20
+
+            paragraph = Paragraph(event.description, normal_style)
             paragraph_width = width - 200
-            summary_height = summary_paragraph.getSpaceBefore() + summary_paragraph.getSpaceAfter() + summary_paragraph.wrap(paragraph_width, 100)[1]
-            summary_paragraph.drawOn(c, 100, height - 60 - summary_height)
-            y_position = height - 60 - summary_height - 20
+            paragraph_height = paragraph.getSpaceBefore() + paragraph.getSpaceAfter() + paragraph.wrap(paragraph_width, 100)[1]
+            paragraph.drawOn(c, 100, y_position - paragraph_height)
+            y_position -= paragraph_height + 20
 
-            normal_style = styles['Normal']
-            normal_style.fontName = 'Helvetica'
-            normal_style.fontSize = 10
-            normal_style.leading = 12
+            c.setFont("Helvetica-Oblique", 10)
+            c.setFillColor(colors.blue)
+            c.drawString(100, y_position, f"Link: {event.link if event.link else 'N/A'}")
+            y_position -= 20
 
-            bottom_margin = 70
+            c.setFillColor(colors.black) 
 
-            for idx, event in enumerate(events_response.events):
+            c.setStrokeColor(colors.gold)
+            c.setLineWidth(1)
+            c.line(100, y_position, width - 100, y_position)
+            y_position -= 20 
 
-                if y_position < bottom_margin:
-                    break
-
-                c.setFillColor(colors.red) 
-                c.setFont("Helvetica-Bold", 14)
-                c.drawString(100, y_position, f"Event: {event.title}")
-                y_position -= 20
-
-                c.setFillColor(colors.green) 
-                c.setFont("Helvetica", 12)
-                c.drawString(100, y_position, f"Date: {event.date}")
-                y_position -= 20
-
-                paragraph = Paragraph(event.description, normal_style)
-                paragraph_width = width - 200
-                paragraph_height = paragraph.getSpaceBefore() + paragraph.getSpaceAfter() + paragraph.wrap(paragraph_width, 100)[1]
-                paragraph.drawOn(c, 100, y_position - paragraph_height)
-                y_position -= paragraph_height + 20
-
-                c.setFont("Helvetica-Oblique", 10)
-                c.setFillColor(colors.blue)
-                c.drawString(100, y_position, f"Link: {event.link if event.link else 'N/A'}")
-                y_position -= 20
-
-                c.setFillColor(colors.black) 
-
-                c.setStrokeColor(colors.gold)
-                c.setLineWidth(1)
-                c.line(100, y_position, width - 100, y_position)
-                y_position -= 20 
-
-            c.save()
-
-        except Exception as e:
-            raise Exception(f"Error generating PDF: {e}")
-
+        c.save()
 
     @staticmethod
     def main(api_key: str, zip_code: str):
-        try:
-            event_generator = EventsGenerator(api_key, zip_code)
-            events_response = event_generator.generate_events()
-            event_generator.generate_pdf(events_response, f"{zip_code}events.pdf")
-        except Exception as e:
-            raise Exception(f"Error: {e}")
-
-
-# Temporary test structure
-EventsGenerator.main("PERPLEXITY_KEY", 11801)
+        event_generator = EventsDeliverer(api_key, zip_code)
+        events_response = event_generator.generate_events()
+        event_generator.generate_pdf(events_response, f"{zip_code}events.pdf")
