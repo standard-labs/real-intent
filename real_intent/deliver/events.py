@@ -10,6 +10,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 
 import datetime
 import json
+from io import BytesIO
 
 from real_intent.internal_logging import log
 
@@ -201,11 +202,12 @@ class EventsGenerator:
         log("debug", "Events and summary generated successfully. Events: {events}")
         return EventsResponse(events=events, summary=summary['summary'])
 
-    def generate_pdf(self, events_response: EventsResponse, filename: str):
+    def generate_pdf(self, events_response: EventsResponse) -> BytesIO:
         """
         Generate a PDF file with the events and summary.
         """
-        c = canvas.Canvas(filename, pagesize=letter)
+        output_buffer = BytesIO()
+        c = canvas.Canvas(output_buffer, pagesize=letter)
         width, height = letter
 
         # background color
@@ -279,3 +281,6 @@ class EventsGenerator:
             y_position -= 20 
 
         c.save()
+
+        output_buffer.seek(0)
+        return output_buffer
