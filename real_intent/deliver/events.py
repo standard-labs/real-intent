@@ -83,11 +83,11 @@ class EventsGenerator:
     """
 
     def __init__(self, zip_code: str, perplexity_api_key: str) -> None:
-        if not perplexity_api_key and isinstance(perplexity_api_key, str):
-            raise ValueError("Perpelxity API key must be a truthy string.")
+        if not isinstance(perplexity_api_key, str) or not perplexity_api_key:
+            raise ValueError("Perplexity API key must be a truthy string.")
 
-        if not zip_code and isinstance(zip_code, str) and len(zip_code) == 5 and zip_code.isnumeric():
-            raise ValueError("Zip code invalid.")
+        if not isinstance(zip_code, str) or not zip_code or len(zip_code) != 5 or not zip_code.isnumeric():
+            raise ValueError("Zip code must be a 5-digit string.")
 
         self.key = perplexity_api_key
         self.zip_code = zip_code
@@ -125,7 +125,7 @@ class EventsGenerator:
         Return the result in a JSON object with 2 keys 'events' and 'thinking':
         The key called 'events" contains a list of events. Each event should have the following keys:
             'title' - the name of the event, 
-            'date' - the date of the event in ISO 8601 format (YYYY-MM-DD),
+            'date' - the date of the event in ISO 8601 format (YYYY-MM-DD). The date MUST be between today ({self.start_date}) and {self.end_date}. Do not return dates outside this range.
             'description' - a description of the event with relevant details and at least 2-3 sentences. Provide
             information about the type of event, any special guests, or activities, and why it's significant to the community.
             'link' - a URL to the event page or more information. You should list where you found the event information in here.
