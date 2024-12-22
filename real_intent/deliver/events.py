@@ -203,7 +203,6 @@ class EventsGenerator:
         """
         Generate a response from the Perplexity API.
         """
-        log("debug", "Generating response from Perplexity API")
         url = "https://api.perplexity.ai/chat/completions"
 
         payload = {
