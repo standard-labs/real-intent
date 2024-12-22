@@ -25,6 +25,13 @@ class Event(BaseModel):
     description: str
     link: str | None = None
 
+    def truncated_title(self, max_length: int = 70) -> str:
+        """Truncate the title to a maximum length."""
+        if len(self.title) > max_length:
+            return self.title[:max_length] + "..."
+
+        return self.title
+
 
 class EventsResponse(BaseModel):
     """Response object, containing events and summary."""
@@ -315,7 +322,7 @@ class EventsGenerator:
 
             c.setFillColor(colors.red) 
             c.setFont("Helvetica-Bold", 14)
-            c.drawString(100, y_position, f"{event.title}")
+            c.drawString(100, y_position, f"{event.truncated_title()}")
             y_position -= 20
 
             c.setFillColor(colors.green) 
