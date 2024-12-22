@@ -13,7 +13,7 @@ import datetime
 import json
 from io import BytesIO
 
-from real_intent.internal_logging import log
+from real_intent.internal_logging import log, log_span
 
 
 # ---- Models ----
@@ -245,7 +245,7 @@ class EventsGenerator:
             raise
     
     @retry_generation
-    def generate_events(self) -> EventsResponse:
+    def _generate_events(self) -> EventsResponse:
         """
         Generate events for a given zip code.
         """
@@ -269,6 +269,13 @@ class EventsGenerator:
         # Return events and summary
         log("debug", f"Events and summary generated successfully. Events: {events}")
         return EventsResponse(events=events, summary=summary_dict['summary'])
+
+    def generate_events(self) -> EventsResponse:
+        """
+        Log spanned generation of events for a given zip code.
+        """
+        with log_span(f"Generating events for {self.zip_code}", _level="debug"):
+            return self._generate_events()
 
     def generate_pdf_buffer(self, events_response: EventsResponse) -> BytesIO:
         """
