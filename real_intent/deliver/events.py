@@ -66,7 +66,7 @@ def retry_generation(func: Callable):
             try:
                 return func(*args, **kwargs)
             except (ValidationError, KeyError, NoValidJSONError, json.decoder.JSONDecodeError):
-                if attempt < 3:  # Log warning for first n-1 attempts
+                if attempt < MAX_ATTEMPTS:  # Log warning for first n-1 attempts
                     log("warn", f"Function {func.__name__} failed validation, attempt {attempt} of {MAX_ATTEMPTS}.")
                 else:  # Log error for the last attempt
                     log("error", f"Function {func.__name__} failed validation after {MAX_ATTEMPTS} attempts.")
