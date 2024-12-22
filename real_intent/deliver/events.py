@@ -137,6 +137,10 @@ class EventsGenerator:
         return system, user
 
     def generate(self, system, user):
+        """
+        Generate a response from the Perplexity API.
+        """
+        log("debug", "Generating response from Perplexity API")
         url = "https://api.perplexity.ai/chat/completions"
 
         payload = {
@@ -165,9 +169,15 @@ class EventsGenerator:
             "Authorization": f"Bearer {self.key}"
         }
 
-        response = requests.request("POST", url, json=payload, headers=headers)
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = requests.request("POST", url, json=payload, headers=headers)
+            response.raise_for_status()
+            response_json = response.json()
+            log("debug", f"Received good response from Perplexity: {response_json}")
+            return response_json
+        except requests.exceptions.RequestException as e:
+            log("error", f"Error in Perplexity API request: {str(e)}")
+            raise
     
     def generate_events(self) -> EventsResponse:
         """
@@ -180,11 +190,8 @@ class EventsGenerator:
         result = json.loads(result)
         events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in result['events']]
         
-        print("THINKING: ", result['thinking'])
-
-        print(f"Generated {len(events)} events")
-        if len(events) < 3:
-            raise Exception(f"Insufficient events found")
+        log("debug", f"Thinking process: {result['thinking']}")
+        log("debug", f"Generated {len(events)} events")
 
         system, user = self.generate_summary_prompt(result)
         summary = self.generate(system, user)['choices'][0]['message']['content']
@@ -192,6 +199,7 @@ class EventsGenerator:
         summary = json.loads(summary)
 
         # Return events and summary
+        log("debug", "Events and summary generated successfully. Events: {events}")
         return EventsResponse(events=events, summary=summary['summary'])
 
     def generate_pdf(self, events_response: EventsResponse, filename: str):
@@ -240,6 +248,7 @@ class EventsGenerator:
 
         for idx, event in enumerate(events_response.events):
             if y_position < bottom_margin:
+                log("warning", f"Not all events could fit on the PDF. Truncated at event {idx+1}")
                 break
 
             c.setFillColor(colors.red) 
@@ -271,9 +280,3 @@ class EventsGenerator:
             y_position -= 20 
 
         c.save()
-
-    @staticmethod
-    def main(api_key: str, zip_code: str):
-        event_generator = EventsGenerator(api_key, zip_code)
-        events_response = event_generator.generate_events()
-        event_generator.generate_pdf(events_response, f"{zip_code}events.pdf")
