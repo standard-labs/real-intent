@@ -2,7 +2,15 @@ from real_intent.deliver.zapier import ZapierDeliverer
 from real_intent.schemas import PII, MD5WithPII
 
 def test_zapier_deliverer():
-    """ This sends it to the Wise Agent Integration Only... """
+    """ This sends it to the Wise Agent Integration Only...
+
+    Couple of things it tests:
+    - tests the case where no insights are provided
+    - tests the case where no sentences are provided
+
+    Everything else is a required field in the PII schema
+    
+    """
 
     pii_1 = PII.create_fake(seed=88)
     test1 = MD5WithPII(
@@ -32,7 +40,7 @@ def test_zapier_deliverer():
         "789": "Insight for third md5 789",
     }
 
-    deliverer = ZapierDeliverer(webhook_url="https://hooks.zapier.com/hooks/catch/21128362/28ah4g6/", per_lead_insights=insights)
+    deliverer = ZapierDeliverer(webhook_url="https://hooks.zapier.com/hooks/catch/21128362/28ah4g6/", client_email="test@email.com", per_lead_insights=insights)
 
     response = deliverer.deliver(md5_list)
 

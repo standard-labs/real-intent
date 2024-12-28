@@ -10,10 +10,11 @@ from real_intent.schemas import MD5WithPII
 class ZapierDeliverer(BaseOutputDeliverer):
     """Deliver to Zapier webhook"""
 
-    def __init__(self, webhook_url: str, per_lead_insights: dict[str, str] = {}):
+    def __init__(self, webhook_url: str, client_email, per_lead_insights: dict[str, str] = {}):
         """Initialize the deliverer"""
 
         self.webhook_url: str = webhook_url
+        self.client_email: str = client_email
         self.per_lead_insights: dict[str, str] = per_lead_insights
 
     def _deliver(self, pii_md5s: list[MD5WithPII]) -> bool:
@@ -73,6 +74,8 @@ class ZapierDeliverer(BaseOutputDeliverer):
             for pos, sentence in enumerate(md5_dict["sentences"], start=1):
                 md5_dict[f"sentence_{pos}"] = sentence
             del md5_dict["sentences"]
+
+            md5_dict["client_email"] = self.client_email
 
             formatted_leads.append(md5_dict)
 
