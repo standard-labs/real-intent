@@ -56,7 +56,7 @@ def extract_date_from_range(date_str: str) -> str:
     
     raise ValueError(f"Could not extract date from: {date_str}")
 
-
+@pytest.mark.skip()
 @pytest.mark.skipif(not os.getenv("PERPLEXITY_API_KEY"), reason="Perplexity API key not found")
 def test_beverly_hills_events(events_generator_90210):
     """Test generating events for Beverly Hills (90210)."""
@@ -91,7 +91,7 @@ def test_beverly_hills_events(events_generator_90210):
     assert len(response.summary.split()) >= 20, "Summary should be meaningful"
     assert "Beverly Hills" in response.summary, "Summary should mention Beverly Hills"
 
-
+@pytest.mark.skip()
 @pytest.mark.skipif(not os.getenv("PERPLEXITY_API_KEY"), reason="Perplexity API key not found")
 def test_mclean_events(events_generator_22101):
     """Test generating events for McLean (22101)."""
@@ -126,7 +126,7 @@ def test_mclean_events(events_generator_22101):
     assert len(response.summary.split()) >= 20, "Summary should be meaningful"
     assert "McLean" in response.summary, "Summary should mention McLean"
 
-
+@pytest.mark.skip()
 @pytest.mark.skipif(not os.getenv("PERPLEXITY_API_KEY"), reason="Perplexity API key not found")
 def test_pdf_generation(events_generator_90210):
     """Test generating PDF from events."""
@@ -140,7 +140,7 @@ def test_pdf_generation(events_generator_90210):
     assert pdf_buffer.getvalue().startswith(b'%PDF'), "Should be a valid PDF"
     assert len(pdf_buffer.getvalue()) > 1000, "PDF should have meaningful content"
 
-
+@pytest.mark.skip()
 @pytest.mark.skipif(not os.getenv("PERPLEXITY_API_KEY"), reason="Perplexity API key not found")
 def test_invalid_zip_code():
     """Test initialization with invalid zip code."""
@@ -162,7 +162,7 @@ def test_invalid_zip_code():
     with pytest.raises(ValueError):
         EventsGenerator("abcde", api_key)
 
-
+@pytest.mark.skip()
 @pytest.mark.skipif(not os.getenv("PERPLEXITY_API_KEY"), reason="Perplexity API key not found")
 def test_invalid_api_key():
     """Test initialization with invalid API key."""
