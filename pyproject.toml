@@ -8,7 +8,7 @@ version = "v2.17.2"
 dependencies = [
   "requests",
   "pandas",
-  "pydantic>=2.0.0",
+  "pydantic>=2.10.4",
 ]
 requires-python = ">=3.12"
 authors = [
