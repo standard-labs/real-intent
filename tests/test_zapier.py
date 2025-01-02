@@ -1,29 +1,40 @@
+import pytest
 from real_intent.deliver.zapier import ZapierDeliverer
 from real_intent.schemas import PII, MD5WithPII
+from datetime import datetime
 
-def test_zapier_deliverer():
 
-    """ Test to mimick how the deliverer will work in real-intent-deliveries"""
-    pii_1 = PII.create_fake(seed=55)
-    test1 = MD5WithPII(
-            md5="123",
-            sentences=["test sentence for first md5 123", "another test sentence for first md5 123", "third test sentence for first md5 123", "fourth test sentence for first md5 123"],
-            pii=pii_1
+@pytest.fixture
+def generate_md5withpii():
+    def _generate(seed: int, md5: str, sentences: list[str]):
+        pii = PII.create_fake(seed=seed)
+        return MD5WithPII(
+            md5=md5,
+            sentences=sentences,
+            pii=pii
         )
+    return _generate
+
+
+def test_zapier_deliverer(generate_md5withpii):
+    """ Test to mimic how the deliverer will be implemented """
+
+    test1 = generate_md5withpii(seed=55, md5="123", sentences=[
+        "test sentence for first md5 123", 
+        "another test sentence for first md5 123", 
+        "third test sentence for first md5 123", 
+        "fourth test sentence for first md5 123"
+    ])
     
-    pii_2 = PII.create_fake(seed=66)
-    test2 = MD5WithPII(
-            md5="456",
-            sentences=["sentence for second md5 456", "sentence for second md5 456", "another sentence for second md5 456"],
-            pii=pii_2
-        )
+    test2 = generate_md5withpii(seed=66, md5="456", sentences=[
+        "sentence for second md5 456", 
+        "sentence for second md5 456",
+        "another sentence for second md5 456"
+    ])
     
-    pii_3 = PII.create_fake(seed=77)
-    test3 = MD5WithPII(
-            md5="789",
-            sentences=["sentence for third md5 789"],
-            pii=pii_3
-        )
+    test3 = generate_md5withpii(seed=77, md5="789", sentences=[
+        "sentence for third md5 789"
+    ])
         
     insights = {
         "123": "Insight for first md5 123",
@@ -33,11 +44,48 @@ def test_zapier_deliverer():
 
     md5_list = [test1, test2, test3]
 
-    # [wiseagent, excel] - full functional webhooks with zapier, will have to manually check, but they are working
-    webhook_urls = ["https://hooks.zapier.com/hooks/standard/21128362/135959053d3748f28471c65abd95fc3c/", "https://hooks.zapier.com/hooks/standard/21128362/8eacd04a01e340b88b8e3723e108bc15/"]
+    # working webhook urls, can manually check the data if it was delivered in [Google Sheets, WiseAgent]
+    webhook_urls = [
+        "https://hooks.zapier.com/hooks/standard/21128362/d382d71573254c1693fdf743d80b5bd9/", 
+        "https://hooks.zapier.com/hooks/standard/21128362/f0fa4b54f70a48efaf19ff32e7d09b3d/"
+    ]
 
     deliverer = ZapierDeliverer(webhook_urls=webhook_urls, per_lead_insights=insights)
 
-    deliverer.deliver(md5_list)
+    response = deliverer.deliver(md5_list)
 
-    assert True
+    # will return False if one of the hooks above unsubscribes aka turned off/deleted. Even if it resubscribes,
+    # the webhook url will be different so it will still return False, Can remove this test if it is not needed.
+    assert response == True
+
+
+def test_format(generate_md5withpii):
+    """ Test the formatting of the data """
+
+    test1: MD5WithPII = generate_md5withpii(seed=55, md5="123", sentences=[
+        "test sentence for first md5 123", 
+    ])
+    
+    insights: dict[str, str] = {
+        "123": "Insight for first md5 123"
+    }
+
+    md5_list = [test1]
+
+    deliverer = ZapierDeliverer(webhook_urls=[], per_lead_insights=insights)
+    formatted_data = deliverer._format(md5_list)
+
+    expected_data = [{
+        "md5": "123",
+        "pii": {key: (str(value) if value is not None else None) for key, value in test1.pii.as_lead_export().items()},
+        "insight": "Insight for first md5 123",
+        "sentences": "test sentence for first md5 123", 
+        "date_delivered": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }]
+
+    assert formatted_data[0]["md5"] == expected_data[0]["md5"]
+    assert formatted_data[0]["pii"] == expected_data[0]["pii"]
+    assert formatted_data[0]["insight"] == expected_data[0]["insight"]
+    assert formatted_data[0]["sentences"] == expected_data[0]["sentences"]
+    assert formatted_data[0]["date_delivered"].startswith(datetime.now().strftime("%Y-%m-%d"))
+

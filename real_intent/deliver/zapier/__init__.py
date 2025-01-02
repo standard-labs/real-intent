@@ -2,20 +2,18 @@
 import requests
 from typing import Any
 from functools import partial
+from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 
 from real_intent.internal_logging import log
 from real_intent.deliver.base import BaseOutputDeliverer
 from real_intent.schemas import MD5WithPII
-from datetime import datetime
-
-from concurrent.futures import ThreadPoolExecutor
 
 class ZapierDeliverer(BaseOutputDeliverer):
-    """Deliver to Zapier webhook"""
 
     def __init__(self, webhook_urls: list[str], per_lead_insights: dict[str, str] = {}):
         """Initialize the deliverer"""
-        self.webhook_urls: str = webhook_urls
+        self.webhook_urls: list[str] = webhook_urls
         self.per_lead_insights: dict[str, str] = per_lead_insights
 
 
@@ -26,7 +24,7 @@ class ZapierDeliverer(BaseOutputDeliverer):
                 log(
                     "warn",
                     (
-                        f"At least 1 lead in the Follow Up Boss deliverer was on "
+                        f"At least 1 lead in the Zapier deliverer was on "
                         f"the DNC list. Please validate the lead before delivery."
                     )
                 )
@@ -60,8 +58,9 @@ class ZapierDeliverer(BaseOutputDeliverer):
                     f"Response: {response.text}"
                 )
             )
+            return False
             
-        return response
+        return True
     
     
     def _format(self, pii_md5s: list[MD5WithPII]) -> list[dict[str, Any]]:
