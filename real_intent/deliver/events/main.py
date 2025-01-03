@@ -199,7 +199,7 @@ class EventsGenerator:
             Task:
             1. Retrieve events happening in the city with ZIP code: {self.zip_code} within the next 7 days, from {self.start_date} to {self.end_date}. First, find the city corresponding to ZIP code {self.zip_code} to ensure events are within the correct area.
             2. Focus on public events, community activities, festivals, and major holidays during this period (e.g., Christmas, New Year) if there are any.
-            3. Include 3–5 unique events relevant to the specified ZIP code and timeframe.
+            3. Include 3–5 unique events relevant to the specified ZIP code and timeframe. Include more if there are many events available that meet the criteria. 
             4. Exclude repeated or duplicate events.
 
             Requirements:
