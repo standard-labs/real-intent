@@ -13,14 +13,6 @@ warnings.filterwarnings(
     category=DeprecationWarning
 )
 
-# Supress pytest asyncio warning
-warnings.filterwarnings(
-    "ignore",
-    message="The configuration option 'asyncio_default_fixture_loop_scope' is unset",
-    category=pytest.PytestDeprecationWarning,
-)
-
-
 from real_intent.deliver.events.main import (
     Event,
     EventsResponse,
@@ -70,11 +62,10 @@ def extract_date_from_range(date_str: str) -> str:
     raise ValueError(f"Could not extract date from: {date_str}")
 
 
-@pytest.mark.asyncio
 @pytest.mark.skipif(not os.getenv("SCRAPYBARA_API_KEY") or not os.getenv("ANTHROPIC_API_KEY"), reason="Scrapybara or Anthropic API key not found")
-async def test_beverly_hills_events(events_generator_90210):
+def test_beverly_hills_events(events_generator_90210):
     """Test generating events for Beverly Hills (90210)."""
-    response = await events_generator_90210.generate_events()
+    response = events_generator_90210.generate_events()
     
     # Verify response structure
     assert isinstance(response, EventsResponse)
@@ -106,11 +97,10 @@ async def test_beverly_hills_events(events_generator_90210):
     assert "Beverly Hills" in response.summary, "Summary should mention Beverly Hills"
 
 
-@pytest.mark.asyncio
 @pytest.mark.skipif(not os.getenv("SCRAPYBARA_API_KEY") or not os.getenv("ANTHROPIC_API_KEY"), reason="Scrapybara or Anthropic API key not found")
-async def test_mclean_events(events_generator_22101):
+def test_mclean_events(events_generator_22101):
     """Test generating events for McLean (22101)."""
-    response = await events_generator_22101.generate_events()
+    response = events_generator_22101.generate_events()
     
     # Verify response structure
     assert isinstance(response, EventsResponse)
@@ -142,12 +132,11 @@ async def test_mclean_events(events_generator_22101):
     assert "McLean" in response.summary, "Summary should mention McLean"
 
 
-@pytest.mark.asyncio
 @pytest.mark.skipif(not os.getenv("SCRAPYBARA_API_KEY") or not os.getenv("ANTHROPIC_API_KEY"), reason="Scrapybara or Anthropic API key not found")
-async def test_pdf_generation(events_generator_90210):
+def test_pdf_generation(events_generator_90210):
     """Test generating PDF from events."""
     # First get some events
-    response = await events_generator_90210.generate_events()
+    response = events_generator_90210.generate_events()
     
     # Generate PDF
     pdf_buffer = events_generator_90210.generate_pdf_buffer(response)

@@ -7,12 +7,12 @@ from anthropic.types.beta import (
     BetaMessageParam,
 )
 from pydantic import BaseModel, ValidationError
-from scrapybara.anthropic import ComputerTool, Instance
 from scrapybara import Scrapybara
-from playwright.async_api import async_playwright
+from playwright.sync_api import sync_playwright
 
-from real_intent.deliver.events.utils import _make_api_tool_result, ToolCollection, SearchTool
+from real_intent.deliver.events.utils import _make_api_tool_result, ToolCollection, SearchTool, ToolCollection, ComputerTool
 from scrapybara.anthropic.base import ToolError
+from scrapybara.client import Instance
 
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
@@ -129,16 +129,19 @@ class EventsGenerator:
 
         self.instance_type = instance_type
 
+        # initialized only when needed in run()
         self.instance = None
         self.tools = None
 
 
     def initialize_instance(self) -> None:
+        """ Intialize the Scrapybara instance and tools. """
         self.instance = self.scrapybara_client.start(instance_type=self.instance_type)
         self.tools: ToolCollection = ToolCollection(
-            ComputerTool(self.instance),
-            SearchTool(self.instance)
+            ComputerTool(),
+            SearchTool()
         )
+        self.tools.set_instance(self.instance)
 
 
     def prompt(self) -> tuple[str, str]:
@@ -254,13 +257,13 @@ class EventsGenerator:
         return system, user
 
 
-    async def go_to_page(self, instance: Instance, url: str) -> None:  
+    def go_to_page(self, instance: Instance, url: str) -> None:  
         cdp_url = instance.browser.start().cdp_url
-        async with async_playwright() as playwright:
-            browser = await playwright.chromium.connect_over_cdp(cdp_url)
-            page = await browser.new_page()
-            await page.goto(url)
-            await page.wait_for_load_state("load")
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.connect_over_cdp(cdp_url)
+            page = browser.new_page()
+            page.goto(url)
+            page.wait_for_load_state("load")
 
 
     def _response_to_params(self, response):
@@ -273,11 +276,11 @@ class EventsGenerator:
         return res
     
 
-    async def run(self) -> dict[str, str]:
+    def run(self) -> dict[str, str]:
         try:
             self.initialize_instance()
             
-            await self.go_to_page(self.instance, "https://www.google.com")  # initial starting point, its faster to start from here, rather then have it come up with the idea to open applications, go to chrome, etc...
+            self.go_to_page(self.instance, "https://www.google.com")  # initial starting point, its faster to start from here, rather then have it come up with the idea to open applications, go to chrome, etc...
             system, user = self.prompt()
 
             messages: list[BetaMessageParam] = []
@@ -315,7 +318,7 @@ class EventsGenerator:
                         # print(f"Input: {content_block['input']}")
                     
                         # Execute the tool
-                        result = await self.tools.run(
+                        result = self.tools.run(
                             name=content_block["name"],
                             tool_input=cast(dict[str, Any], content_block["input"])
                         )            
@@ -355,12 +358,12 @@ class EventsGenerator:
     
 
     @retry_generation
-    async def _generate_events(self) -> EventsResponse:
+    def _generate_events(self) -> EventsResponse:
         """
         Generate a list of events for the specified ZIP code and date range.
         """
        
-        response = await self.run()
+        response = self.run()
         response = extract_json_array(response)
         events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in response]
         log("info", f"Generated {len(events)} for {self.zip_code} between {self.start_date} and {self.end_date}")
@@ -394,10 +397,10 @@ class EventsGenerator:
             raise Exception(f"Failed to generate summary: {e}")
    
 
-    async def generate_events(self) -> EventsResponse:
+    def generate_events(self) -> EventsResponse:
         """print spanned generation of events for a given zip code."""
         with log_span(f"Generating events for {self.zip_code}", _level="debug"):
-            return await self._generate_events()
+            return self._generate_events()
 
 
     def generate_pdf_buffer(self, events_response: EventsResponse) -> BytesIO:
