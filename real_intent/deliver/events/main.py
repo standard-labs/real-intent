@@ -1,7 +1,6 @@
-import asyncio
 import datetime
 import json
-from typing import Any, cast
+from typing import Any, Callable, cast
 from anthropic import Anthropic
 from anthropic.types.beta import (
     BetaToolResultBlockParam,
@@ -12,7 +11,8 @@ from scrapybara.anthropic import ComputerTool, Instance
 from scrapybara import Scrapybara
 from playwright.async_api import async_playwright
 
-from utils import ToolCollection, _make_api_tool_result, SearchTool
+from real_intent.deliver.events.utils import _make_api_tool_result, ToolCollection, SearchTool
+from scrapybara.anthropic.base import ToolError
 
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
@@ -20,6 +20,8 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 from io import BytesIO
+
+from real_intent.internal_logging import log, log_span
 
 
 class Event(BaseModel):
@@ -83,20 +85,60 @@ def extract_json_array(response: str):
         return json.loads(response[start_index:end_index + 1])
 
 
-class UpdatedEventsGenerator:
+def retry_generation(func: Callable):
+    """Retry the generation four times if it fails validation."""
+    MAX_ATTEMPTS: int = 4
+
+    def wrapper(*args, **kwargs):
+        """Run the function, catch error, then retry up to four times."""
+        for attempt in range(1, MAX_ATTEMPTS+1):
+            try:
+                return func(*args, **kwargs)
+            except (ValidationError, KeyError, NoValidJSONError, json.decoder.JSONDecodeError, ToolError, NoEventsFoundError):
+                if attempt < MAX_ATTEMPTS:  # print warning for first n-1 attempts
+                    log("warn", f"Function {func.__name__} failed validation, attempt {attempt} of {MAX_ATTEMPTS}.")
+                else:  # print error for the last attempt
+                    log("error", f"Function {func.__name__} failed validation after {MAX_ATTEMPTS} attempts.")
+        
+        # If we've exhausted all attempts, raise the last exception
+        raise
+
+    return wrapper
+
+
+class EventsGenerator:
 
 
     def __init__(self, zip_code: str, scrapybara_key: str, anthropic_key: str, instance_type: str = "small"):
+        if not isinstance(zip_code, str) or not zip_code.isnumeric() or len(zip_code) != 5:
+            raise ValueError("Invalid ZIP code. ZIP code must be a 5-digit numeric string.")
+        
+        if not isinstance(scrapybara_key, str) or not scrapybara_key:
+            raise ValueError("Invalid Scrapybara API key. Please provide a valid API key.")
+        
+        if not isinstance(anthropic_key, str) or not anthropic_key:
+            raise ValueError("Invalid Anthropic API key. Please provide a valid API key.")
+
+
         self.scrapybara_client = Scrapybara(api_key=scrapybara_key)
-        self.instance = self.scrapybara_client.start(instance_type=instance_type)
         self.anthropic_client = Anthropic(api_key=anthropic_key)
+    
         self.zip_code = zip_code
+        self.start_date = datetime.datetime.now().strftime("%B %d, %Y")
+        self.end_date = (datetime.datetime.now() + datetime.timedelta(days=7)).strftime("%B %d, %Y")
+
+        self.instance_type = instance_type
+
+        self.instance = None
+        self.tools = None
+
+
+    def initialize_instance(self) -> None:
+        self.instance = self.scrapybara_client.start(instance_type=self.instance_type)
         self.tools: ToolCollection = ToolCollection(
             ComputerTool(self.instance),
             SearchTool(self.instance)
         )
-        self.start_date = datetime.datetime.now().strftime("%B %d, %Y")
-        self.end_date = (datetime.datetime.now() + datetime.timedelta(days=7)).strftime("%B %d, %Y")
 
 
     def prompt(self) -> tuple[str, str]:
@@ -124,6 +166,7 @@ class UpdatedEventsGenerator:
             <JSON_SCHEMA>
             {json.dumps(Event.model_json_schema())}
             Note: The schema represents ONE object, you will provide a list of these objects.
+            Note: The data attribute represents the date or date range of the event in ISO 8601 format (YYYY-MM-DD). Make sure to follow this format when providing the date.
             </JSON_SCHEMA>
 
             <IMPORTANT>
@@ -179,6 +222,38 @@ class UpdatedEventsGenerator:
             """
 
 
+    def summary_prompt(self, events: list[Event]) -> tuple[str, str]:
+        """
+        Generate the prompt for the summary generation task.
+        """
+        system = f"""
+            You will be helping the user generate a comprehensive summary of a specific zipcode, including details about 
+            local events and general conditions. You will be given a list of events happening in the specified zipcode 
+            and date range. Your task is to summarize the events in a concise and informative manner, highlighting the 
+            key details and providing a general overview of the local community during that period. The summary should also include 
+            weather conditions and any other relevant local insights. Your response should be structured in valid JSON format, 
+            adhering strictly to the user's instructions.
+            """
+
+        user = f"""
+            Summarize the events happening in {self.zip_code} between {self.start_date} and {self.end_date} provided to you here.
+            \n{events}\n
+            Your summary should be informative and engaging, providing a brief overview of the events, the local community,
+            and any other relevant details such as weather conditions. Provide a maximum of 5 sentences! 
+            
+            You must only include the key events and highlights from the list provided. Do not include any additional events.
+            
+            It should be structured in valid JSON format with one top level key called "summary" that contains a string
+            summarizing the events and the local community during the specified period with a maximum of 5 sentences. 
+            The summary should be a detailed paragraph that provides an overview of the expected weather conditions for the week, {self.start_date} to {self.end_date},
+            and highlights the key events happening in {self.zip_code} from the list provided. Include any relevant insights about the local community, 
+            such as cultural aspects, holiday-specific activities, or any notable attractions during this period.
+            If there are any major holidays (e.g., Christmas, New Year's), mention how the local events and community activities reflect these.
+        """
+
+        return system, user
+
+
     async def go_to_page(self, instance: Instance, url: str) -> None:  
         cdp_url = instance.browser.start().cdp_url
         async with async_playwright() as playwright:
@@ -196,10 +271,12 @@ class UpdatedEventsGenerator:
             else:
                 res.append(block.model_dump())
         return res
+    
 
-
-    async def run(self) -> list[Event] | None:
+    async def run(self) -> dict[str, str]:
         try:
+            self.initialize_instance()
+            
             await self.go_to_page(self.instance, "https://www.google.com")  # initial starting point, its faster to start from here, rather then have it come up with the idea to open applications, go to chrome, etc...
             system, user = self.prompt()
 
@@ -230,11 +307,12 @@ class UpdatedEventsGenerator:
 
                 for content_block in response_params:
                     if content_block["type"] == "text":
-                        print(f"\nAssistant: {content_block['text']}")
+                        pass
+                        # print(f"\nAssistant: {content_block['text']}")
 
                     elif content_block["type"] == "tool_use":
-                        print(f"\nTool Use: {content_block['name']}")
-                        print(f"Input: {content_block['input']}")
+                        # print(f"\nTool Use: {content_block['name']}")
+                        # print(f"Input: {content_block['input']}")
                     
                         # Execute the tool
                         result = await self.tools.run(
@@ -246,14 +324,13 @@ class UpdatedEventsGenerator:
                             tool_result = _make_api_tool_result(result, content_block["id"])
 
                             if result.output:
-                                print(f"\nTool Output: {result.output}")
-
+                                # print(f"\nTool Output: {result.output}")
+                                pass
                             if result.error:
-                                print(f"\nTool Error: {result.error}")
-
+                                # print(f"\nTool Error: {result.error}")
+                                pass
                             tool_result_content.append(tool_result)
 
-                        print("\n---")
 
                 # Add assistant's response to messages
                 messages.append({
@@ -270,19 +347,59 @@ class UpdatedEventsGenerator:
                 else:
                     # No tools used, task is complete
                     self.instance.stop()
-                    events = extract_json_array(content_block['text'])
-                    return [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in events]
-        
-        except ValidationError as e:
-            print(f"Validation Error: {e}")
-            self.instance.stop()
-            return []
+                    log("info", f"Sampling loop completed. Last response received: {content_block['text']} ")
+                    return content_block['text']        
         except Exception as e:
-            print(f"Error: {e}")
             self.instance.stop()
-            return []
+            raise()
     
-    
+
+    @retry_generation
+    async def _generate_events(self) -> EventsResponse:
+        """
+        Generate a list of events for the specified ZIP code and date range.
+        """
+       
+        response = await self.run()
+        response = extract_json_array(response)
+        events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in response]
+        log("info", f"Generated {len(events)} for {self.zip_code} between {self.start_date} and {self.end_date}")
+
+        if not events:
+            raise NoEventsFoundError(self.zip_code)
+        
+        summary = self.generate_summary(events)
+        summary_dict = extract_json_only(summary)
+
+        log("debug", f"Events and summary generated successfully. Events: {events}, Summary: {summary_dict['summary']}")
+        return EventsResponse(events=events, summary=summary_dict['summary'])
+
+
+    def generate_summary(self, events: list[Event]) -> str:
+
+        system, user = self.summary_prompt(events=events)        
+        
+        try:
+            response = self.anthropic_client.completions.create(
+            model="claude-2.1",  
+            prompt=system + "\n\nHuman:" + user + "\n\nAssistant:", 
+            max_tokens_to_sample=500,
+            temperature=0.5,
+        )
+
+            
+            return response.completion
+
+        except Exception as e:
+            raise Exception(f"Failed to generate summary: {e}")
+   
+
+    async def generate_events(self) -> EventsResponse:
+        """print spanned generation of events for a given zip code."""
+        with log_span(f"Generating events for {self.zip_code}", _level="debug"):
+            return await self._generate_events()
+
+
     def generate_pdf_buffer(self, events_response: EventsResponse) -> BytesIO:
         """
         Generate a PDF file with the events and summary.
@@ -330,7 +447,7 @@ class UpdatedEventsGenerator:
 
         for idx, event in enumerate(events_response.events):
             if y_position < bottom_margin:
-                # log("warning", f"Not all events could fit on the PDF. Truncated at event {idx+1}")
+                log("warning", f"Not all events could fit on the PDF. Truncated at event {idx+1}")
                 break
 
             c.setFillColor(colors.red) 
@@ -367,65 +484,6 @@ class UpdatedEventsGenerator:
         return output_buffer
 
 
-    def summary_prompt(self, events: list[Event]) -> tuple[str, str]:
-        """
-        Generate the prompt for the summary generation task.
-        """
-        system = f"""
-            You will be helping the user generate a comprehensive summary of a specific zipcode, including details about 
-            local events and general conditions. You will be given a list of events happening in the specified zipcode 
-            and date range. Your task is to summarize the events in a concise and informative manner, highlighting the 
-            key details and providing a general overview of the local community during that period. The summary should also include 
-            weather conditions and any other relevant local insights. Your response should be structured in valid JSON format, 
-            adhering strictly to the user's instructions.
-            """
-
-        user = f"""
-            Summarize the events happening in {self.zip_code} between {self.start_date} and {self.end_date} provided to you here.
-            \n{events}\n
-            Your summary should be informative and engaging, providing a brief overview of the events, the local community,
-            and any other relevant details such as weather conditions. Provide a maximum of 5 sentences! 
-            
-            You must only include the key events and highlights from the list provided. Do not include any additional events.
-            
-            It should be structured in valid JSON format with one top level key called "summary" that contains a string
-            summarizing the events and the local community during the specified period with a maximum of 5 sentences. 
-            The summary should be a detailed paragraph that provides an overview of the expected weather conditions for the week, {self.start_date} to {self.end_date},
-            and highlights the key events happening in {self.zip_code} from the list provided. Include any relevant insights about the local community, 
-            such as cultural aspects, holiday-specific activities, or any notable attractions during this period.
-            If there are any major holidays (e.g., Christmas, New Year's), mention how the local events and community activities reflect these.
-        """
-
-        return system, user
-
-
-    def generate_summary(self, events: list[Event]) -> str:
-
-        system, user = self.summary_prompt(events=events)        
-        
-        try:
-            response = self.anthropic_client.completions.create(
-            model="claude-2.1",  
-            prompt=system + "\n\nHuman:" + user + "\n\nAssistant:", 
-            max_tokens_to_sample=500,
-            temperature=0.5,
-        )
-
-            
-            return response.completion
-
-        except Exception as e:
-            raise RuntimeError(f"Failed to generate summary: {e}")
-   
-
-    async def generate_events(self) -> list[Event]:
-        events = await self.run()
-        summary = self.generate_summary(events)
-        summary_dict = extract_json_only(summary)
-        return EventsResponse(events=events, summary=summary_dict['summary'])    
-
-
-
 """
 The main issue was that the assistant was struggling to make subsequent search queries, as in targeting the search bar and clearing the previous search query. Prompting it to always open a new tab doesn't seem to work either.
 The current solution was a implementation of a custom tool which will handle all searches that the assistant wants to do, by using the browser protocol with playwright.
@@ -438,15 +496,3 @@ Another solution for this is to run the sampling loop 3 times. One to find the c
     - Cons: The assistant will take longer to complete the task, as it will have to run the sampling loop 3 times, but it is asynchronous; Will have to deal with dedeuplication of events;
             and an issue is that since deliveries in mutlithreaded, we might go above the scrapybara instance limit by doing this.
 """
-
-if __name__ == "__main__":
-    zip_code = ""
-    scrapybara_key = ""
-    anthropic_key = ""
-
-    generator = UpdatedEventsGenerator(zip_code, scrapybara_key, anthropic_key)
-    events = asyncio.run(generator.generate_events())
-
-    pdf_buffer = generator.generate_pdf_buffer(events)
-    with open(f"{zip_code}_events.pdf", "wb") as f:
-        f.write(pdf_buffer.read())
