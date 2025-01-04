@@ -11,7 +11,7 @@ from scrapybara import Scrapybara
 from scrapybara.core.api_error import ApiError
 from playwright.sync_api import sync_playwright
 
-from real_intent.deliver.events.utils import _make_api_tool_result, ToolCollection, SearchTool, ToolCollection, ComputerTool
+from real_intent.deliver.events.utils import _make_api_tool_result, SearchTool, ToolCollection, ComputerTool
 from scrapybara.anthropic.base import ToolError
 from scrapybara.client import Instance
 
@@ -77,16 +77,15 @@ def extract_json_only(response_str: str) -> dict[str, Any]:
 
 
 def extract_json_array(response: str):
-        start_index = response.find("[")
-        end_index = response.rfind("]")
+    start_index = response.find("[")
+    end_index = response.rfind("]")
 
-        if start_index == -1 or end_index == -1:
-            raise NoValidJSONError("Array not found in response") # temporary
+    if start_index == -1 or end_index == -1:
+        raise NoValidJSONError("Array not found in response") # temporary
 
-        return json.loads(response[start_index:end_index + 1])
+    return json.loads(response[start_index:end_index + 1])
 
 
-# APIError is not being caught - test with a bad API key (to mimick a instance failed) throws ApiError in initialize_instance(), but no retry occurs
 def retry_generation(func: Callable):
     """Retry the generation four times if it fails validation."""
     MAX_ATTEMPTS: int = 2
@@ -366,20 +365,20 @@ class EventsGenerator:
         except KeyError as e:
             log("error", f"KeyError: {e}")
             self.stop_instance()
-            raise()
+            raise
         except ToolError as e:
             log("error", f"ToolError: {e}")
             self.stop_instance()
-            raise()
+            raise
         except ApiError as e:
             print("API Error", e)
             log("error", f"ApiError: {e}")
             self.stop_instance()
-            raise()
+            raise
         except Exception as e:
             log("error", f"Error: {e}")
             self.stop_instance()
-            raise()
+            raise
     
 
     @retry_generation
@@ -512,16 +511,3 @@ class EventsGenerator:
         output_buffer.seek(0)
         return output_buffer
 
-
-"""
-The main issue was that the assistant was struggling to make subsequent search queries, as in targeting the search bar and clearing the previous search query. Prompting it to always open a new tab doesn't seem to work either.
-The current solution was a implementation of a custom tool which will handle all searches that the assistant wants to do, by using the browser protocol with playwright.
-    - Pros: Implemented as a Tool so Claude can deem when it is a appropriate time to use it, reliable and consistent, can be used for any search query; this is much faster
-    - Cons: Assistant won't be able to interact with the search results, as the browser closes immediately after it's loaded. The only way Claude even gets the information is by the screenshot I append to the response.
-        - not the worst thing as we don't want the asssitant to do a deep dive into the search results, just need to get the information from the search results. It seems to be working well now though.
-
-Another solution for this is to run the sampling loop 3 times. One to find the city. Then give it the city to search 2? more times in seperate loops. This way search bar isn't an issue and it can interact with the search results.
-    - Pros: This is probably as comprehensive as it gets, as the assistant will be able to interact with the search results, and can be used for any search query.
-    - Cons: The assistant will take longer to complete the task, as it will have to run the sampling loop 3 times, but it is asynchronous; Will have to deal with dedeuplication of events;
-            and an issue is that since deliveries in mutlithreaded, we might go above the scrapybara instance limit by doing this.
-"""

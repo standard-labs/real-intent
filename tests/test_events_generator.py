@@ -14,9 +14,7 @@ warnings.filterwarnings(
 )
 
 from real_intent.deliver.events.main import (
-    Event,
     EventsResponse,
-    NoValidJSONError,
     EventsGenerator,
 )
 
