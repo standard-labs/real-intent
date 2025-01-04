@@ -8,6 +8,7 @@ from anthropic.types.beta import (
 )
 from pydantic import BaseModel, ValidationError
 from scrapybara import Scrapybara
+from scrapybara.core.api_error import ApiError
 from playwright.sync_api import sync_playwright
 
 from real_intent.deliver.events.utils import _make_api_tool_result, ToolCollection, SearchTool, ToolCollection, ComputerTool
@@ -85,21 +86,22 @@ def extract_json_array(response: str):
         return json.loads(response[start_index:end_index + 1])
 
 
+# APIError is not being caught - test with a bad API key (to mimick a instance failed) throws ApiError in initialize_instance(), but no retry occurs
 def retry_generation(func: Callable):
     """Retry the generation four times if it fails validation."""
-    MAX_ATTEMPTS: int = 4
+    MAX_ATTEMPTS: int = 2
 
     def wrapper(*args, **kwargs):
         """Run the function, catch error, then retry up to four times."""
         for attempt in range(1, MAX_ATTEMPTS+1):
             try:
                 return func(*args, **kwargs)
-            except (ValidationError, KeyError, NoValidJSONError, json.decoder.JSONDecodeError, ToolError, NoEventsFoundError):
+            except (ValidationError, KeyError, NoValidJSONError, json.decoder.JSONDecodeError, ToolError, NoEventsFoundError, ApiError):
                 if attempt < MAX_ATTEMPTS:  # print warning for first n-1 attempts
                     log("warn", f"Function {func.__name__} failed validation, attempt {attempt} of {MAX_ATTEMPTS}.")
                 else:  # print error for the last attempt
                     log("error", f"Function {func.__name__} failed validation after {MAX_ATTEMPTS} attempts.")
-        
+
         # If we've exhausted all attempts, raise the last exception
         raise
 
@@ -119,7 +121,7 @@ class EventsGenerator:
         if not isinstance(anthropic_key, str) or not anthropic_key:
             raise ValueError("Invalid Anthropic API key. Please provide a valid API key.")
 
-
+       
         self.scrapybara_client = Scrapybara(api_key=scrapybara_key)
         self.anthropic_client = Anthropic(api_key=anthropic_key)
     
@@ -134,9 +136,18 @@ class EventsGenerator:
         self.tools = None
 
 
+    def stop_instance(self) -> None:
+        """ Stop the Scrapybara instance. """
+        if self.instance:
+            self.instance.stop()
+            log("info", "Scrapybara instance stopped successfully.")
+        else:
+            log("info", "No Scrapybara instance to stop.")
+
+
     def initialize_instance(self) -> None:
         """ Intialize the Scrapybara instance and tools. """
-        self.instance = self.scrapybara_client.start(instance_type=self.instance_type)
+        self.instance = self.scrapybara_client.start(instance_type=self.instance_type, timeout_hours=.06)
         self.tools: ToolCollection = ToolCollection(
             ComputerTool(),
             SearchTool()
@@ -207,7 +218,7 @@ class EventsGenerator:
 
             Requirements:
             - Perform TWO distinct searches:
-            - First, search for events based on the city name derived from ZIP code {self.zip_code}. Find the events within the zip code area and timeframe, and if and only if this criteria is met, you will add that event to the list.
+            - First, search for events based on the city name derived from ZIP code {self.zip_code}. Find appropriate community events within the zip code area and timeframe, and if and only if this criteria is met, you will add that event to the list.
             - If the first search yields no results or not enough results, PERFORM a NEW SEARCH and refine your query and adjust search terms and perform a second search. Once again, only add events that meet the criteria.
             - If no results are found after two searches, stop searching and respond with an empty JSON list([]).
             - It is acceptable to return an empty list if there are no events matching the criteria. Avoid fabricated results or predictions of events. All your events must be real and verifiable.
@@ -278,7 +289,7 @@ class EventsGenerator:
 
     def run(self) -> dict[str, str]:
         try:
-            self.initialize_instance()
+            self.initialize_instance() # can throw scrapybar.core.api_error.ApiError
             
             self.go_to_page(self.instance, "https://www.google.com")  # initial starting point, its faster to start from here, rather then have it come up with the idea to open applications, go to chrome, etc...
             system, user = self.prompt()
@@ -349,11 +360,25 @@ class EventsGenerator:
                     })
                 else:
                     # No tools used, task is complete
-                    self.instance.stop()
+                    self.stop_instance()
                     log("info", f"Sampling loop completed. Last response received: {content_block['text']} ")
                     return content_block['text']        
+        except KeyError as e:
+            log("error", f"KeyError: {e}")
+            self.stop_instance()
+            raise()
+        except ToolError as e:
+            log("error", f"ToolError: {e}")
+            self.stop_instance()
+            raise()
+        except ApiError as e:
+            print("API Error", e)
+            log("error", f"ApiError: {e}")
+            self.stop_instance()
+            raise()
         except Exception as e:
-            self.instance.stop()
+            log("error", f"Error: {e}")
+            self.stop_instance()
             raise()
     
 
@@ -367,6 +392,7 @@ class EventsGenerator:
         response = extract_json_array(response)
         events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in response]
         log("info", f"Generated {len(events)} for {self.zip_code} between {self.start_date} and {self.end_date}")
+        print(f"generated events for {self.zip_code} between {self.start_date} and {self.end_date}")
 
         if not events:
             raise NoEventsFoundError(self.zip_code)
