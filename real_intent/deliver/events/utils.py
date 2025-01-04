@@ -79,7 +79,9 @@ class ComputerTool(BaseTool):
         }
 
     def call(self, kwargs: dict, instance: Instance) -> ToolResult:
-        action = kwargs.pop("action")
+        if "action" not in kwargs:
+            raise ToolError("Missing required 'action' parameter.")
+        action = kwargs["action"]
         coordinate = kwargs.pop("coordinate", None)
         text = kwargs.pop("text", None)
 
