@@ -32,6 +32,7 @@ from real_intent.events.base import Event, EventsResponse, BaseEventsGenerator
 from real_intent.internal_logging import log, log_span
 
 
+# ---- Errors ----
 
 class NoValidJSONError(ValueError):
     """Exception raised when no valid JSON is found in the response."""
@@ -46,6 +47,8 @@ class NoEventsFoundError(Exception):
     def __init__(self, zip_code: str):
         super().__init__(f"No events found for zip code {zip_code}")
 
+
+# ---- Helpers ----
 
 def extract_json_only(response_str: str) -> dict[str, Any]:
     """
@@ -93,13 +96,12 @@ def retry_generation(func: Callable):
     return wrapper
 
 
-class EventsGenerator:
+# ---- Implementation ----
 
+class EventsGenerator(BaseEventsGenerator):
+    """Implementation of event generation using Scrapybara and Claude."""
 
-    def __init__(self, zip_code: str, scrapybara_key: str, anthropic_key: str, instance_type: str = "small"):
-        if not isinstance(zip_code, str) or not zip_code.isnumeric() or len(zip_code) != 5:
-            raise ValueError("Invalid ZIP code. ZIP code must be a 5-digit numeric string.")
-        
+    def __init__(self, scrapybara_key: str, anthropic_key: str, instance_type: str = "small"):
         if not isinstance(scrapybara_key, str) or not scrapybara_key:
             raise ValueError("Invalid Scrapybara API key. Please provide a valid API key.")
         
@@ -110,13 +112,7 @@ class EventsGenerator:
         self.scrapybara_client = Scrapybara(api_key=scrapybara_key)
         self.anthropic_client = Anthropic(api_key=anthropic_key)
     
-        self.zip_code = zip_code
-        self.start_date = datetime.datetime.now().strftime("%B %d, %Y")
-        self.end_date = (datetime.datetime.now() + datetime.timedelta(days=7)).strftime("%B %d, %Y")
-
         self.instance_type = instance_type
-
-        # initialized only when needed in run()
         self.instance = None
         self.tools = None
 
@@ -253,7 +249,7 @@ class EventsGenerator:
         return system, user
 
 
-    def go_to_page(self, instance: Instance, url: str) -> None:  
+    def go_to_page(self, instance: Instance, url: str) -> None:
         cdp_url = instance.browser.start().cdp_url
         with sync_playwright() as playwright:
             browser = playwright.chromium.connect_over_cdp(cdp_url)
@@ -269,14 +265,15 @@ class EventsGenerator:
                 res.append({"type": "text", "text": block.text})
             else:
                 res.append(block.model_dump())
+
         return res
     
 
     def run(self) -> dict[str, str]:
         try:
-            self.initialize_instance() # can throw scrapybar.core.api_error.ApiError
+            self.initialize_instance() # can throw scrapybara.core.api_error.ApiError
             
-            self.go_to_page(self.instance, "https://www.google.com")  # initial starting point, its faster to start from here, rather then have it come up with the idea to open applications, go to chrome, etc...
+            self.go_to_page(self.instance, "https://www.google.com")  # initial starting point, its faster to start from here, rather than have it come up with the idea to open applications, go to chrome, etc...
             system, user = self.prompt()
 
             messages: list[BetaMessageParam] = []
@@ -372,7 +369,6 @@ class EventsGenerator:
         """
         Generate a list of events for the specified ZIP code and date range.
         """
-       
         response = self.run()
         response = extract_json_array(response)
         events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in response]
@@ -408,10 +404,24 @@ class EventsGenerator:
             raise Exception(f"Failed to generate summary: {e}")
    
 
-    def generate_events(self) -> EventsResponse:
-        """print spanned generation of events for a given zip code."""
-        with log_span(f"Generating events for {self.zip_code}", _level="debug"):
-            return self._generate_events()
+    def _generate(self, zip_code: str) -> EventsResponse:
+        """
+        Internal method to generate events for a given zip code.
+        
+        Args:
+            zip_code: The zip code to generate events for.
+            
+        Returns:
+            EventsResponse: The generated events and summary.
+        """
+        if not isinstance(zip_code, str) or not zip_code.isnumeric() or len(zip_code) != 5:
+            raise ValueError("Invalid ZIP code. ZIP code must be a 5-digit numeric string.")
+
+        self.zip_code = zip_code
+        self.start_date = datetime.datetime.now().strftime("%B %d, %Y")
+        self.end_date = (datetime.datetime.now() + datetime.timedelta(days=7)).strftime("%B %d, %Y")
+
+        return self._generate_events()
 
 
     def generate_pdf_buffer(self, events_response: EventsResponse) -> BytesIO:
@@ -496,4 +506,3 @@ class EventsGenerator:
 
         output_buffer.seek(0)
         return output_buffer
-
