@@ -1,7 +1,8 @@
-pydantic>=2.8.2
+pydantic>=2.10.4
 pandas
 requests
-logfire>=2.5.0
+
+logfire>=2.11.1
 openai==1.58.1
 reportlab==4.2.5
 
