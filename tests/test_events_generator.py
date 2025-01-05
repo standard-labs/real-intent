@@ -87,7 +87,7 @@ def test_beverly_hills_events_scrapybara(scrapybara_events_generator):
         date_str = extract_date_from_range(event.date)
         event_date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
         # Allow events within the next month
-        today = datetime.datetime.now() - datetime.timedelta(days=1)  # 1 day grace period
+        today = (datetime.datetime.now() - datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)  # 1 day grace period
         month_from_now = today + datetime.timedelta(days=32)  # ~1 month + 1 day grace period
         assert today <= event_date <= month_from_now, f"Event date {event_date} should be within the next month"
         
@@ -121,7 +121,7 @@ def test_mclean_events_scrapybara(scrapybara_events_generator):
         date_str = extract_date_from_range(event.date)
         event_date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
         # Allow events within the next month
-        today = datetime.datetime.now() - datetime.timedelta(days=1)  # 1 day grace period
+        today = (datetime.datetime.now() - datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)  # 1 day grace period
         month_from_now = today + datetime.timedelta(days=32)  # ~1 month + 1 day grace period
         assert today <= event_date <= month_from_now, f"Event date {event_date} should be within the next month"
         
@@ -202,7 +202,7 @@ def test_beverly_hills_events_perplexity(perplexity_events_generator):
         date_str = extract_date_from_range(event.date)
         event_date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
         # Allow events within the next month
-        today = datetime.datetime.now() - datetime.timedelta(days=1)  # 1 day grace period
+        today = (datetime.datetime.now() - datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)  # 1 day grace period
         month_from_now = today + datetime.timedelta(days=32)  # ~1 month + 1 day grace period
         assert today <= event_date <= month_from_now, f"Event date {event_date} should be within the next month"
         
@@ -236,7 +236,7 @@ def test_mclean_events_perplexity(perplexity_events_generator):
         date_str = extract_date_from_range(event.date)
         event_date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
         # Allow events within the next month
-        today = datetime.datetime.now() - datetime.timedelta(days=1)  # 1 day grace period
+        today = (datetime.datetime.now() - datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)  # 1 day grace period
         month_from_now = today + datetime.timedelta(days=32)  # ~1 month + 1 day grace period
         assert today <= event_date <= month_from_now, f"Event date {event_date} should be within the next month"
         
