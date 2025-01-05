@@ -1,7 +1,7 @@
 """Implementation of event generation using Scrapybara and Claude."""
 import datetime as dt
 import json
-from typing import Any, Callable, cast
+from typing import Any, Callable, Literal, cast
 from anthropic import Anthropic
 from anthropic.types.beta import (
     BetaToolResultBlockParam,
@@ -30,6 +30,11 @@ from io import BytesIO
 
 from real_intent.events.base import Event, EventsResponse, BaseEventsGenerator
 from real_intent.internal_logging import log, log_span
+
+
+# ---- Types ----
+
+type InstanceType = Literal["small"]
 
 
 # ---- Errors ----
@@ -105,7 +110,7 @@ class EventsGenerator(BaseEventsGenerator):
         self, 
         scrapybara_key: str, 
         anthropic_key: str, 
-        instance_type: str = "small",
+        instance_type: InstanceType = "small",
         start_date: dt.datetime | None = None,
         end_date: dt.datetime | None = None
     ):
@@ -128,7 +133,7 @@ class EventsGenerator(BaseEventsGenerator):
         self.scrapybara_client = Scrapybara(api_key=scrapybara_key)
         self.anthropic_client = Anthropic(api_key=anthropic_key)
     
-        self.instance_type = instance_type
+        self.instance_type: str = instance_type
         self.instance = None
         self.tools = None
 
