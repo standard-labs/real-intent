@@ -1,5 +1,5 @@
 """Implementation of event generation using Scrapybara and Claude."""
-import datetime
+import datetime as dt
 import json
 from typing import Any, Callable, cast
 from anthropic import Anthropic
@@ -106,9 +106,19 @@ class EventsGenerator(BaseEventsGenerator):
         scrapybara_key: str, 
         anthropic_key: str, 
         instance_type: str = "small",
-        start_date: str | None = None,
-        end_date: str | None = None
+        start_date: dt.datetime | None = None,
+        end_date: dt.datetime | None = None
     ):
+        """
+        Initialize the EventsGenerator.
+
+        Args:
+            scrapybara_key: API key for Scrapybara
+            anthropic_key: API key for Anthropic
+            instance_type: Type of Scrapybara instance to use
+            start_date: Optional start date for event search, defaults to today
+            end_date: Optional end date for event search, defaults to 14 days from start
+        """
         if not isinstance(scrapybara_key, str) or not scrapybara_key:
             raise ValueError("Invalid Scrapybara API key. Please provide a valid API key.")
         
@@ -123,9 +133,15 @@ class EventsGenerator(BaseEventsGenerator):
         self.tools = None
 
         # Set dates with defaults if not provided
-        now = datetime.datetime.now()
-        self.start_date = start_date or now.strftime("%B %d, %Y")
-        self.end_date = end_date or (now + datetime.timedelta(days=7)).strftime("%B %d, %Y")
+        if any(not isinstance(start_date, dt.datetime), not isinstance(end_date, dt.datetime)):
+            raise ValueError("Invalid start or end date inputs.")
+
+        start = start_date or dt.datetime.now()
+        end = end_date or (start + dt.timedelta(days=14))
+        
+        # Convert to formatted strings for internal use
+        self.start_date = start.strftime("%B %d, %Y")
+        self.end_date = end.strftime("%B %d, %Y")
 
 
     def stop_instance(self) -> None:
