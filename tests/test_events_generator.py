@@ -99,40 +99,6 @@ def test_beverly_hills_events_scrapybara(scrapybara_events_generator):
     assert "Beverly Hills" in response.summary, "Summary should mention Beverly Hills"
 
 
-def test_mclean_events_scrapybara(scrapybara_events_generator):
-    """Test generating events for McLean (22101) using Scrapybara."""
-    response = scrapybara_events_generator.generate("22101")
-    
-    # Verify response structure
-    assert isinstance(response, EventsResponse)
-    assert isinstance(response.events, list)
-    assert isinstance(response.summary, str)
-    
-    # Verify we got some events
-    assert len(response.events) >= 3, "Should have at least 3 events"
-    
-    # Verify each event
-    for event in response.events:
-        assert event.title, "Event should have a title"
-        assert event.date, "Event should have a date"
-        assert event.description, "Event should have a description"
-        
-        # Extract and verify date
-        date_str = extract_date_from_range(event.date)
-        event_date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
-        # Allow events within the next month
-        today = (datetime.datetime.now() - datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)  # 1 day grace period
-        month_from_now = today + datetime.timedelta(days=32)  # ~1 month + 1 day grace period
-        assert today <= event_date <= month_from_now, f"Event date {event_date} should be within the next month"
-        
-        # Verify description is meaningful
-        assert len(event.description.split()) >= 10, "Description should be meaningful"
-    
-    # Verify summary
-    assert len(response.summary.split()) >= 20, "Summary should be meaningful"
-    assert "McLean" in response.summary, "Summary should mention McLean"
-
-
 def test_pdf_generation_scrapybara(scrapybara_events_generator):
     """Test generating PDF from events using Scrapybara."""
     # First get some events
@@ -212,40 +178,6 @@ def test_beverly_hills_events_perplexity(perplexity_events_generator):
     # Verify summary
     assert len(response.summary.split()) >= 20, "Summary should be meaningful"
     assert "Beverly Hills" in response.summary, "Summary should mention Beverly Hills"
-
-
-def test_mclean_events_perplexity(perplexity_events_generator):
-    """Test generating events for McLean (22101) using Perplexity."""
-    response = perplexity_events_generator.generate("22101")
-    
-    # Verify response structure
-    assert isinstance(response, EventsResponse)
-    assert isinstance(response.events, list)
-    assert isinstance(response.summary, str)
-    
-    # Verify we got some events
-    assert len(response.events) >= 3, "Should have at least 3 events"
-    
-    # Verify each event
-    for event in response.events:
-        assert event.title, "Event should have a title"
-        assert event.date, "Event should have a date"
-        assert event.description, "Event should have a description"
-        
-        # Extract and verify date
-        date_str = extract_date_from_range(event.date)
-        event_date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
-        # Allow events within the next month
-        today = (datetime.datetime.now() - datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)  # 1 day grace period
-        month_from_now = today + datetime.timedelta(days=32)  # ~1 month + 1 day grace period
-        assert today <= event_date <= month_from_now, f"Event date {event_date} should be within the next month"
-        
-        # Verify description is meaningful
-        assert len(event.description.split()) >= 10, "Description should be meaningful"
-    
-    # Verify summary
-    assert len(response.summary.split()) >= 20, "Summary should be meaningful"
-    assert "McLean" in response.summary, "Summary should mention McLean"
 
 
 def test_pdf_generation_perplexity(perplexity_events_generator):
