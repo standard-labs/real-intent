@@ -33,5 +33,5 @@ Repository = "https://github.com/Standard-Labs/real-intent.git"
 [project.optional-dependencies]
 logfire = ["logfire>=2.11.1"]
 ai = ["openai>=1.58.1"]
-events = ["scrapybara>=2.0.6", "playwright>=1.49.1", "httpx>=0.28.1"]
+events = ["scrapybara>=2.0.6", "playwright>=1.49.1", "httpx==0.27.0"]
 pdf = ["reportlab>=4.2.5"]
