@@ -1,16 +1,17 @@
 """Implementation of event generation using Scrapybara and Claude."""
 import datetime as dt
 import json
-from typing import Any, Callable, Literal, cast
+from typing import Any, Literal, cast
 from anthropic import Anthropic
 from anthropic.types.beta import (
     BetaToolResultBlockParam,
     BetaMessageParam,
 )
-from pydantic import ValidationError
 from scrapybara import Scrapybara
 from scrapybara.core.api_error import ApiError
 from playwright.sync_api import sync_playwright
+from scrapybara.anthropic.base import ToolError
+from scrapybara.client import Instance
 
 from real_intent.events.scrapy_claude.claude_sync import (
     _make_api_tool_result, 
@@ -18,10 +19,9 @@ from real_intent.events.scrapy_claude.claude_sync import (
     ToolCollection, 
     ComputerTool
 )
-from scrapybara.anthropic.base import ToolError
-from scrapybara.client import Instance
-
 from real_intent.events.base import Event, EventsResponse, BaseEventsGenerator
+from real_intent.events.errors import NoValidJSONError, NoEventsFoundError
+from real_intent.events.utils import extract_json_only, retry_generation
 from real_intent.internal_logging import log
 
 
@@ -30,68 +30,19 @@ from real_intent.internal_logging import log
 type InstanceType = Literal["small"]
 
 
-# ---- Errors ----
-
-class NoValidJSONError(ValueError):
-    """Exception raised when no valid JSON is found in the response."""
-
-    def __init__(self, content: str):
-        super().__init__(content)
-
-
-class NoEventsFoundError(Exception):
-    """Exception raised when no events are found for a zip code."""
-
-    def __init__(self, zip_code: str):
-        super().__init__(f"No events found for zip code {zip_code}")
-
-
-# ---- Helpers ----
-
-def extract_json_only(response_str: str) -> dict[str, Any]:
+def extract_json_array(response: str):
     """
-    Parse a string response and pull out everything between the first { and last }
-    then return it as a dictionary. Allows excess text before and after valid JSON
+    Parse a string response and pull out everything between the first [ and last ]
+    then return it as a list. Allows excess text before and after valid JSON array
     without causing an error.
     """
-    start_index = response_str.find("{")
-    end_index = response_str.rfind("}")
-
-    if start_index == -1 or end_index == -1:
-        raise NoValidJSONError(response_str)
-
-    return json.loads(response_str[start_index:end_index+1])
-
-
-def extract_json_array(response: str):
     start_index = response.find("[")
     end_index = response.rfind("]")
 
     if start_index == -1 or end_index == -1:
-        raise NoValidJSONError("Array not found in response") # temporary
+        raise NoValidJSONError("Array not found in response")
 
     return json.loads(response[start_index:end_index + 1])
-
-
-def retry_generation(func: Callable):
-    """Retry the generation four times if it fails validation."""
-    MAX_ATTEMPTS: int = 2
-
-    def wrapper(*args, **kwargs):
-        """Run the function, catch error, then retry up to four times."""
-        for attempt in range(1, MAX_ATTEMPTS+1):
-            try:
-                return func(*args, **kwargs)
-            except (ValidationError, KeyError, NoValidJSONError, json.decoder.JSONDecodeError, ToolError, NoEventsFoundError, ApiError):
-                if attempt < MAX_ATTEMPTS:  # print warning for first n-1 attempts
-                    log("warn", f"Function {func.__name__} failed validation, attempt {attempt} of {MAX_ATTEMPTS}.")
-                else:  # print error for the last attempt
-                    log("error", f"Function {func.__name__} failed validation after {MAX_ATTEMPTS} attempts.")
-
-        # If we've exhausted all attempts, raise the last exception
-        raise
-
-    return wrapper
 
 
 # ---- Implementation ----
