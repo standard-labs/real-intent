@@ -66,7 +66,7 @@ def extract_json_only(response_str: str) -> dict[str, Any]:
 
 # ---- Implementation ----
 
-class EventsGenerator(BaseEventsGenerator):
+class PerplexityEventsGenerator(BaseEventsGenerator):
     """Implementation of event generation using Perplexity."""
 
     def __init__(

@@ -96,7 +96,7 @@ def retry_generation(func: Callable):
 
 # ---- Implementation ----
 
-class EventsGenerator(BaseEventsGenerator):
+class ScrapybaraEventsGenerator(BaseEventsGenerator):
     """Implementation of event generation using Scrapybara and Claude."""
 
     def __init__(
