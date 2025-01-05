@@ -1,4 +1,4 @@
-""" Synchronous implementation of tools for the anthropic API. """
+"""Synchronous implementation of tools for the Anthropic API."""
 from typing import Literal, Optional, TypedDict, Any
 from anthropic.types.beta import (
     BetaToolComputerUse20241022Param,
