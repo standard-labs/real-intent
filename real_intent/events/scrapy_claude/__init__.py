@@ -7,7 +7,7 @@ from anthropic.types.beta import (
     BetaToolResultBlockParam,
     BetaMessageParam,
 )
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 from scrapybara import Scrapybara
 from scrapybara.core.api_error import ApiError
 from playwright.sync_api import sync_playwright
@@ -395,7 +395,6 @@ class EventsGenerator(BaseEventsGenerator):
             self.stop_instance()
             raise
         except ApiError as e:
-            print("API Error", e)
             log("error", f"ApiError: {e}")
             self.stop_instance()
             raise
@@ -414,7 +413,6 @@ class EventsGenerator(BaseEventsGenerator):
         response = extract_json_array(response)
         events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in response]
         log("info", f"Generated {len(events)} for {zip_code} between {self.start_date} and {self.end_date}")
-        print(f"generated events for {zip_code} between {self.start_date} and {self.end_date}")
 
         if not events:
             raise NoEventsFoundError(zip_code)
