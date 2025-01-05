@@ -40,11 +40,15 @@ def retry_generation(func: Callable):
         for attempt in range(1, MAX_ATTEMPTS+1):
             try:
                 return func(*args, **kwargs)
-            except (ValidationError, KeyError, NoValidJSONError, json.decoder.JSONDecodeError):
+            except (ValidationError, KeyError, NoValidJSONError, json.decoder.JSONDecodeError) as err:
                 if attempt < MAX_ATTEMPTS:  # Log warning for first n-1 attempts
                     log("warn", f"Function {func.__name__} failed validation, attempt {attempt} of {MAX_ATTEMPTS}.")
                 else:  # Log error for the last attempt
-                    log("error", f"Function {func.__name__} failed validation after {MAX_ATTEMPTS} attempts.")
+                    log(
+                        "error", 
+                        f"Function {func.__name__} failed validation after {MAX_ATTEMPTS} attempts.",
+                        exc_info=err
+                    )
         
         # If we've exhausted all attempts, raise the last exception
         raise
