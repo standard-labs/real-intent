@@ -1,9 +1,9 @@
 """Base abstraction for event generation."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from abc import ABC, abstractmethod
 
-from real_intent.schemas import MD5WithPII
+from real_intent.events.utils import generate_pdf_buffer
 from real_intent.internal_logging import log, log_span
 
 
@@ -56,4 +56,10 @@ class BaseEventsGenerator(ABC):
         event generation.
         """
         pass
+
+    def to_pdf_buffer(self, events_response: EventsResponse) -> bytes:
+        """
+        Convert the events and summary to a PDF buffer.
+        """
+        return generate_pdf_buffer(events_response)
     
