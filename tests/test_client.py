@@ -67,9 +67,7 @@ def test_check_numbers(bigdbm_client: BigDBMClient) -> None:
 
 def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
     phones = ["2017872909", "5712861350"]
-    
     result = bigdbm_client.phones_to_pii(phones)
-    print(result)
     
     assert isinstance(result, list), "Result should be a list"
     assert result[0].first_name == "Donna", "First name should be 'Donna'"
