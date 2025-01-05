@@ -33,7 +33,6 @@ def events_generator_90210_scrapybara():
         pytest.skip("Scrapybara and Anthropic API keys required")
     
     return ScrapybaraEventsGenerator(
-        "90210",
         scrapybara_api_key,
         anthropic_api_key
     )
@@ -49,7 +48,6 @@ def events_generator_22101_scrapybara():
         pytest.skip("Scrapybara and Anthropic API keys required")
     
     return ScrapybaraEventsGenerator(
-        "22101",
         scrapybara_api_key,
         anthropic_api_key
     )
@@ -64,7 +62,6 @@ def events_generator_90210_perplexity():
         pytest.skip("Perplexity API key not found")
     
     return PerplexityEventsGenerator(
-        "90210",
         perplexity_api_key
     )
 
@@ -78,7 +75,6 @@ def events_generator_22101_perplexity():
         pytest.skip("Perplexity API key not found")
     
     return PerplexityEventsGenerator(
-        "22101",
         perplexity_api_key
     )
 
@@ -178,44 +174,38 @@ def test_pdf_generation_scrapybara(events_generator_90210_scrapybara):
     assert len(pdf_buffer.getvalue()) > 1000, "PDF should have meaningful content"
 
 
-def test_invalid_zip_code_scrapybara():
-    """Test initialization with invalid zip code for Scrapybara."""
-    scrapybara_api_key = os.getenv("SCRAPYBARA_API_KEY")
-    anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-    
-    if not scrapybara_api_key or not anthropic_api_key:
-        pytest.skip("Scrapybara and Anthropic API keys required")
-    
+def test_invalid_zip_code_scrapybara(events_generator_90210_scrapybara):
+    """Test generation with invalid zip code for Scrapybara."""
     # Test non-string zip code
     with pytest.raises(ValueError):
-        ScrapybaraEventsGenerator(12345, scrapybara_api_key, anthropic_api_key)
+        events_generator_90210_scrapybara._generate(12345)
     
     # Test empty zip code
     with pytest.raises(ValueError):
-        ScrapybaraEventsGenerator("", scrapybara_api_key, anthropic_api_key)
+        events_generator_90210_scrapybara._generate("")
     
     # Test wrong length zip code
     with pytest.raises(ValueError):
-        ScrapybaraEventsGenerator("1234", scrapybara_api_key, anthropic_api_key)
+        events_generator_90210_scrapybara._generate("1234")
     
     # Test non-numeric zip code
     with pytest.raises(ValueError):
-        ScrapybaraEventsGenerator("abcde", scrapybara_api_key, anthropic_api_key)
+        events_generator_90210_scrapybara._generate("abcde")
 
 
 def test_invalid_api_key_scrapybara():
     """Test initialization with invalid API key for Scrapybara."""
     # Test non-string API key
     with pytest.raises(ValueError):
-        ScrapybaraEventsGenerator("90210", 12345, 54321)
+        ScrapybaraEventsGenerator(12345, 54321)
     
     # Test empty API key
     with pytest.raises(ValueError):
-        ScrapybaraEventsGenerator("90210", "", "")
+        ScrapybaraEventsGenerator("", "")
     
     # Test None API key
     with pytest.raises(ValueError):
-        ScrapybaraEventsGenerator("90210", None, None)
+        ScrapybaraEventsGenerator(None, None)
 
 
 def test_beverly_hills_events_perplexity(events_generator_90210_perplexity):
@@ -299,40 +289,35 @@ def test_pdf_generation_perplexity(events_generator_90210_perplexity):
     assert len(pdf_buffer.getvalue()) > 1000, "PDF should have meaningful content"
 
 
-def test_invalid_zip_code_perplexity():
-    """Test initialization with invalid zip code for Perplexity."""
-    perplexity_api_key = os.getenv("PERPLEXITY_API_KEY")
-    
-    if not perplexity_api_key:
-        pytest.skip("Perplexity API key not found")
-    
+def test_invalid_zip_code_perplexity(events_generator_90210_perplexity):
+    """Test generation with invalid zip code for Perplexity."""
     # Test non-string zip code
     with pytest.raises(ValueError):
-        PerplexityEventsGenerator(12345, perplexity_api_key)
+        events_generator_90210_perplexity._generate(12345)
     
     # Test empty zip code
     with pytest.raises(ValueError):
-        PerplexityEventsGenerator("", perplexity_api_key)
+        events_generator_90210_perplexity._generate("")
     
     # Test wrong length zip code
     with pytest.raises(ValueError):
-        PerplexityEventsGenerator("1234", perplexity_api_key)
+        events_generator_90210_perplexity._generate("1234")
     
     # Test non-numeric zip code
     with pytest.raises(ValueError):
-        PerplexityEventsGenerator("abcde", perplexity_api_key)
+        events_generator_90210_perplexity._generate("abcde")
 
 
 def test_invalid_api_key_perplexity():
     """Test initialization with invalid API key for Perplexity."""
     # Test non-string API key
     with pytest.raises(ValueError):
-        PerplexityEventsGenerator("90210", 12345)
+        PerplexityEventsGenerator(12345)
     
     # Test empty API key
     with pytest.raises(ValueError):
-        PerplexityEventsGenerator("90210", "")
+        PerplexityEventsGenerator("")
     
     # Test None API key
     with pytest.raises(ValueError):
-        PerplexityEventsGenerator("90210", None)
+        PerplexityEventsGenerator(None)
