@@ -138,11 +138,12 @@ class EventsGenerator(BaseEventsGenerator):
         self.tools = None
 
         # Set dates with defaults if not provided
-        if any(not isinstance(start_date, dt.datetime), not isinstance(end_date, dt.datetime)):
+        start = start_date or dt.datetime.now()
+        end = end_date or (start + dt.timedelta(days=14))
+        
+        # Validate inputs are datetime objects
+        if not isinstance(start, dt.datetime) or not isinstance(end, dt.datetime):
             raise ValueError("Invalid start or end date inputs.")
-
-        start: dt.datetime = start_date or dt.datetime.now()
-        end: dt.datetime = end_date or (start + dt.timedelta(days=14))
         
         # Convert to formatted strings for internal use
         self.start_date: str = start.strftime("%B %d, %Y")
@@ -251,9 +252,15 @@ class EventsGenerator(BaseEventsGenerator):
 
 
     def summary_prompt(self, events: list[Event], zip_code: str) -> tuple[str, str]:
-        """Generate the prompt for summary generation."""
         """
-        Generate the prompt for the summary generation task.
+        Generate the prompt for summary generation.
+        
+        Args:
+            events: List of events to summarize.
+            zip_code: The zip code the events are for.
+            
+        Returns:
+            A tuple of (system prompt, user prompt).
         """
         system = f"""
             You will be helping the user generate a comprehensive summary of a specific zipcode, including details about 
