@@ -2,7 +2,8 @@
 import requests
 import datetime as dt
 
-from real_intent.events.base import Event, EventsResponse, BaseEventsGenerator
+from real_intent.events.models import Event, EventsResponse
+from real_intent.events.base import BaseEventsGenerator
 from real_intent.events.errors import NoValidJSONError, NoEventsFoundError
 from real_intent.events.utils import extract_json_only, retry_generation
 from real_intent.internal_logging import log

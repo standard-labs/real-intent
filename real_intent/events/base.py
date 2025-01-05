@@ -1,37 +1,10 @@
 """Base abstraction for event generation."""
-from pydantic import BaseModel
-
 from abc import ABC, abstractmethod
 
+from real_intent.events.models import EventsResponse
 from real_intent.events.utils import generate_pdf_buffer
 from real_intent.internal_logging import log, log_span
 
-
-# ---- Models ----
-
-class Event(BaseModel):
-    """Event object."""
-    title: str
-    date: str
-    description: str
-    link: str | None = None
-    
-    @property
-    def truncated_title(self) -> str:
-        """Truncate the title to a maximum length."""
-        if len(self.title) > 70:
-            return self.title[:70] + "..."
-
-        return self.title
-
-
-class EventsResponse(BaseModel):
-    """Response object, containing events and summary."""
-    events: list[Event]
-    summary: str
-
-
-# ---- Abstraction ----
 
 class BaseEventsGenerator(ABC):
     """Base class for event generators, by zipcode."""
@@ -62,4 +35,3 @@ class BaseEventsGenerator(ABC):
         Convert the events and summary to a PDF buffer.
         """
         return generate_pdf_buffer(events_response)
-    

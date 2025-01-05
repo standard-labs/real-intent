@@ -12,7 +12,7 @@ from reportlab.platypus import Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 from io import BytesIO
 
-from real_intent.events.base import EventsResponse
+from real_intent.events.models import EventsResponse
 from real_intent.internal_logging import log
 
 
