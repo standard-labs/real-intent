@@ -288,12 +288,10 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
 
                 for content_block in response_params:
                     if content_block["type"] == "text":
-                        pass
-                        # print(f"\nAssistant: {content_block['text']}")
+                        log("trace", f"Assistant response: {content_block['text']}")
 
                     elif content_block["type"] == "tool_use":
-                        # print(f"\nTool Use: {content_block['name']}")
-                        # print(f"Input: {content_block['input']}")
+                        log("trace", f"Tool use requested: {content_block['name']} with input: {content_block['input']}")
                     
                         # Execute the tool
                         result = self.tools.run(
@@ -305,11 +303,9 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
                             tool_result = _make_api_tool_result(result, content_block["id"])
 
                             if result.output:
-                                # print(f"\nTool Output: {result.output}")
-                                pass
+                                log("trace", f"Tool output: {result.output}")
                             if result.error:
-                                # print(f"\nTool Error: {result.error}")
-                                pass
+                                log("warn", f"Tool error: {result.error}")
                             tool_result_content.append(tool_result)
 
 
