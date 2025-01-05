@@ -24,8 +24,8 @@ load_dotenv()
 
 
 @pytest.fixture
-def events_generator_90210_scrapybara():
-    """Create a ScrapybaraEventsGenerator instance for Beverly Hills."""
+def scrapybara_events_generator():
+    """Create a ScrapybaraEventsGenerator instance."""
     scrapybara_api_key = os.getenv("SCRAPYBARA_API_KEY")
     anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
     
@@ -39,36 +39,8 @@ def events_generator_90210_scrapybara():
 
 
 @pytest.fixture
-def events_generator_22101_scrapybara():
-    """Create a ScrapybaraEventsGenerator instance for McLean."""
-    scrapybara_api_key = os.getenv("SCRAPYBARA_API_KEY")
-    anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-    
-    if not scrapybara_api_key or not anthropic_api_key:
-        pytest.skip("Scrapybara and Anthropic API keys required")
-    
-    return ScrapybaraEventsGenerator(
-        scrapybara_api_key,
-        anthropic_api_key
-    )
-
-
-@pytest.fixture
-def events_generator_90210_perplexity():
-    """Create a PerplexityEventsGenerator instance for Beverly Hills."""
-    perplexity_api_key = os.getenv("PERPLEXITY_API_KEY")
-    
-    if not perplexity_api_key:
-        pytest.skip("Perplexity API key not found")
-    
-    return PerplexityEventsGenerator(
-        perplexity_api_key
-    )
-
-
-@pytest.fixture
-def events_generator_22101_perplexity():
-    """Create a PerplexityEventsGenerator instance for McLean."""
+def perplexity_events_generator():
+    """Create a PerplexityEventsGenerator instance."""
     perplexity_api_key = os.getenv("PERPLEXITY_API_KEY")
     
     if not perplexity_api_key:
@@ -93,9 +65,9 @@ def extract_date_from_range(date_str: str) -> str:
     raise ValueError(f"Could not extract date from: {date_str}")
 
 
-def test_beverly_hills_events_scrapybara(events_generator_90210_scrapybara):
+def test_beverly_hills_events_scrapybara(scrapybara_events_generator):
     """Test generating events for Beverly Hills (90210) using Scrapybara."""
-    response = events_generator_90210_scrapybara.generate("90210")
+    response = scrapybara_events_generator.generate("90210")
     
     # Verify response structure
     assert isinstance(response, EventsResponse)
@@ -127,9 +99,9 @@ def test_beverly_hills_events_scrapybara(events_generator_90210_scrapybara):
     assert "Beverly Hills" in response.summary, "Summary should mention Beverly Hills"
 
 
-def test_mclean_events_scrapybara(events_generator_22101_scrapybara):
+def test_mclean_events_scrapybara(scrapybara_events_generator):
     """Test generating events for McLean (22101) using Scrapybara."""
-    response = events_generator_22101_scrapybara.generate("22101")
+    response = scrapybara_events_generator.generate("22101")
     
     # Verify response structure
     assert isinstance(response, EventsResponse)
@@ -161,36 +133,36 @@ def test_mclean_events_scrapybara(events_generator_22101_scrapybara):
     assert "McLean" in response.summary, "Summary should mention McLean"
 
 
-def test_pdf_generation_scrapybara(events_generator_90210_scrapybara):
+def test_pdf_generation_scrapybara(scrapybara_events_generator):
     """Test generating PDF from events using Scrapybara."""
     # First get some events
-    response = events_generator_90210_scrapybara.generate("90210")
+    response = scrapybara_events_generator.generate("90210")
     
     # Generate PDF
-    pdf_buffer = events_generator_90210_scrapybara.to_pdf_buffer(response)
+    pdf_buffer = scrapybara_events_generator.to_pdf_buffer(response)
     
     # Verify PDF was generated
     assert pdf_buffer.getvalue().startswith(b'%PDF'), "Should be a valid PDF"
     assert len(pdf_buffer.getvalue()) > 1000, "PDF should have meaningful content"
 
 
-def test_invalid_zip_code_scrapybara(events_generator_90210_scrapybara):
+def test_invalid_zip_code_scrapybara(scrapybara_events_generator):
     """Test generation with invalid zip code for Scrapybara."""
     # Test non-string zip code
     with pytest.raises(ValueError):
-        events_generator_90210_scrapybara._generate(12345)
+        scrapybara_events_generator.generate(12345)
     
     # Test empty zip code
     with pytest.raises(ValueError):
-        events_generator_90210_scrapybara._generate("")
+        scrapybara_events_generator.generate("")
     
     # Test wrong length zip code
     with pytest.raises(ValueError):
-        events_generator_90210_scrapybara._generate("1234")
+        scrapybara_events_generator.generate("1234")
     
     # Test non-numeric zip code
     with pytest.raises(ValueError):
-        events_generator_90210_scrapybara._generate("abcde")
+        scrapybara_events_generator.generate("abcde")
 
 
 def test_invalid_api_key_scrapybara():
@@ -208,9 +180,9 @@ def test_invalid_api_key_scrapybara():
         ScrapybaraEventsGenerator(None, None)
 
 
-def test_beverly_hills_events_perplexity(events_generator_90210_perplexity):
+def test_beverly_hills_events_perplexity(perplexity_events_generator):
     """Test generating events for Beverly Hills (90210) using Perplexity."""
-    response = events_generator_90210_perplexity.generate("90210")
+    response = perplexity_events_generator.generate("90210")
     
     # Verify response structure
     assert isinstance(response, EventsResponse)
@@ -242,9 +214,9 @@ def test_beverly_hills_events_perplexity(events_generator_90210_perplexity):
     assert "Beverly Hills" in response.summary, "Summary should mention Beverly Hills"
 
 
-def test_mclean_events_perplexity(events_generator_22101_perplexity):
+def test_mclean_events_perplexity(perplexity_events_generator):
     """Test generating events for McLean (22101) using Perplexity."""
-    response = events_generator_22101_perplexity.generate("22101")
+    response = perplexity_events_generator.generate("22101")
     
     # Verify response structure
     assert isinstance(response, EventsResponse)
@@ -276,36 +248,36 @@ def test_mclean_events_perplexity(events_generator_22101_perplexity):
     assert "McLean" in response.summary, "Summary should mention McLean"
 
 
-def test_pdf_generation_perplexity(events_generator_90210_perplexity):
+def test_pdf_generation_perplexity(perplexity_events_generator):
     """Test generating PDF from events using Perplexity."""
     # First get some events
-    response = events_generator_90210_perplexity.generate("90210")
+    response = perplexity_events_generator.generate("90210")
     
     # Generate PDF
-    pdf_buffer = events_generator_90210_perplexity.to_pdf_buffer(response)
+    pdf_buffer = perplexity_events_generator.to_pdf_buffer(response)
     
     # Verify PDF was generated
     assert pdf_buffer.getvalue().startswith(b'%PDF'), "Should be a valid PDF"
     assert len(pdf_buffer.getvalue()) > 1000, "PDF should have meaningful content"
 
 
-def test_invalid_zip_code_perplexity(events_generator_90210_perplexity):
+def test_invalid_zip_code_perplexity(perplexity_events_generator):
     """Test generation with invalid zip code for Perplexity."""
     # Test non-string zip code
     with pytest.raises(ValueError):
-        events_generator_90210_perplexity._generate(12345)
+        perplexity_events_generator.generate(12345)
     
     # Test empty zip code
     with pytest.raises(ValueError):
-        events_generator_90210_perplexity._generate("")
+        perplexity_events_generator.generate("")
     
     # Test wrong length zip code
     with pytest.raises(ValueError):
-        events_generator_90210_perplexity._generate("1234")
+        perplexity_events_generator.generate("1234")
     
     # Test non-numeric zip code
     with pytest.raises(ValueError):
-        events_generator_90210_perplexity._generate("abcde")
+        perplexity_events_generator.generate("abcde")
 
 
 def test_invalid_api_key_perplexity():
