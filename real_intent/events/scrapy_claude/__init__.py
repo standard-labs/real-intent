@@ -331,22 +331,19 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
         try:
             return self._run(zip_code)
         except KeyError as e:
-            log("error", f"KeyError: {e}")
-            self.stop_instance()
+            log("error", f"KeyError running Scrapybara event generation: {e}", exc_info=e)
             raise
         except ToolError as e:
-            log("error", f"ToolError: {e}")
-            self.stop_instance()
+            log("error", f"ToolError running Scrapybara event generation: {e}", exc_info=e)
             raise
         except ApiError as e:
-            log("error", f"ApiError: {e}")
-            self.stop_instance()
+            log("error", f"ApiError running Scrapybara event generation: {e}", exc_info=e)
             raise
         except Exception as e:
-            log("error", f"Error: {e}")
-            self.stop_instance()
+            log("error", f"Error running Scrapybara event generation: {e}", exc_info=e)
             raise
-    
+        finally:
+            self.stop_instance()
 
     @retry_generation
     def _generate_events(self, zip_code: str) -> EventsResponse:
