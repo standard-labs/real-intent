@@ -136,12 +136,12 @@ class EventsGenerator(BaseEventsGenerator):
         if any(not isinstance(start_date, dt.datetime), not isinstance(end_date, dt.datetime)):
             raise ValueError("Invalid start or end date inputs.")
 
-        start = start_date or dt.datetime.now()
-        end = end_date or (start + dt.timedelta(days=14))
+        start: dt.datetime = start_date or dt.datetime.now()
+        end: dt.datetime = end_date or (start + dt.timedelta(days=14))
         
         # Convert to formatted strings for internal use
-        self.start_date = start.strftime("%B %d, %Y")
-        self.end_date = end.strftime("%B %d, %Y")
+        self.start_date: str = start.strftime("%B %d, %Y")
+        self.end_date: str = end.strftime("%B %d, %Y")
 
 
     def stop_instance(self) -> None:
