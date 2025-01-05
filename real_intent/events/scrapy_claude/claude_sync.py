@@ -1,15 +1,20 @@
 """Synchronous implementation of tools for the Anthropic API."""
-from typing import Literal, Optional, TypedDict, Any
 from anthropic.types.beta import (
     BetaToolComputerUse20241022Param,
     BetaToolResultBlockParam, 
     BetaTextBlockParam, 
     BetaImageBlockParam
 )
+
 from scrapybara.client import Instance
 from scrapybara.anthropic.base import ToolResult, ToolError, CLIResult, BaseAnthropicTool
+
 from playwright.sync_api import sync_playwright
+
+from typing import Literal, Optional, TypedDict, Any
 import base64
+
+from real_intent.internal_logging import log
 
 
 class BaseTool(BaseAnthropicTool):
@@ -45,7 +50,7 @@ class ToolCollection:
                 raise ValueError("Instance not set!")
             return tool.call(tool_input, self.instance)
         except Exception as e:
-            print(f"Error running tool {name}: {e}")
+            log("error", f"Error running tool {name}: {e}")
             return None
 
 
@@ -187,4 +192,3 @@ class SearchTool(BaseTool):
             )
         except Exception as e:
             raise ToolError(str(e)) from None
-
