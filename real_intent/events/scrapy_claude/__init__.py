@@ -254,78 +254,82 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
         return res
     
 
-    def run(self, zip_code: str) -> dict[str, str]:
-        try:
-            self.initialize_instance() # can throw scrapybara.core.api_error.ApiError
-            
-            self.go_to_page(self.instance, "https://www.google.com")  # initial starting point, its faster to start from here, rather than have it come up with the idea to open applications, go to chrome, etc...
-            system, user = self.prompt(zip_code)
+    def _run(self, zip_code: str) -> dict[str, str]:
+        """Core implementation of the event generation loop."""
+        self.initialize_instance()
+        
+        self.go_to_page(self.instance, "https://www.google.com")  # initial starting point, its faster to start from here
+        system, user = self.prompt(zip_code)
 
-            messages: list[BetaMessageParam] = []
+        messages: list[BetaMessageParam] = []
 
-            # Add initial command to messages
-            messages.append({
+        # Add initial command to messages
+        messages.append({
             "role": "user",
             "content": [{"type": "text", "text": user}],
+        })
+
+        while True:
+            # Get Claude's response
+            response = self.anthropic_client.beta.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=4096,
+                messages=messages,
+                system=[{"type": "text", "text": system}],
+                tools=self.tools.to_params(),
+                betas=["computer-use-2024-10-22"]
+            )
+
+            # Convert response to params
+            response_params = self._response_to_params(response)
+
+            # Process response content and handle tools before adding to messages
+            tool_result_content: list[BetaToolResultBlockParam] = []
+
+            for content_block in response_params:
+                if content_block["type"] == "text":
+                    log("trace", f"Assistant response: {content_block['text']}")
+
+                elif content_block["type"] == "tool_use":
+                    log("trace", f"Tool use requested: {content_block['name']} with input: {content_block['input']}")
+                
+                    # Execute the tool
+                    result = self.tools.run(
+                        name=content_block["name"],
+                        tool_input=cast(dict[str, Any], content_block["input"])
+                    )            
+
+                    if result:
+                        tool_result = _make_api_tool_result(result, content_block["id"])
+
+                        if result.output:
+                            log("trace", f"Tool output: {result.output}")
+                        if result.error:
+                            log("debug", f"Tool error: {result.error}")
+                        tool_result_content.append(tool_result)
+
+            # Add assistant's response to messages
+            messages.append({
+                "role": "assistant",
+                "content": response_params,
             })
 
-            while True:
-                # Get Claude's response
-                response = self.anthropic_client.beta.messages.create(
-                    model="claude-3-5-sonnet-20241022",
-                    max_tokens=4096,
-                    messages=messages,
-                    system=[{"type": "text", "text": system}],
-                    tools=self.tools.to_params(),
-                    betas=["computer-use-2024-10-22"]
-                )
-
-                # Convert response to params
-                response_params = self._response_to_params(response)
-
-                # Process response content and handle tools before adding to messages
-                tool_result_content: list[BetaToolResultBlockParam] = []
-
-                for content_block in response_params:
-                    if content_block["type"] == "text":
-                        log("trace", f"Assistant response: {content_block['text']}")
-
-                    elif content_block["type"] == "tool_use":
-                        log("trace", f"Tool use requested: {content_block['name']} with input: {content_block['input']}")
-                    
-                        # Execute the tool
-                        result = self.tools.run(
-                            name=content_block["name"],
-                            tool_input=cast(dict[str, Any], content_block["input"])
-                        )            
-
-                        if result:
-                            tool_result = _make_api_tool_result(result, content_block["id"])
-
-                            if result.output:
-                                log("trace", f"Tool output: {result.output}")
-                            if result.error:
-                                log("warn", f"Tool error: {result.error}")
-                            tool_result_content.append(tool_result)
-
-
-                # Add assistant's response to messages
+            # If tools were used, add their results to messages
+            if tool_result_content:
                 messages.append({
-                    "role": "assistant",
-                    "content": response_params,
+                    "role": "user",
+                    "content": tool_result_content
                 })
+            else:
+                # No tools used, task is complete
+                self.stop_instance()
+                log("info", f"Sampling loop completed. Last response received: {content_block['text']}")
+                return content_block['text']
 
-                # If tools were used, add their results to messages
-                if tool_result_content:
-                    messages.append({
-                        "role": "user",
-                        "content": tool_result_content
-                    })
-                else:
-                    # No tools used, task is complete
-                    self.stop_instance()
-                    log("info", f"Sampling loop completed. Last response received: {content_block['text']} ")
-                    return content_block['text']        
+    def run(self, zip_code: str) -> dict[str, str]:
+        """Run the event generation with error handling."""
+        try:
+            return self._run(zip_code)
         except KeyError as e:
             log("error", f"KeyError: {e}")
             self.stop_instance()
