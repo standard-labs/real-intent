@@ -101,20 +101,31 @@ def retry_generation(func: Callable):
 class EventsGenerator(BaseEventsGenerator):
     """Implementation of event generation using Scrapybara and Claude."""
 
-    def __init__(self, scrapybara_key: str, anthropic_key: str, instance_type: str = "small"):
+    def __init__(
+        self, 
+        scrapybara_key: str, 
+        anthropic_key: str, 
+        instance_type: str = "small",
+        start_date: str | None = None,
+        end_date: str | None = None
+    ):
         if not isinstance(scrapybara_key, str) or not scrapybara_key:
             raise ValueError("Invalid Scrapybara API key. Please provide a valid API key.")
         
         if not isinstance(anthropic_key, str) or not anthropic_key:
             raise ValueError("Invalid Anthropic API key. Please provide a valid API key.")
 
-       
         self.scrapybara_client = Scrapybara(api_key=scrapybara_key)
         self.anthropic_client = Anthropic(api_key=anthropic_key)
     
         self.instance_type = instance_type
         self.instance = None
         self.tools = None
+
+        # Set dates with defaults if not provided
+        now = datetime.datetime.now()
+        self.start_date = start_date or now.strftime("%B %d, %Y")
+        self.end_date = end_date or (now + datetime.timedelta(days=7)).strftime("%B %d, %Y")
 
 
     def stop_instance(self) -> None:
@@ -136,7 +147,8 @@ class EventsGenerator(BaseEventsGenerator):
         self.tools.set_instance(self.instance)
 
 
-    def prompt(self) -> tuple[str, str]:
+    def prompt(self, zip_code: str) -> tuple[str, str]:
+        """Generate the prompts for event generation."""
         return f"""
             <SYSTEM_CAPABILITY>
             * You are utilising an Ubuntu virtual machine using linux architecture with internet access.
@@ -192,22 +204,22 @@ class EventsGenerator(BaseEventsGenerator):
 
         """, f""" 
             Task:
-            1. Retrieve events happening in the city with ZIP code: {self.zip_code} within the next 7 days, from {self.start_date} to {self.end_date}. First, find the city corresponding to ZIP code {self.zip_code} to ensure events are within the correct area.
+            1. Retrieve events happening in the city with ZIP code: {zip_code} within the next 7 days, from {self.start_date} to {self.end_date}. First, find the city corresponding to ZIP code {zip_code} to ensure events are within the correct area.
             2. Focus on public events, community activities, festivals, and major holidays during this period (e.g., Christmas, New Year) if there are any.
             3. Include 3–5 unique events relevant to the specified ZIP code and timeframe. Include more if there are many events available that meet the criteria. 
             4. Exclude repeated or duplicate events.
 
             Requirements:
             - Perform TWO distinct searches:
-            - First, search for events based on the city name derived from ZIP code {self.zip_code}. Find appropriate community events within the zip code area and timeframe, and if and only if this criteria is met, you will add that event to the list.
+            - First, search for events based on the city name derived from ZIP code {zip_code}. Find appropriate community events within the zip code area and timeframe, and if and only if this criteria is met, you will add that event to the list.
             - If the first search yields no results or not enough results, PERFORM a NEW SEARCH and refine your query and adjust search terms and perform a second search. Once again, only add events that meet the criteria.
             - If no results are found after two searches, stop searching and respond with an empty JSON list([]).
             - It is acceptable to return an empty list if there are no events matching the criteria. Avoid fabricated results or predictions of events. All your events must be real and verifiable.
             - Provide a JSON list of events matching the schema. You must include the link. If for some reason there is no link, set that attribute as null.
-            - Ensure events are relevant to the area {self.zip_code} and date range {self.start_date} to {self.end_date}.
+            - Ensure events are relevant to the area {zip_code} and date range {self.start_date} to {self.end_date}.
 
             Instructions:
-            1. Start by finding the city corresponding to the ZIP code {self.zip_code}.
+            1. Start by finding the city corresponding to the ZIP code {zip_code}.
             2. Perform the first search for public events, community activities, festivals, or major holidays in the city and timeframe.
             3. If the first search returns no results, refine or adjust the query and perform a second search.
             4. If the second search also yields no results, return an empty JSON list ([]).
@@ -217,7 +229,8 @@ class EventsGenerator(BaseEventsGenerator):
             """
 
 
-    def summary_prompt(self, events: list[Event]) -> tuple[str, str]:
+    def summary_prompt(self, events: list[Event], zip_code: str) -> tuple[str, str]:
+        """Generate the prompt for summary generation."""
         """
         Generate the prompt for the summary generation task.
         """
@@ -231,7 +244,7 @@ class EventsGenerator(BaseEventsGenerator):
             """
 
         user = f"""
-            Summarize the events happening in {self.zip_code} between {self.start_date} and {self.end_date} provided to you here.
+            Summarize the events happening in {zip_code} between {self.start_date} and {self.end_date} provided to you here.
             \n{events}\n
             Your summary should be informative and engaging, providing a brief overview of the events, the local community,
             and any other relevant details such as weather conditions. Provide a maximum of 5 sentences! 
@@ -241,7 +254,7 @@ class EventsGenerator(BaseEventsGenerator):
             It should be structured in valid JSON format with one top level key called "summary" that contains a string
             summarizing the events and the local community during the specified period with a maximum of 5 sentences. 
             The summary should be a detailed paragraph that provides an overview of the expected weather conditions for the week, {self.start_date} to {self.end_date},
-            and highlights the key events happening in {self.zip_code} from the list provided. Include any relevant insights about the local community, 
+            and highlights the key events happening in {zip_code} from the list provided. Include any relevant insights about the local community, 
             such as cultural aspects, holiday-specific activities, or any notable attractions during this period.
             If there are any major holidays (e.g., Christmas, New Year's), mention how the local events and community activities reflect these.
         """
@@ -269,12 +282,12 @@ class EventsGenerator(BaseEventsGenerator):
         return res
     
 
-    def run(self) -> dict[str, str]:
+    def run(self, zip_code: str) -> dict[str, str]:
         try:
             self.initialize_instance() # can throw scrapybara.core.api_error.ApiError
             
             self.go_to_page(self.instance, "https://www.google.com")  # initial starting point, its faster to start from here, rather than have it come up with the idea to open applications, go to chrome, etc...
-            system, user = self.prompt()
+            system, user = self.prompt(zip_code)
 
             messages: list[BetaMessageParam] = []
 
@@ -365,29 +378,29 @@ class EventsGenerator(BaseEventsGenerator):
     
 
     @retry_generation
-    def _generate_events(self) -> EventsResponse:
+    def _generate_events(self, zip_code: str) -> EventsResponse:
         """
         Generate a list of events for the specified ZIP code and date range.
         """
-        response = self.run()
+        response = self.run(zip_code)
         response = extract_json_array(response)
         events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in response]
-        log("info", f"Generated {len(events)} for {self.zip_code} between {self.start_date} and {self.end_date}")
-        print(f"generated events for {self.zip_code} between {self.start_date} and {self.end_date}")
+        log("info", f"Generated {len(events)} for {zip_code} between {self.start_date} and {self.end_date}")
+        print(f"generated events for {zip_code} between {self.start_date} and {self.end_date}")
 
         if not events:
-            raise NoEventsFoundError(self.zip_code)
+            raise NoEventsFoundError(zip_code)
         
-        summary = self.generate_summary(events)
+        summary = self.generate_summary(events, zip_code)
         summary_dict = extract_json_only(summary)
 
         log("debug", f"Events and summary generated successfully. Events: {events}, Summary: {summary_dict['summary']}")
         return EventsResponse(events=events, summary=summary_dict['summary'])
 
 
-    def generate_summary(self, events: list[Event]) -> str:
-
-        system, user = self.summary_prompt(events=events)        
+    def generate_summary(self, events: list[Event], zip_code: str) -> str:
+        """Generate a summary of the events."""
+        system, user = self.summary_prompt(events=events, zip_code=zip_code)        
         
         try:
             response = self.anthropic_client.completions.create(
@@ -417,11 +430,7 @@ class EventsGenerator(BaseEventsGenerator):
         if not isinstance(zip_code, str) or not zip_code.isnumeric() or len(zip_code) != 5:
             raise ValueError("Invalid ZIP code. ZIP code must be a 5-digit numeric string.")
 
-        self.zip_code = zip_code
-        self.start_date = datetime.datetime.now().strftime("%B %d, %Y")
-        self.end_date = (datetime.datetime.now() + datetime.timedelta(days=7)).strftime("%B %d, %Y")
-
-        return self._generate_events()
+        return self._generate_events(zip_code)
 
 
     def generate_pdf_buffer(self, events_response: EventsResponse) -> BytesIO:
