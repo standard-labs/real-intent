@@ -10,7 +10,6 @@ def test_csv_string_formatter() -> None:
         MD5WithPII(md5="456def", sentences=["test sentence"], pii=PII.create_fake(seed=43))
     ]
     csv_content = formatter.deliver(md5s)
-    print("CSV CONTENT: \n", csv_content)
     
     # Check if the CSV contains the expected headers
     expected_header = "test sentence,first_name,last_name,email_1,email_2,email_3,phone_1,phone_1_dnc,phone_2,phone_2_dnc,phone_3,phone_3_dnc,address,city,state,zip_code,zip4,fips_state_code,fips_county_code,county_name,latitude,longitude,age,gender,address_type,cbsa,census_tract,census_block_group,census_block,scf,dma,msa,congressional_district,head_of_household,birth_month_and_year,prop_type,n_household_children,credit_range,household_income,household_net_worth,home_owner_status,marital_status,occupation,median_home_value,education,length_of_residence,n_household_adults,political_party,health_beauty_products,cosmetics,jewelry,investment_type,investments,pet_owner,pets_affinity,health_affinity,diet_affinity,fitness_affinity,outdoors_affinity,boating_sailing_affinity,camping_hiking_climbing_affinity,fishing_affinity,hunting_affinity,aerobics,nascar,scuba,weight_lifting,healthy_living_interest,motor_racing,foreign_travel,self_improvement,walking,fitness,ethnicity_detail,ethnic_group,md5"
@@ -28,8 +27,7 @@ def test_csv_string_formatter_renames() -> None:
         MD5WithPII(md5="456def", sentences=["test sentence"], pii=PII.create_fake(seed=43))
     ]
     csv_content = formatter.deliver(md5s)
-    print("CSV CONTENT: \n", csv_content)
-    
+
     # Check if the CSV contains the expected headers
     expected_header = "thisrenamed,first_name,last_name,email_1,email_2,email_3,phone_1,phone_1_dnc,phone_2,phone_2_dnc,phone_3,phone_3_dnc,address,city,state,zip_code,zip4,fips_state_code,fips_county_code,county_name,latitude,longitude,age,gender,address_type,cbsa,census_tract,census_block_group,census_block,scf,dma,msa,congressional_district,head_of_household,birth_month_and_year,prop_type,n_household_children,credit_range,household_income,household_net_worth,home_owner_status,marital_status,occupation,median_home_value,education,length_of_residence,n_household_adults,political_party,health_beauty_products,cosmetics,jewelry,investment_type,investments,pet_owner,pets_affinity,health_affinity,diet_affinity,fitness_affinity,outdoors_affinity,boating_sailing_affinity,camping_hiking_climbing_affinity,fishing_affinity,hunting_affinity,aerobics,nascar,scuba,weight_lifting,healthy_living_interest,motor_racing,foreign_travel,self_improvement,walking,fitness,ethnicity_detail,ethnic_group,md5"
     assert expected_header in csv_content
