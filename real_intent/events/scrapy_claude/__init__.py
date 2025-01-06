@@ -31,6 +31,8 @@ from real_intent.internal_logging import log
 type InstanceType = Literal["small"]
 
 
+# ---- Helpers ----
+
 def extract_json_array(response: str):
     """
     Parse a string response and pull out everything between the first [ and last ]
