@@ -43,11 +43,14 @@ class ToolCollection:
 
     def run(self, *, name: str, tool_input: dict) -> Optional[ToolResult]:
         tool = self.tool_map.get(name)
+
         if not tool:
             return None
+
         try:
             if not self.instance:
                 raise ValueError("Instance not set!")
+
             return tool.call(tool_input, self.instance)
         except Exception as e:
             log("error", f"Error running tool {name}: {e}")
@@ -139,7 +142,10 @@ def _make_api_tool_result(result: ToolResult, tool_use_id: str) -> BetaToolResul
 
 
 class SearchTool(BaseTool):
-    """ Custom tool used to search for a query on Google. Needed to create this as Claude won't correctly target and search for queries. """
+    """
+    Custom tool used to search for a query on Google. 
+    Necessary as Claude won't correctly target and search for queries.
+    """
 
     api_type: Literal["custom"] = "custom"
     name: Literal["search"] = "search"
