@@ -14,6 +14,7 @@ warnings.filterwarnings(
 )
 
 from real_intent.events import (
+    Event,
     EventsResponse,
     PerplexityEventsGenerator,
     ScrapybaraEventsGenerator
@@ -99,13 +100,38 @@ def test_beverly_hills_events_scrapybara(scrapybara_events_generator):
     assert "Beverly Hills" in response.summary, "Summary should mention Beverly Hills"
 
 
-def test_pdf_generation_scrapybara(scrapybara_events_generator):
+@pytest.fixture
+def dummy_events_response():
+    """Create a dummy EventsResponse for testing."""
+    return EventsResponse(
+        events=[
+            Event(
+                title="Test Event 1",
+                date="2024-03-15",
+                description="A fun test event happening in Beverly Hills",
+                link="https://example.com/event1"
+            ),
+            Event(
+                title="Test Event 2",
+                date="2024-03-20",
+                description="Another exciting event in the 90210 area",
+                link="https://example.com/event2"
+            ),
+            Event(
+                title="Test Event 3",
+                date="2024-03-25",
+                description="A third amazing event for testing purposes",
+                link="https://example.com/event3"
+            )
+        ],
+        summary="A collection of upcoming events in Beverly Hills featuring entertainment, culture, and community gatherings."
+    )
+
+
+def test_pdf_generation(scrapybara_events_generator, dummy_events_response):
     """Test generating PDF from events using Scrapybara."""
-    # First get some events
-    response = scrapybara_events_generator.generate("90210")
-    
-    # Generate PDF
-    pdf_buffer = scrapybara_events_generator.to_pdf_buffer(response)
+    # Generate PDF using dummy data
+    pdf_buffer = scrapybara_events_generator.to_pdf_buffer(dummy_events_response)
     
     # Verify PDF was generated
     assert pdf_buffer.getvalue().startswith(b'%PDF'), "Should be a valid PDF"
@@ -178,19 +204,6 @@ def test_beverly_hills_events_perplexity(perplexity_events_generator):
     # Verify summary
     assert len(response.summary.split()) >= 20, "Summary should be meaningful"
     assert "Beverly Hills" in response.summary, "Summary should mention Beverly Hills"
-
-
-def test_pdf_generation_perplexity(perplexity_events_generator):
-    """Test generating PDF from events using Perplexity."""
-    # First get some events
-    response = perplexity_events_generator.generate("90210")
-    
-    # Generate PDF
-    pdf_buffer = perplexity_events_generator.to_pdf_buffer(response)
-    
-    # Verify PDF was generated
-    assert pdf_buffer.getvalue().startswith(b'%PDF'), "Should be a valid PDF"
-    assert len(pdf_buffer.getvalue()) > 1000, "PDF should have meaningful content"
 
 
 def test_invalid_zip_code_perplexity(perplexity_events_generator):
