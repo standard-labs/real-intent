@@ -180,7 +180,13 @@ class SearchTool(BaseTool):
     def perform_search(self, query: str, instance: Instance) -> ToolResult:
         try:
             url = f"https://www.google.com/search?q={query}"
-            cdp_url = instance.browser.start().cdp_url
+            
+            cdp_url = instance.browser.get_cdp_url().cdp_url
+
+            if not cdp_url:
+                cdp_url = instance.browser.start().cdp_url    
+                log("info", f"Starting new browser with cdp_url {cdp_url}")
+
             with sync_playwright() as playwright:
                 browser = playwright.chromium.connect_over_cdp(cdp_url)
                 page = browser.new_page()
@@ -197,4 +203,5 @@ class SearchTool(BaseTool):
                 system=result.get("system") if result else None,
             )
         except Exception as e:
+            print("Error in search tool", e)
             raise ToolError(str(e)) from None

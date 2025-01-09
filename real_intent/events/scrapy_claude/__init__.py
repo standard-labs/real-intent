@@ -25,6 +25,8 @@ from real_intent.events.errors import NoValidJSONError, NoEventsFoundError
 from real_intent.events.utils import extract_json_only, retry_generation
 from real_intent.internal_logging import log
 
+from anthropic import APIStatusError
+
 
 # ---- Types ----
 
@@ -329,6 +331,7 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
                 log("info", f"Sampling loop completed. Last response received: {content_block['text']}")
                 return content_block['text']
 
+
     def run(self, zip_code: str) -> dict[str, str]:
         """Run the event generation with error handling."""
         try:
@@ -340,13 +343,14 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
             log("error", f"ToolError running Scrapybara event generation: {e}", exc_info=e)
             raise
         except ApiError as e:
-            log("error", f"ApiError running Scrapybara event generation: {e}", exc_info=e)
+            log("error", f"Scrapybara ApiError running Scrapybara event generation: {e}", exc_info=e)
             raise
         except Exception as e:
             log("error", f"Error running Scrapybara event generation: {e}", exc_info=e)
             raise
         finally:
             self.stop_instance()
+
 
     @retry_generation
     def _generate_events(self, zip_code: str) -> EventsResponse:
@@ -383,8 +387,9 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
             
             return response.completion
 
-        except Exception as e:
-            raise Exception(f"Failed to generate summary: {e}")
+        except APIStatusError as e:
+            log("error", f"APIStatusError generating summary with Anthropic: {e}")
+            raise
    
 
     def _generate(self, zip_code: str) -> EventsResponse:
