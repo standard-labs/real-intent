@@ -345,6 +345,9 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
         except ApiError as e:
             log("error", f"Scrapybara ApiError running Scrapybara event generation: {e}", exc_info=e)
             raise
+        except APIStatusError as e:
+            log("error", f"Anthropic APIStatusError running Scrapybara event generation: {e}", exc_info=e)
+            raise
         except Exception as e:
             log("error", f"Error running Scrapybara event generation: {e}", exc_info=e)
             raise
