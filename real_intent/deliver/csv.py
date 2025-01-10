@@ -92,10 +92,10 @@ class CSVStringFormatter(BaseOutputDeliverer):
 
     def __init__(
         self, 
-        output_columns: list[str] = OUTPUT_COLUMNS, 
+        output_columns: list[str] | None = None, 
         renames: dict[str, str] | None = None
     ):
-        self.output_columns = [] + output_columns
+        self.output_columns = [] + (output_columns if output_columns is not None else OUTPUT_COLUMNS)
         self.renames = renames or {}
 
     @staticmethod
