@@ -14,10 +14,7 @@ class ZapierDeliverer(BaseOutputDeliverer):
     def __init__(self, webhook_urls: list[str], per_lead_insights: dict[str, str] | None = None):
         """Initialize the deliverer"""
         self.webhook_urls: list[str] = webhook_urls
-        
-        if not per_lead_insights:
-            per_lead_insights = {}
-        self.per_lead_insights: dict[str, str] = per_lead_insights
+        self.per_lead_insights: dict[str, str] = per_lead_insights or {}
 
 
     def _warn_dnc(self, pii_md5s: list[MD5WithPII]) -> None:
