@@ -71,14 +71,13 @@ class ZapierDeliverer(BaseOutputDeliverer):
         Returns:
             bool: True if all deliveries were successful, False otherwise.
         """
-
         self._warn_dnc(pii_md5s)
         payload = self._format(pii_md5s)
+        deliver_one = partial(self._deliver_one_url, payload)
 
-        # payload will be constant, so we can use partial to make it as a prefilled argument
         with ThreadPoolExecutor(max_workers=5) as executor:
-            deliver_one = partial(self._deliver_one_url, payload)
             results = list(executor.map(deliver_one, self.webhook_urls))
+
         return all(results)
 
     def _deliver_one_url(self, payload: list[dict[str, Any]], webhook_url: str) -> bool:
