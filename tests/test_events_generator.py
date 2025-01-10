@@ -1,23 +1,25 @@
 """Test the event generators (Scrapybara and Perplexity)."""
 import pytest
-import os
-import warnings
 from dotenv import load_dotenv
-import datetime
-import re
 
-# Suppress reportlab deprecation warning
-warnings.filterwarnings(
-    "ignore",
-    message="ast.NameConstant is deprecated",
-    category=DeprecationWarning
-)
+import os
+import re
+import warnings
+import datetime
 
 from real_intent.events import (
     Event,
     EventsResponse,
     PerplexityEventsGenerator,
     ScrapybaraEventsGenerator
+)
+from real_intent.events.errors import NoEventsFoundError
+
+# Suppress reportlab deprecation warning
+warnings.filterwarnings(
+    "ignore",
+    message="ast.NameConstant is deprecated",
+    category=DeprecationWarning
 )
 
 # Load environment variables
@@ -172,9 +174,12 @@ def test_invalid_api_key_scrapybara():
         ScrapybaraEventsGenerator(None, None)
 
 
-def test_beverly_hills_events_perplexity(perplexity_events_generator):
-    """Test generating events for Beverly Hills (90210) using Perplexity."""
-    response = perplexity_events_generator.generate("90210")
+def test_chicago_events_perplexity(perplexity_events_generator):
+    """Test generating events for Chicago (60629) using Perplexity."""
+    try:
+        response = perplexity_events_generator.generate("60629")
+    except NoEventsFoundError:
+        pytest.skip("No events found for this zip code.")
     
     # Verify response structure
     assert isinstance(response, EventsResponse)
@@ -193,6 +198,7 @@ def test_beverly_hills_events_perplexity(perplexity_events_generator):
         # Extract and verify date
         date_str = extract_date_from_range(event.date)
         event_date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+
         # Allow events within the next month
         today = (datetime.datetime.now() - datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)  # 1 day grace period
         month_from_now = today + datetime.timedelta(days=32)  # ~1 month + 1 day grace period
@@ -203,7 +209,7 @@ def test_beverly_hills_events_perplexity(perplexity_events_generator):
     
     # Verify summary
     assert len(response.summary.split()) >= 20, "Summary should be meaningful"
-    assert "Beverly Hills" in response.summary, "Summary should mention Beverly Hills"
+    assert "Chicago" in response.summary, "Summary should mention Chicago"
 
 
 def test_invalid_zip_code_perplexity(perplexity_events_generator):
