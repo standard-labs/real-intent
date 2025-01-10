@@ -11,9 +11,12 @@ from real_intent.schemas import MD5WithPII
 
 class ZapierDeliverer(BaseOutputDeliverer):
 
-    def __init__(self, webhook_urls: list[str], per_lead_insights: dict[str, str] = {}):
+    def __init__(self, webhook_urls: list[str], per_lead_insights: dict[str, str] | None = None):
         """Initialize the deliverer"""
         self.webhook_urls: list[str] = webhook_urls
+        
+        if not per_lead_insights:
+            per_lead_insights = {}
         self.per_lead_insights: dict[str, str] = per_lead_insights
 
 
@@ -62,6 +65,15 @@ class ZapierDeliverer(BaseOutputDeliverer):
             
         return True
     
+
+    def _convert_dict_lead_export(self, pii_md5: MD5WithPII) -> dict[str, Any]:
+        """Convert to dictionary for lead export."""
+        return {
+            "md5": pii_md5.md5,
+            "sentences": pii_md5.sentences,
+            "pii": pii_md5.pii.as_lead_export()
+        }
+    
     
     def _format(self, pii_md5s: list[MD5WithPII]) -> list[dict[str, Any]]:
         """
@@ -76,14 +88,14 @@ class ZapierDeliverer(BaseOutputDeliverer):
                 "md5": "...",
                 "pii": {...},
                 "insight": "...",
-                "sentences": "... | ... | ... | ...",
+                "sentences": "..., ..., ..., ...",
                 "date_delivered": "...."
             },
             {
                 "md5": "...",
                 "pii": {...},
                 "insight": "",
-                "sentences": "... | ... | ...",
+                "sentences": "..., ..., ...",
                 "date_delivered": "...."
                 ...
             },
@@ -93,14 +105,14 @@ class ZapierDeliverer(BaseOutputDeliverer):
         formatted_leads = []
         for pii_md5 in pii_md5s:
 
-            md5_dict = pii_md5.convert_dict_lead_export()
+            md5_dict: dict[str, Any] = self._convert_dict_lead_export(pii_md5)
 
             # convert all values to string, needed for Zapier consistency
-            md5_dict["pii"] = {key: (str(value) if value is not None else None) for key, value in md5_dict["pii"].items()}
+            md5_dict["pii"] = {key: (str(value) if value else None) for key, value in md5_dict["pii"].items()}
 
             md5_dict["insight"] = self.per_lead_insights.get(md5_dict["md5"], "")
 
-            md5_dict["sentences"] = " | ".join(md5_dict["sentences"])
+            md5_dict["sentences"] = ", ".join(md5_dict["sentences"])
 
             md5_dict["date_delivered"] = datetime.now().strftime("%Y-%m-%d")
 
