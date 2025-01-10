@@ -15,6 +15,10 @@ from io import BytesIO
 from real_intent.events.models import EventsResponse
 from real_intent.internal_logging import log
 
+from scrapybara.core.api_error import ApiError
+
+from anthropic import APIStatusError
+
 
 def extract_json_only(response_str: str) -> dict[str, Any]:
     """
@@ -32,15 +36,15 @@ def extract_json_only(response_str: str) -> dict[str, Any]:
 
 
 def retry_generation(func: Callable):
-    """Retry the generation four times if it fails validation."""
-    MAX_ATTEMPTS: int = 4
+    """Retry the generation once if it fails validation."""
+    MAX_ATTEMPTS: int = 2
 
     def wrapper(*args, **kwargs):
-        """Run the function, catch error, then retry up to four times."""
+        """Run the function, catch error, then retry once if exception occurs."""
         for attempt in range(1, MAX_ATTEMPTS+1):
             try:
                 return func(*args, **kwargs)
-            except (ValidationError, KeyError, NoValidJSONError, json.decoder.JSONDecodeError) as err:
+            except (ValidationError, KeyError, NoValidJSONError, json.decoder.JSONDecodeError, ApiError, APIStatusError) as err:
                 if attempt < MAX_ATTEMPTS:  # Log warning for first n-1 attempts
                     log("warn", f"Function {func.__name__} failed validation, attempt {attempt} of {MAX_ATTEMPTS}.")
                 else:  # Log error for the last attempt
