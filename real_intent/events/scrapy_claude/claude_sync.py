@@ -54,7 +54,7 @@ class ToolCollection:
             return tool.call(tool_input, self.instance)
         except Exception as e:
             log("error", f"Error running tool {name}: {e}")
-            return None
+            raise
 
 
 class ComputerTool(BaseTool):
@@ -92,53 +92,48 @@ class ComputerTool(BaseTool):
         action = kwargs["action"]
         coordinate = kwargs.pop("coordinate", None)
         text = kwargs.pop("text", None)
-
-        try:
-            result = instance.computer(
-                action=action,
-                coordinate=tuple(coordinate) if coordinate else None,
-                text=text,
-            )
-            return CLIResult(
-                output=result.get("output") if result else "",
-                error=result.get("error") if result else None,
-                base64_image=result.get("base64_image") if result else None,
-                system=result.get("system") if result else None,
-            )
-        except Exception as e:
-            raise ToolError(str(e)) from None
+        
+        result = instance.computer(
+            action=action,
+            coordinate=tuple(coordinate) if coordinate else None,
+            text=text,
+        )
+        return CLIResult(
+            output=result.get("output") if result else "",
+            error=result.get("error") if result else None,
+            base64_image=result.get("base64_image") if result else None,
+            system=result.get("system") if result else None,
+        )
+        
 
 
 def _make_api_tool_result(result: ToolResult, tool_use_id: str) -> BetaToolResultBlockParam:
-    try:
-        tool_result_content: list[BetaTextBlockParam | BetaImageBlockParam] | str = []
-        is_error = False
-        if result.error:
-            is_error = True
-            tool_result_content = result.error
-        else:
-            if result.output:
-                tool_result_content.append({
-                    "type": "text",
-                    "text": result.output,
-                })
-            if result.base64_image:
-                tool_result_content.append({
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": "image/png",
-                        "data": result.base64_image,
-                    },
-                })
-        return {
-            "type": "tool_result",
-            "content": tool_result_content,
-            "tool_use_id": tool_use_id,
-            "is_error": is_error,
-        }
-    except Exception as e:
-        raise ToolError(str(e)) from None
+    tool_result_content: list[BetaTextBlockParam | BetaImageBlockParam] | str = []
+    is_error = False
+    if result.error:
+        is_error = True
+        tool_result_content = result.error
+    else:
+        if result.output:
+            tool_result_content.append({
+                "type": "text",
+                "text": result.output,
+            })
+        if result.base64_image:
+            tool_result_content.append({
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": "image/png",
+                    "data": result.base64_image,
+                },
+            })
+    return {
+        "type": "tool_result",
+        "content": tool_result_content,
+        "tool_use_id": tool_use_id,
+        "is_error": is_error,
+    }
 
 
 class SearchTool(BaseTool):
@@ -173,35 +168,26 @@ class SearchTool(BaseTool):
         query = kwargs.get("query")
         
         if not query:
-            return {"error": "Query parameter is required."}
+            raise ToolError("Missing required 'query' parameter.")
 
         return self.perform_search(query, instance)
 
     def perform_search(self, query: str, instance: Instance) -> ToolResult:
-        try:
-            url = f"https://www.google.com/search?q={query}"
-            
-            cdp_url = instance.browser.get_cdp_url().cdp_url
+        url = f"https://www.google.com/search?q={query}"
+        cdp_url = instance.browser.start().cdp_url
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.connect_over_cdp(cdp_url)
+            page = browser.new_page()
+            page.goto(url)
+            page.wait_for_load_state("load")    
+            result = {"output": f"Successfully searched for {query}."}
+            ss = page.screenshot(full_page=True)      # important, this screenshot is the only way Claude can see the results, the page closes instantly
+            result['base64_image'] = base64.b64encode(ss).decode("utf-8")
 
-            if not cdp_url:
-                cdp_url = instance.browser.start().cdp_url    
-                log("info", f"Starting new browser with cdp_url {cdp_url}")
-
-            with sync_playwright() as playwright:
-                browser = playwright.chromium.connect_over_cdp(cdp_url)
-                page = browser.new_page()
-                page.goto(url)
-                page.wait_for_load_state("load")    
-                result = {"output": f"Successfully searched for {query}."}
-                ss = page.screenshot(full_page=True)      # important, this screenshot is the only way Claude can see the results, the page closes instantly
-                result['base64_image'] = base64.b64encode(ss).decode("utf-8")
-
-            return CLIResult(
-                output=result.get("output") if result else "",
-                error=result.get("error") if result else None,
-                base64_image=result.get("base64_image") if result else None,
-                system=result.get("system") if result else None,
-            )
-        except Exception as e:
-            print("Error in search tool", e)
-            raise ToolError(str(e)) from None
+        return CLIResult(
+            output=result.get("output") if result else "",
+            error=result.get("error") if result else None,
+            base64_image=result.get("base64_image") if result else None,
+            system=result.get("system") if result else None,
+        )
+    
