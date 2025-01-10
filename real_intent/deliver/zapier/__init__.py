@@ -12,7 +12,25 @@ from real_intent.schemas import MD5WithPII
 
 
 class ZapierDeliverer(BaseOutputDeliverer):
-    """Delivers data to Zapier webhooks."""
+    """
+    Delivers data to Zapier via webhooks.
+
+    This class is responsible for formatting and delivering lead data to one or more Zapier webhooks.
+    It handles batch processing of leads, multi-threading for multiple webhook URLs, and includes
+    additional features such as DNC (Do Not Call) list checking and lead insights.
+
+    Behavior:
+    - Formats lead data into a Zapier-friendly structure.
+    - Delivers formatted data to multiple Zapier webhooks concurrently.
+    - Warns about leads on the DNC list.
+    - Adds insights to leads if available.
+
+    Functionality:
+    - Converts MD5WithPII objects to dictionaries for lead export.
+    - Formats leads with additional information like insights and delivery date.
+    - Delivers leads to Zapier webhooks using POST requests.
+    - Supports multiple webhook URLs for delivery.
+    """
 
     def __init__(self, webhook_urls: list[str], per_lead_insights: dict[str, str] | None = None):
         """
