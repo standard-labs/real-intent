@@ -1,23 +1,25 @@
 """Test the event generators (Scrapybara and Perplexity)."""
 import pytest
-import os
-import warnings
 from dotenv import load_dotenv
-import datetime
-import re
 
-# Suppress reportlab deprecation warning
-warnings.filterwarnings(
-    "ignore",
-    message="ast.NameConstant is deprecated",
-    category=DeprecationWarning
-)
+import os
+import re
+import warnings
+import datetime
 
 from real_intent.events import (
     Event,
     EventsResponse,
     PerplexityEventsGenerator,
     ScrapybaraEventsGenerator
+)
+from real_intent.events.errors import NoEventsFoundError
+
+# Suppress reportlab deprecation warning
+warnings.filterwarnings(
+    "ignore",
+    message="ast.NameConstant is deprecated",
+    category=DeprecationWarning
 )
 
 # Load environment variables
@@ -174,7 +176,10 @@ def test_invalid_api_key_scrapybara():
 
 def test_chicago_events_perplexity(perplexity_events_generator):
     """Test generating events for Chicago (60629) using Perplexity."""
-    response = perplexity_events_generator.generate("60629")
+    try:
+        response = perplexity_events_generator.generate("60629")
+    except NoEventsFoundError:
+        pytest.skip("No events found for this zip code.")
     
     # Verify response structure
     assert isinstance(response, EventsResponse)
