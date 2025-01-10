@@ -1,5 +1,6 @@
-"""Deliver to Zapier webhooks."""
+"""Deliverer for Zapier webhooks."""
 import requests
+
 from typing import Any
 from functools import partial
 from datetime import datetime
@@ -9,16 +10,29 @@ from real_intent.internal_logging import log
 from real_intent.deliver.base import BaseOutputDeliverer
 from real_intent.schemas import MD5WithPII
 
+
 class ZapierDeliverer(BaseOutputDeliverer):
+    """Delivers data to Zapier webhooks."""
 
     def __init__(self, webhook_urls: list[str], per_lead_insights: dict[str, str] | None = None):
-        """Initialize the deliverer"""
+        """
+        Initialize the ZapierDeliverer.
+
+        Args:
+            webhook_urls (list[str]): List of Zapier webhook URLs to deliver to.
+            per_lead_insights (dict[str, str] | None, optional): Dictionary mapping MD5 hashes to insights. Defaults to None.
+        """
         self.webhook_urls: list[str] = webhook_urls
         self.per_lead_insights: dict[str, str] = per_lead_insights or {}
 
 
     def _warn_dnc(self, pii_md5s: list[MD5WithPII]) -> None:
-        """Log a warning if any of the leads are on the DNC list."""
+        """
+        Log a warning if any of the leads are on the DNC list.
+
+        Args:
+            pii_md5s (list[MD5WithPII]): List of MD5WithPII objects to check for DNC status.
+        """
         for md5_with_pii in pii_md5s:
             if any(phone.do_not_call for phone in md5_with_pii.pii.mobile_phones):
                 log(
@@ -32,7 +46,15 @@ class ZapierDeliverer(BaseOutputDeliverer):
 
 
     def _deliver(self, pii_md5s: list[MD5WithPII]) -> bool:
-        """Deliver the formatted data to Zapier webhooks."""
+        """
+        Deliver the formatted data to Zapier webhooks.
+
+        Args:
+            pii_md5s (list[MD5WithPII]): List of MD5WithPII objects to deliver.
+
+        Returns:
+            bool: True if all deliveries were successful, False otherwise.
+        """
 
         self._warn_dnc(pii_md5s)
         payload = self._format(pii_md5s)
@@ -45,8 +67,16 @@ class ZapierDeliverer(BaseOutputDeliverer):
 
 
     def _deliver_one_url(self, payload: list[dict[str, Any]], webhook_url: str) -> bool:
-        """Deliver batch of leads to a singular Zapier webhook."""
-        
+        """
+        Deliver batch of leads to a singular Zapier webhook.
+
+        Args:
+            payload (list[dict[str, Any]]): List of formatted lead data to deliver.
+            webhook_url (str): Zapier webhook URL to deliver to.
+
+        Returns:
+            bool: True if delivery was successful, False otherwise.
+        """
         response = requests.post(webhook_url, json=payload)
 
         if response.status_code != 200:
@@ -61,42 +91,53 @@ class ZapierDeliverer(BaseOutputDeliverer):
             return False
             
         return True
-    
+
 
     def _convert_dict_lead_export(self, pii_md5: MD5WithPII) -> dict[str, Any]:
-        """Convert to dictionary for lead export."""
+        """
+        Convert MD5WithPII object to dictionary for lead export.
+
+        Args:
+            pii_md5 (MD5WithPII): MD5WithPII object to convert.
+
+        Returns:
+            dict[str, Any]: Dictionary containing formatted lead data.
+        """
         return {
             "md5": pii_md5.md5,
             "sentences": pii_md5.sentences,
             "pii": pii_md5.pii.as_lead_export()
         }
-    
-    
+
+
     def _format(self, pii_md5s: list[MD5WithPII]) -> list[dict[str, Any]]:
         """
         Format the leads into a deliverable format.
 
-        Seperates phone numbers and emails (convert_dict_lead_export()), adds insights to the dict, and combines 
+        Separates phone numbers and emails (convert_dict_lead_export()), adds insights to the dict, and combines 
         sentences into a single string.
-        
-        Returns the formatted list of these dictionary objects:
-        [
-            {
-                "md5": "...",
-                "pii": {...},
-                "insight": "...",
-                "sentences": "..., ..., ..., ...",
-                "date_delivered": "...."
-            },
-            {
-                "md5": "...",
-                "pii": {...},
-                "insight": "",
-                "sentences": "..., ..., ...",
-                "date_delivered": "...."
-                ...
-            },
-        ]
+
+        Args:
+            pii_md5s (list[MD5WithPII]): List of MD5WithPII objects to format.
+
+        Returns:
+            list[dict[str, Any]]: List of formatted lead dictionaries with the following structure:
+                [
+                    {
+                        "md5": "...",
+                        "pii": {...},
+                        "insight": "...",
+                        "sentences": "..., ..., ..., ...",
+                        "date_delivered": "...."
+                    },
+                    {
+                        "md5": "...",
+                        "pii": {...},
+                        "insight": "",
+                        "sentences": "..., ..., ...",
+                        "date_delivered": "...."
+                    }
+                ]
         """
 
         formatted_leads = []
@@ -116,4 +157,3 @@ class ZapierDeliverer(BaseOutputDeliverer):
             formatted_leads.append(md5_dict)
 
         return formatted_leads
-
