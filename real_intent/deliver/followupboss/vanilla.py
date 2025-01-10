@@ -64,12 +64,12 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             api_key: str, 
             system: str, 
             system_key: str, 
-            tags: list[str] = [],
+            tags: list[str] | None = None,
             add_zip_tags: bool = True,
             base_url: str = "https://api.followupboss.com/v1",
             event_type: EventType = EventType.REGISTRATION,
             n_threads: int = 1,
-            per_lead_insights: dict[str, str] = {}
+            per_lead_insights: dict[str, str] | None = None
         ):
         """
         Initialize the FollowUpBossDeliverer.
@@ -85,10 +85,10 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         self.api_key: str = api_key
         self.base_url: str = base_url
         self.system: str = system
-        self.tags: list[str] = tags
+        self.tags: list[str] = tags or []
         self.add_zip_tags: bool = add_zip_tags
         self.system_key: str = system_key
-        self.per_lead_insights: dict[str, str] = per_lead_insights
+        self.per_lead_insights: dict[str, str] = per_lead_insights or {}
 
         # Configuration stuff
         self.event_type: EventType = EventType(event_type)
