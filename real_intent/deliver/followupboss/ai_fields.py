@@ -63,12 +63,12 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         system: str,
         system_key: str,
         openai_api_key: str,
-        tags: list[str] = [],
+        tags: list[str] | None = None,
         add_zip_tags: bool = True,
         base_url: str = "https://api.followupboss.com/v1",
         event_type: EventType = EventType.REGISTRATION,
         n_threads: int = 1,
-        per_lead_insights: dict[str, str] = {},
+        per_lead_insights: dict[str, str] | None = None,
         **kwargs
     ):
         """
@@ -94,6 +94,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             base_url=base_url,
             event_type=event_type,
             n_threads=n_threads,
+            per_lead_insights=per_lead_insights,
             **kwargs
         )
 
@@ -104,9 +105,6 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             raise ImportError(
                 "OpenAI is required for AI FollowUpBoss deliverer. pip install real-intent[ai]."
             )
-
-        # Per-lead insights
-        self.per_lead_insights: dict[str, str] = per_lead_insights
 
         # Set the OpenAI client and verify the credentials
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
