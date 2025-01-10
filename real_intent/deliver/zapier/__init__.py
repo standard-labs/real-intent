@@ -1,4 +1,4 @@
-"""Deliverer for Zapier webhooks."""
+"""Deliverer for Zapier, via webhooks."""
 import requests
 
 from typing import Any
@@ -25,7 +25,6 @@ class ZapierDeliverer(BaseOutputDeliverer):
         self.webhook_urls: list[str] = webhook_urls
         self.per_lead_insights: dict[str, str] = per_lead_insights or {}
 
-
     def _warn_dnc(self, pii_md5s: list[MD5WithPII]) -> None:
         """
         Log a warning if any of the leads are on the DNC list.
@@ -43,7 +42,6 @@ class ZapierDeliverer(BaseOutputDeliverer):
                     )
                 )
                 break
-
 
     def _deliver(self, pii_md5s: list[MD5WithPII]) -> bool:
         """
@@ -64,7 +62,6 @@ class ZapierDeliverer(BaseOutputDeliverer):
             deliver_one = partial(self._deliver_one_url, payload)
             results = list(executor.map(deliver_one, self.webhook_urls))
         return all(results)
-
 
     def _deliver_one_url(self, payload: list[dict[str, Any]], webhook_url: str) -> bool:
         """
@@ -92,7 +89,6 @@ class ZapierDeliverer(BaseOutputDeliverer):
             
         return True
 
-
     def _convert_dict_lead_export(self, pii_md5: MD5WithPII) -> dict[str, Any]:
         """
         Convert MD5WithPII object to dictionary for lead export.
@@ -108,7 +104,6 @@ class ZapierDeliverer(BaseOutputDeliverer):
             "sentences": pii_md5.sentences,
             "pii": pii_md5.pii.as_lead_export()
         }
-
 
     def _format(self, pii_md5s: list[MD5WithPII]) -> list[dict[str, Any]]:
         """
@@ -139,21 +134,16 @@ class ZapierDeliverer(BaseOutputDeliverer):
                     }
                 ]
         """
-
-        formatted_leads = []
+        formatted_leads: list[dict[str, Any]] = []
         for pii_md5 in pii_md5s:
-
             md5_dict: dict[str, Any] = self._convert_dict_lead_export(pii_md5)
 
             # convert all values to string, needed for Zapier consistency
             md5_dict["pii"] = {key: (str(value) if value else None) for key, value in md5_dict["pii"].items()}
 
             md5_dict["insight"] = self.per_lead_insights.get(md5_dict["md5"], "")
-
             md5_dict["sentences"] = ", ".join(md5_dict["sentences"])
-
             md5_dict["date_delivered"] = datetime.now().strftime("%Y-%m-%d")
-
             formatted_leads.append(md5_dict)
 
         return formatted_leads
