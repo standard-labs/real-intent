@@ -12,7 +12,7 @@ class CSVWithInsightsFormatter(CSVStringFormatter):
     def __init__(
         self, 
         per_lead_insights: dict[str, str], 
-        output_columns: list[str] = OUTPUT_COLUMNS,
+        output_columns: list[str] | None = None,
         renames: dict[str, str] | None = None
     ):
         super().__init__(output_columns, renames)

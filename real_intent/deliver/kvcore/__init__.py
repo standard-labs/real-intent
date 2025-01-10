@@ -27,7 +27,7 @@ class KVCoreDeliverer(BaseOutputDeliverer):
             from_email: str, 
             inboxing_address: str, 
             tag: str = "",
-            per_lead_insights: dict[str, str] = {}
+            per_lead_insights: dict[str, str] | None = None
         ):
         """Initialize the deliverer."""
         # Postmark setup
@@ -39,7 +39,7 @@ class KVCoreDeliverer(BaseOutputDeliverer):
         self.tag = tag
 
         # Per-lead insights
-        self.per_lead_insights: dict[str, str] = per_lead_insights
+        self.per_lead_insights: dict[str, str] = per_lead_insights or {}
 
     def _deliver(self, pii_md5s: list[MD5WithPII]) -> bool:
         """
