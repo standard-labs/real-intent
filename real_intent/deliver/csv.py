@@ -95,7 +95,7 @@ class CSVStringFormatter(BaseOutputDeliverer):
         output_columns: list[str] | None = None, 
         renames: dict[str, str] | None = None
     ):
-        self.output_columns = [] + (output_columns if output_columns is not None else OUTPUT_COLUMNS)
+        self.output_columns = output_columns if output_columns is not None else OUTPUT_COLUMNS
         self.renames = renames or {}
 
     @staticmethod
