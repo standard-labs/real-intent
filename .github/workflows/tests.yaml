@@ -25,14 +25,23 @@ jobs:
         run: |
           echo CLIENT_ID=${{ secrets.CLIENT_ID }} >> .env
           echo CLIENT_SECRET=${{ secrets.CLIENT_SECRET }} >> .env
+
           echo OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} >> .env
           echo ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }} >> .env
+
           echo MILLION_VERIFIER_KEY=${{ secrets.MILLION_VERIFIER_KEY }} >> .env
           echo NUMVERIFY_KEY=${{ secrets.NUMVERIFY_KEY }} >> .env
+
+          echo FILLOUT_API_KEY=${{ secrets.FILLOUT_API_KEY }} >> .env
+          echo FILLOUT_DNS_FORM_ID=${{ secrets.FILLOUT_DNS_FORM_ID }} >> .env
+          echo FILLOUT_DNS_QUESTION_ID=${{ secrets.FILLOUT_DNS_QUESTION_ID }} >> .env
+
           echo LOGFIRE_WRITE_TOKEN=${{ secrets.LOGFIRE_WRITE_TOKEN }} >> .env
+
           echo FOLLOWUPBOSS_API_KEY=${{ secrets.FOLLOWUPBOSS_API_KEY }} >> .env
           echo FOLLOWUPBOSS_SYSTEM=${{ secrets.FOLLOWUPBOSS_SYSTEM }} >> .env
           echo FOLLOWUPBOSS_SYSTEM_KEY=${{ secrets.FOLLOWUPBOSS_SYSTEM_KEY }} >> .env
+
           echo PERPLEXITY_API_KEY=${{ secrets.PERPLEXITY_API_KEY }} >> .env
           echo SCRAPYBARA_API_KEY=${{ secrets.SCRAPYBARA_API_KEY }} >> .env
 
