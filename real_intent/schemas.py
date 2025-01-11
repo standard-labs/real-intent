@@ -327,8 +327,12 @@ class PII(BaseModel):
         lon = random.uniform(-125.000000, -66.934570)
 
         # Generate random email and phone
-        email = f"{random.choice(string.ascii_lowercase)}{random.choice(string.ascii_lowercase)}{random.randint(100,999)}@example.com"
-        phone = f"{random.randint(100,999)}{random.randint(100,999)}{random.randint(1000,9999)}"
+        gen_email = lambda: (
+            f"{random.choice(string.ascii_lowercase)}"
+            f"{random.choice(string.ascii_lowercase)}"
+            f"{random.randint(100,999)}@example.com"
+        )
+        gen_phone = lambda: f"{random.randint(100,999)}{random.randint(100,999)}{random.randint(1000,9999)}"
 
         # Create fake PII data
         fake_data = {
@@ -359,7 +363,7 @@ class PII(BaseModel):
             "Birth_Month_and_Year": birth_month_year,
             "Age": age,
             "Prop_Type": random.choice(["Single Family", "Multi Family", "Condo", "Apartment"]),
-            "Email_Array": [email],
+            "Email_Array": [gen_email() for _ in range(3)],
             "Children_HH": str(random.randint(0,5)),
             "Credit_Range": random.choice(credit_ranges),
             "Income_HH": random.choice(income_ranges),
@@ -403,13 +407,9 @@ class PII(BaseModel):
 
         # Create mobile phones
         mobile_phones = [
-            MobilePhone(phone=phone, do_not_call=random.choice([True, False]))
+            MobilePhone(phone=gen_phone(), do_not_call=random.choice([True, False]))
+            for _ in range(2)
         ]
-
-        # Add 0-2 additional phone numbers
-        for _ in range(random.randint(0, 2)):
-            additional_phone = f"{random.randint(100,999)}{random.randint(100,999)}{random.randint(1000,9999)}"
-            mobile_phones.append(MobilePhone(phone=additional_phone, do_not_call=random.choice([True, False])))
 
         return cls(**fake_data, mobile_phones=mobile_phones)  
 
