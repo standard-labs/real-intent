@@ -156,7 +156,7 @@ class ZapierDeliverer(BaseOutputDeliverer):
             md5_dict: dict[str, Any] = self._convert_dict_lead_export(pii_md5)
 
             # convert all values to string, needed for Zapier consistency
-            md5_dict["pii"] = {key: (str(value) if value else None) for key, value in md5_dict["pii"].items()}
+            md5_dict["pii"] = {key: (str(value)) for key, value in md5_dict["pii"].items()}
 
             md5_dict["insight"] = self.per_lead_insights.get(md5_dict["md5"], "")
             md5_dict["sentences"] = ", ".join(md5_dict["sentences"])
