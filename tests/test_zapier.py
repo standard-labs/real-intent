@@ -15,7 +15,7 @@ def generate_md5withpii():
         )
     return _generate
 
-
+@pytest.mark.skip("temporarily deactivated webhook urls")
 def test_zapier_deliverer(generate_md5withpii):
     """ Test to mimic how the deliverer will be implemented """
 
@@ -77,7 +77,7 @@ def test_format(generate_md5withpii):
 
     expected_data = [{
         "md5": "123",
-        "pii": {key: (str(value) if value else None) for key, value in test1.pii.as_lead_export().items()},
+        "pii": {key: (str(value)) for key, value in test1.pii.as_lead_export().items()},
         "insight": "Insight for first md5 123",
         "sentences": "test sentence for first md5 123", 
         "date_delivered": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
