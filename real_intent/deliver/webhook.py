@@ -1,5 +1,7 @@
 """Deliver leads to a webhook."""
+from pydantic import HttpUrl
 import requests
+
 import datetime as dt
 from concurrent.futures import ThreadPoolExecutor
 
@@ -11,9 +13,18 @@ from real_intent.schemas import MD5WithPII
 class WebhookDeliverer(BaseOutputDeliverer):
     """Deliver leads to a webhook."""
 
-    def __init__(self, webhook_url: str, per_lead_insights: dict[str, str] | None = None):
+    def __init__(self, webhook_url: str | HttpUrl, per_lead_insights: dict[str, str] | None = None):
         """Initialize the deliverer."""
-        self.webhook_url = webhook_url
+        if not isinstance(webhook_url, (str, HttpUrl)):
+            raise ValueError("Webhook URL must be a string or HttpUrl.")
+
+        if isinstance(webhook_url, str):
+            try:
+                webhook_url = HttpUrl(webhook_url)
+            except ValueError:
+                raise ValueError("Invalid webhook URL provided.")
+
+        self.webhook_url: str = str(webhook_url)
         self.per_lead_insights: dict[str, str] = per_lead_insights or {}
 
     def _deliver(self, pii_md5s: list[MD5WithPII]) -> bool:
