@@ -43,7 +43,7 @@ class WebhookDeliverer(BaseOutputDeliverer):
         }
 
         # Send the request
-        response = requests.post(self.webhook_url, json=payload)
+        response = requests.post(self.webhook_url, json=payload, timeout=10)
 
         if not response.ok:
             log("error", f"Failed to deliver to webhook with status {response.status_code}: {response.text}")
