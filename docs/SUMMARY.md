@@ -20,6 +20,12 @@
 * [🔵 kvCORE](integration-support/kvcore.md)
 * [🟢 GoHighLevel](integration-support/gohighlevel.md)
 * [🪝 Webhook](integration-support/webhook.md)
+* [🌐 Other Integrations](integration-support/other-integrations/README.md)
+  * [Lofty](integration-support/other-integrations/lofty.md)
+  * [Propertybase GO](integration-support/other-integrations/propertybase-go.md)
+  * [Real Geeks](integration-support/other-integrations/real-geeks.md)
+  * [Realty Juggler](integration-support/other-integrations/realty-juggler.md)
+  * [Wise Agent](integration-support/other-integrations/wise-agent.md)
 
 ## Best Practices
 
