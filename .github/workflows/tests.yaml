@@ -8,6 +8,7 @@ on:
       - ".vscode/**/*.*"
       - .gitignore
       - pyproject.toml
+      - docs/**/*.*
   pull_request:
     types:  # avoid double runs in open pr
       - opened
