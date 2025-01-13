@@ -1,6 +1,6 @@
 """Deliver leads to a webhook."""
 import requests
-from datetime import datetime
+import datetime as dt
 from concurrent.futures import ThreadPoolExecutor
 
 from real_intent.internal_logging import log
@@ -39,7 +39,7 @@ class WebhookDeliverer(BaseOutputDeliverer):
             "pii": pii_md5.pii.as_lead_export(),
             "insight": self.per_lead_insights.get(pii_md5.md5, ""),
             "sentences": pii_md5.sentences,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": dt.datetime.now().isoformat()
         }
 
         # Send the request
