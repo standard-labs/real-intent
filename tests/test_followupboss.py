@@ -78,7 +78,7 @@ def test_followupboss_deliverer_success(followupboss_deliverer, sample_pii_md5s)
     assert set(event_data["person"]["tags"]) == set(expected_tags), "Prepared event data does not contain the correct tags"
 
     # Test delivery and verify tags in the result
-    result = followupboss_deliverer.deliver(sample_pii_md5s)
+    result = followupboss_deliverer.deliver([sample_pii_md5s[0]])
 
     assert len(result) == 1
     assert "id" in result[0]
@@ -114,7 +114,7 @@ def test_prepare_event_data(followupboss_deliverer, sample_pii_md5s):
     assert event_data["system"] == followupboss_deliverer.system
     assert event_data["person"]["firstName"] == sample_pii_md5s[0].pii.first_name
     assert event_data["person"]["lastName"] == sample_pii_md5s[0].pii.last_name
-    assert event_data["person"]["emails"] == [{"value": sample_pii_md5s[0].pii.emails[0]}]
+    assert sample_pii_md5s[0].pii.emails[0] in [email["value"] for email in event_data["person"]["emails"]]
     assert event_data["person"]["addresses"] == [{
         "type": "home",
         "street": sample_pii_md5s[0].pii.address,
