@@ -49,4 +49,14 @@ class WebhookDeliverer(BaseOutputDeliverer):
             log("error", f"Failed to deliver to webhook with status {response.status_code}: {response.text}")
             return False
 
+        log(
+            "trace", 
+            (
+                f"Delivered lead to webhook. URL: {self.webhook_url}; "
+                f"Response code: {response.status_code}; "
+                f"Response text: {response.text}; "
+                f"Payload: {payload}"
+            )
+        )
+
         return True
