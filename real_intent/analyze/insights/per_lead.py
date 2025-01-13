@@ -16,7 +16,7 @@ Your individual lead insight should be NO MORE than 2 sentences long.
 It's extremely important that you think deeply and critically. Think like a subject-matter expert, thinking through the overall insights and how this individual lead fits into the bigger picture. 
 Think about how somebody receiving this lead can make the most of it. Actionable insights are key. 
 
-You will be given a "Profile" which is a brief descriptor of the overall category of the IAB categories, so you can make assumptions about who the leads are for and how the recipient of the leads should optimize usage of the leads.
+You will be given a "Profile" which is a brief descriptor of the overall category of the IAB categories, so you can make assumptions about who the leads are for and how the recipient of the leads should optimize usage of the leads. Keep the insight focused on the profile, ex. if the profile is Real Estate Broker, focus on how the lead can be useful to a real estate agent selling real estate to the lead.
 
 Your response must be valid JSON with the specified keys. Use the "thinking" key FIRST to think thoroughly and critically through your process, before arriving at your final insight. Consider the provided profile when generating your insight.
 """
