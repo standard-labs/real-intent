@@ -45,7 +45,7 @@ def generate_random_name(length=6):
 def sample_pii_md5s():
     """Create a sample MD5WithPII object using fake PII data."""
     # Create fake PII with a fixed seed for reproducibility
-    pii = PII.create_fake(seed=42)
+    pii = PII.create_fake()
     
     # Create MD5WithPII with the fake PII
     return [
