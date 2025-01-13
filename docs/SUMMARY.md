@@ -12,6 +12,7 @@
   * [AI Powered Insights](onboarding-documents/onboarding-videos/ai-powered-insights.md)
   * [How to Avoid Spam Emails?](onboarding-documents/onboarding-videos/how-to-avoid-spam-emails.md)
   * [Turn Conversations to Conversions](onboarding-documents/onboarding-videos/turn-conversations-to-conversions.md)
+* [FAQs](onboarding-documents/faqs.md)
 
 ## Integration Support
 
@@ -35,7 +36,6 @@
 * [📬 Scripts](best-practices/scripts/README.md)
   * [Approach Scripts](best-practices/scripts/approach-scripts.md)
   * [Additional Scripts](best-practices/scripts/additional-scripts.md)
-  * [Page](best-practices/scripts/page.md)
 
 ## Featured Videos
 
@@ -57,7 +57,3 @@
 * [Unlocking Hidden Demand in Niche Real Estate Markets](blog-articles/unlocking-hidden-demand-in-niche-real-estate-markets.md)
 * [Anticipate and Address Buyer Resistance Using Intent Data](blog-articles/anticipate-and-address-buyer-resistance-using-intent-data.md)
 * [How Intent Data Helps You Anticipate Concession Requests](blog-articles/how-intent-data-helps-you-anticipate-concession-requests.md)
-
-## Group 1
-
-* [FAQs](group-1/faqs.md)
