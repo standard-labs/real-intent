@@ -1,6 +1,6 @@
 # Wise Agent
 
-{% embed url="https://real-intent-wiseagent.streamlit.app/" %}
+{% embed url="https://real-intent-wiseagent.streamlit.app/" fullWidth="true" %}
 
 1. Download the CSV file sent by Real Intent.
 2. Use the converter tool to process the file.

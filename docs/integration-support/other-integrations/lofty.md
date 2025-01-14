@@ -1,6 +1,6 @@
 # Lofty
 
-{% embed url="https://real-intent-lofty.streamlit.app/" %}
+{% embed url="https://real-intent-lofty.streamlit.app/" fullWidth="false" %}
 
 1. Download the CSV file provided by Real Intent.
 2. Upload the CSV into the converter tool.
