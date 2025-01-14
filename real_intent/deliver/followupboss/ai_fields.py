@@ -7,10 +7,12 @@ from typing import Literal, Any
 import time
 
 from real_intent.schemas import MD5WithPII
-from real_intent.deliver.followupboss.vanilla import FollowUpBossDeliverer, EventType, InvalidAPICredentialsError, fub_rate_limited
+from real_intent.deliver.followupboss.vanilla import FollowUpBossDeliverer, EventType, fub_rate_limited
 from real_intent.deliver.followupboss.ai_prompt import SYSTEM_PROMPT
 from real_intent.internal_logging import log, log_span
 
+
+# ---- Models ----
 
 class CustomField(BaseModel):
     """Custom field in Follow Up Boss."""
@@ -47,6 +49,14 @@ class CustomFieldCreation(BaseModel):
         )
     )
 
+
+# ---- Errors ----
+
+class InvalidOpenAICredentialsError(Exception):
+    """Raised when invalid OpenAI API credentials are provided."""
+
+
+# ---- Deliverer ----
 
 class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
     """
@@ -110,7 +120,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
 
         if not self._verify_openai_credentials():
-            raise InvalidAPICredentialsError("Invalid API credentials provided for OpenAI.")
+            raise InvalidOpenAICredentialsError("Invalid API credentials provided for OpenAI.")
 
         # Cache the custom fields
         self.custom_fields: list[CustomField] = []
