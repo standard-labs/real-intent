@@ -35,7 +35,7 @@ class EventType(StrEnum):
 
 # ---- Errors ----
 
-class InvalidAPICredentialsError(Exception):
+class InvalidFUBCredentialsError(Exception):
     """Raised when invalid API credentials are provided."""
 
 
@@ -108,7 +108,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
 
         # Make sure API credentials are valid
         if not self._verify_api_credentials():
-            raise InvalidAPICredentialsError("Invalid API credentials provided for FollowUpBoss.")
+            raise InvalidFUBCredentialsError("Invalid API credentials provided for FollowUpBoss.")
 
         # Make sure the account is active
         if not self._verify_account_active():
