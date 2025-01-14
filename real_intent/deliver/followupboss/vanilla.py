@@ -13,6 +13,8 @@ from real_intent.schemas import MD5WithPII
 from real_intent.internal_logging import log
 
 
+# ---- Models ----
+
 class EventType(StrEnum):
     """Event types for adding a lead."""
     REGISTRATION = "Registration"
@@ -31,9 +33,17 @@ class EventType(StrEnum):
     VIEWED_PAGE = "Viewed Page"
 
 
+# ---- Errors ----
+
 class InvalidAPICredentialsError(Exception):
     """Raised when invalid API credentials are provided."""
 
+
+class AccountInactiveError(Exception):
+    """Raised when the account is inactive."""
+
+
+# ---- Helpers ----
 
 def fub_rate_limited(func):
     """
@@ -55,6 +65,8 @@ def fub_rate_limited(func):
         raise Exception("Max retries (10) exceeded due to rate limiting.")
     return wrapper
 
+
+# ---- Deliverer ----
 
 class FollowUpBossDeliverer(BaseOutputDeliverer):
     """Delivers data to FollowUpBoss CRM."""
@@ -97,6 +109,10 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         # Make sure API credentials are valid
         if not self._verify_api_credentials():
             raise InvalidAPICredentialsError("Invalid API credentials provided for FollowUpBoss.")
+
+        # Make sure the account is active
+        if not self._verify_account_active():
+            raise AccountInactiveError("Account is inactive.")
         
     @property
     def api_headers(self) -> dict:
@@ -127,6 +143,22 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         )
 
         return response.ok
+
+    @fub_rate_limited
+    def _verify_account_active(self) -> bool:
+        """
+        Verify that the account is active.
+
+        Returns:
+            bool: True if the account is active, False otherwise.
+        """
+        response = requests.get(
+            f"{self.base_url}/people",
+            headers=self.api_headers
+        )
+        log("trace", f"Raw response: {response.text}, status_code: {response.status_code}")
+
+        return response.ok  # 403 if inactive
     
     def _warn_dnc(self, pii_md5s: list[MD5WithPII]) -> None:
         """Log a warning if any of the leads are on the DNC list."""
