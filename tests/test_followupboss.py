@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 import string
 import random
 
-from real_intent.deliver.followupboss import FollowUpBossDeliverer, InvalidAPICredentialsError
-from real_intent.deliver.followupboss.ai_fields import AIFollowUpBossDeliverer
+from real_intent.deliver.followupboss import FollowUpBossDeliverer, InvalidFUBCredentialsError
+from real_intent.deliver.followupboss.ai_fields import AIFollowUpBossDeliverer, InvalidOpenAICredentialsError
 
 
 # Load environment variables from .env file
@@ -178,7 +178,7 @@ def test_vanilla_followupboss_credential_validation(api_key, system, system_key)
     FollowUpBossDeliverer(api_key, system, system_key)
 
     # Test invalid credentials and ensure that they don't throw exception
-    with pytest.raises(InvalidAPICredentialsError):
+    with pytest.raises(InvalidFUBCredentialsError):
         FollowUpBossDeliverer("invalid_api_key", system, system_key)
 
 
@@ -194,11 +194,11 @@ def test_ai_followupboss_credential_validation(api_key, system, system_key, open
     AIFollowUpBossDeliverer(api_key, system, system_key, openai_api_key)
 
     # Test invalid credentials and ensure that they don't throw exception
-    with pytest.raises(InvalidAPICredentialsError):
+    with pytest.raises(InvalidFUBCredentialsError):
         AIFollowUpBossDeliverer("invalid_api_key", system, system_key, openai_api_key)
 
     # Test OpenAI API key validation
-    with pytest.raises(InvalidAPICredentialsError):
+    with pytest.raises(InvalidOpenAICredentialsError):
         AIFollowUpBossDeliverer(api_key, system, system_key, "invalid_openai_api_key")
 
 
