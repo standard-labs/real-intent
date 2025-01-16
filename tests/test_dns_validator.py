@@ -99,3 +99,21 @@ def test_validate(fillout_dns_validator, dns_test_md5s):
     assert len(result) == 1  # Expecting 1 out of 2 to pass validation
     assert all("preritdas@gmail.com" not in md5.pii.emails for md5 in result)
     assert result[0].md5 == dns_test_md5s[0].md5
+
+
+@pytest.mark.skipif(
+    not os.getenv("MONGO_CONNECT_STR"),
+    reason="MongoDB connection string not found",
+)
+def test_mongo_dns_validator(dns_test_md5s):
+    from pymongo import MongoClient
+    client = MongoClient(os.getenv("MONGO_CONNECT_STR"))
+    coll = client.donotsell.entries
+
+    validator = MongoDNSValidator(coll)
+
+    result = validator.validate(dns_test_md5s)
+    assert isinstance(result, list)
+    assert len(result) == 1  # Expecting 1 out of 2 to pass validation
+    assert all("preritdas@gmail.com" not in md5.pii.emails for md5 in result)
+    assert result[0].md5 == dns_test_md5s[0].md5
