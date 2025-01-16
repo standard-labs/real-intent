@@ -82,14 +82,30 @@ class MongoDNSValidator(BaseValidator):
     def __init__(self, mongo_collection: Collection) -> None:
         self.mongo_collection: Collection = mongo_collection
 
-    def _check_one(self, email: str) -> bool:
-        """Check if an email is on the Do Not Sell (DNS) blacklist."""
-        return bool(self.mongo_collection.find_one({"email": email}))
+    def _check_emails(self, emails: list[str]) -> set[str]:
+        """Check which emails are on the Do Not Sell (DNS) blacklist.
+        
+        Args:
+            emails: List of emails to check.
+            
+        Returns:
+            Set of emails that are on the DNS blacklist.
+        """
+        # Use $in operator to check all emails in one query
+        blacklisted = self.mongo_collection.find({"email": {"$in": emails}})
+        return {doc["email"] for doc in blacklisted}
 
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove leads with an email on the Do Not Sell (DNS) blacklist."""
+        # Get all unique emails from the MD5s
+        all_emails = {email for md5 in md5s for email in md5.pii.emails}
+        
+        # Check all emails at once
+        blacklisted_emails = self._check_emails(list(all_emails))
+        
+        # Filter MD5s where none of their emails are blacklisted
         return [
-            md5 for md5 in md5s if all(
-                not self._check_one(email) for email in md5.pii.emails
+            md5 for md5 in md5s if not any(
+                email in blacklisted_emails for email in md5.pii.emails
             )
         ]
