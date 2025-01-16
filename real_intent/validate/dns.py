@@ -1,5 +1,6 @@
 """Validation for the Do Not Sell list."""
 import requests
+from pymongo.collection import Collection
 
 from real_intent.validate.base import BaseValidator
 from real_intent.schemas import MD5WithPII
@@ -71,5 +72,24 @@ class FilloutDNSValidator(BaseValidator):
         return [
             md5 for md5 in md5s if all(
                 email not in self.emails_cache for email in md5.pii.emails
+            )
+        ]
+
+    
+class MongoDNSValidator(BaseValidator):
+    """Removes leads with an email on the Do Not Sell (DNS) blacklist."""
+
+    def __init__(self, mongo_collection: Collection) -> None:
+        self.mongo_collection: Collection = mongo_collection
+
+    def _check_one(self, email: str) -> bool:
+        """Check if an email is on the Do Not Sell (DNS) blacklist."""
+        return bool(self.mongo_collection.find_one({"email": email}))
+
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove leads with an email on the Do Not Sell (DNS) blacklist."""
+        return [
+            md5 for md5 in md5s if all(
+                not self._check_one(email) for email in md5.pii.emails
             )
         ]
