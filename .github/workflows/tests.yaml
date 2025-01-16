@@ -33,6 +33,8 @@ jobs:
           echo MILLION_VERIFIER_KEY=${{ secrets.MILLION_VERIFIER_KEY }} >> .env
           echo NUMVERIFY_KEY=${{ secrets.NUMVERIFY_KEY }} >> .env
 
+          echo MONGO_CONNECT_STR=${{ secrets.MONGO_CONNECT_STR }} >> .env
+
           echo FILLOUT_API_KEY=${{ secrets.FILLOUT_API_KEY }} >> .env
           echo FILLOUT_DNS_FORM_ID=${{ secrets.FILLOUT_DNS_FORM_ID }} >> .env
           echo FILLOUT_DNS_QUESTION_ID=${{ secrets.FILLOUT_DNS_QUESTION_ID }} >> .env
