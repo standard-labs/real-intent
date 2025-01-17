@@ -64,8 +64,6 @@ class BigDBMClient:
         with self._token_lock:
             self._access_token = response_json["access_token"]
             self._access_token_expiration = int(time.time() - 10) + response_json["expires_in"]
-        
-        log("trace", "Updated access token.")
 
     def _access_token_valid(self) -> bool:
         """
