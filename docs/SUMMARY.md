@@ -12,7 +12,7 @@
   * [AI Powered Insights](onboarding-documents/onboarding-videos/ai-powered-insights.md)
   * [How to Avoid Spam Emails?](onboarding-documents/onboarding-videos/how-to-avoid-spam-emails.md)
   * [Turn Conversations to Conversions](onboarding-documents/onboarding-videos/turn-conversations-to-conversions.md)
-* [FAQs](onboarding-documents/faqs.md)
+* [❓ FAQs](onboarding-documents/faqs.md)
 
 ## Integration Support
 
@@ -42,6 +42,7 @@
 * [📬 Scripts](best-practices/scripts/README.md)
   * [Approach Scripts](best-practices/scripts/approach-scripts.md)
   * [Additional Scripts](best-practices/scripts/additional-scripts.md)
+* [❤️ Founders' Picks](best-practices/founders-picks.md)
 
 ## Featured Videos
 
