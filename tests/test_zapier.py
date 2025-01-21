@@ -77,7 +77,7 @@ def test_format(generate_md5withpii):
 
     expected_data = [{
         "md5": "123",
-        "pii": {key: (str(value)) for key, value in test1.pii.as_lead_export().items()},
+        "pii": {key: str(value) for key, value in test1.pii.as_lead_export().items() if value is not None},
         "insight": "Insight for first md5 123",
         "sentences": "test sentence for first md5 123", 
         "date_delivered": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -88,4 +88,3 @@ def test_format(generate_md5withpii):
     assert formatted_data[0]["insight"] == expected_data[0]["insight"]
     assert formatted_data[0]["sentences"] == expected_data[0]["sentences"]
     assert formatted_data[0]["date_delivered"].startswith(datetime.now().strftime("%Y-%m-%d"))
-
