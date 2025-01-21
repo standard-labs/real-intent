@@ -1,5 +1,5 @@
 ---
-description: 'Written by: Aaron Raferty'
+description: 'Written by: Aaron Rafferty'
 ---
 
 # The FCC 1-to-1 Consent Update: How Will It Impact Your Marketing Strategy in 2025?
