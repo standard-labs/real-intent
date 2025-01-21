@@ -77,7 +77,7 @@ def test_format(generate_md5withpii):
 
     expected_data = [{
         "md5": "123",
-        "pii": {key: str(value) for key, value in test1.pii.as_lead_export().items() if value is not None},
+        "pii": {key: str(value) if value is not None else None for key, value in test1.pii.as_lead_export().items()},
         "insight": "Insight for first md5 123",
         "sentences": "test sentence for first md5 123", 
         "date_delivered": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
