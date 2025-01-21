@@ -1,8 +1,8 @@
 ---
+icon: message-question
 description: >-
   Have a question? Our FAQs cover everything from quick tips to in-depth
   answers, helping you find solutions fast.
-icon: message-question
 ---
 
 # FAQs
@@ -36,6 +36,14 @@ Absolutely! We offer a referral program with 10% compensation for each agent who
 <summary>Is there support for using this data with Follow Up Boss, KVCore, or other CRMs?</summary>
 
 Yes, our leads are compatible with most CRMs, including KVCore and Follow Up Boss. For specific setup questions or CRM compatibility, our support team can create an instance for you to directly integrate your leads into a file type that will work with your CRM. Email us at [contact@realintent.co](mailto:contact@realintent.co).
+
+</details>
+
+<details>
+
+<summary>A lead already passed away. Why did they appear in my data?</summary>
+
+Our system tracks intent-based signals from various devices and accounts. This can sometimes include devices they previously logged into or used to visit relevant sites (e.g., _home desktops, work computers_). Scenarios where people sign into each other's accounts or use shared devices like laptops, especially if they were living at the same house.
 
 </details>
 
