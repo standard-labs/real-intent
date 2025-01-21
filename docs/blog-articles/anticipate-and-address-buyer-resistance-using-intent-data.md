@@ -1,4 +1,5 @@
 ---
+description: 'Article by: Real Intent'
 cover: >-
   https://realintent.onlinedemoserver9.com/wp-content/uploads/2024/11/pexels-shvets-production-7516245-1536x1024.jpg
 coverY: 0

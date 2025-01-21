@@ -1,4 +1,5 @@
 ---
+description: 'Article by: Real Intent'
 cover: >-
   https://realintent.onlinedemoserver9.com/wp-content/uploads/2024/11/pexels-olly-3760072-1536x1024.jpg
 coverY: 0

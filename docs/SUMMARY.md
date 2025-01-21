@@ -58,6 +58,7 @@
 
 ## Blog Articles
 
+* [The FCC 1-to-1 Consent Update: How Will It Impact Your Marketing Strategy in 2025?](blog-articles/the-fcc-1-to-1-consent-update-how-will-it-impact-your-marketing-strategy-in-2025.md)
 * [Leveraging Emotional Connection in Real Estate Negotiations](blog-articles/leveraging-emotional-connection-in-real-estate-negotiations.md)
 * [How Intent Data Reveals Your Buyer's Decision-Making Style](blog-articles/how-intent-data-reveals-your-buyers-decision-making-style.md)
 * [Uncovering the Unconscious Patterns Behind Real Estate Choices](blog-articles/uncovering-the-unconscious-patterns-behind-real-estate-choices.md)
