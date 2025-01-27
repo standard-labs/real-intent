@@ -1,31 +1,26 @@
 """Implementation of event generation using Scrapybara and Claude."""
 import datetime as dt
 import json
-from typing import Any, Literal, cast
-from anthropic import Anthropic
-from anthropic.types.beta import (
-    BetaToolResultBlockParam,
-    BetaMessageParam,
-)
+from typing import Literal
+
+from anthropic import Anthropic, APIStatusError
+
+from pydantic import BaseModel
 from scrapybara import Scrapybara
 from scrapybara.core.api_error import ApiError
-from playwright.sync_api import sync_playwright
-from scrapybara.anthropic.base import ToolError
+from scrapybara.anthropic.base import ToolError, CLIResult
 from scrapybara.client import Instance
+from scrapybara.tools import ComputerTool
+from scrapybara.types.act import ActResponse, Step, Model
 
-from real_intent.events.scrapy_claude.claude_sync import (
-    _make_api_tool_result, 
-    SearchTool, 
-    ToolCollection, 
-    ComputerTool
-)
+from playwright.sync_api import sync_playwright
+
+from real_intent.events.scrapy_claude.claude_sync import SearchTool
 from real_intent.events.models import Event, EventsResponse
 from real_intent.events.base import BaseEventsGenerator
 from real_intent.events.errors import NoValidJSONError, NoEventsFoundError
 from real_intent.events.utils import extract_json_only, retry_generation
 from real_intent.internal_logging import log
-
-from anthropic import APIStatusError
 
 
 # ---- Types ----
@@ -49,6 +44,25 @@ def extract_json_array(response: str):
 
     return json.loads(response[start_index:end_index + 1])
 
+
+def log_step(step: Step) -> None:
+    """Log the details of a step in the event generation process."""
+
+    try:
+        text: str = step.text
+        tool_results = step.tool_results or []
+
+        log("trace", f"Step Text: {text}")
+        
+        for tool_result in tool_results:
+            result: CLIResult = tool_result.result
+
+            log("trace", f"Output for tool: {tool_result.tool_name}: {result.output}")
+            if tool_result.is_error:
+                log("debug", f"Tool Error: {result.error}")
+
+    except Exception as e:
+        log("debug", f"Error processing step: {e}")
 
 # ---- Implementation ----
 
@@ -84,7 +98,6 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
     
         self.instance_type: str = instance_type
         self.instance = None
-        self.tools = None
 
         # Set dates with defaults if not provided
         start = start_date or dt.datetime.now()
@@ -111,11 +124,6 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
     def initialize_instance(self) -> None:
         """ Intialize the Scrapybara instance and tools. """
         self.instance = self.scrapybara_client.start(instance_type=self.instance_type, timeout_hours=.06)
-        self.tools: ToolCollection = ToolCollection(
-            ComputerTool(),
-            SearchTool()
-        )
-        self.tools.set_instance(self.instance)
 
 
     def prompt(self, zip_code: str) -> tuple[str, str]:
@@ -128,7 +136,7 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
             * When using your bash tool with commands that are expected to output very large quantities of text, redirect into a tmp file and use str_replace_editor or `grep -n -B <lines before> -A <lines after> <query> <filename>` to confirm output.
             * When viewing a page it can be helpful to zoom out so that you can see everything on the page. Either that, or make sure you scroll down to see everything before deciding something isn't available.
             * When using your computer function calls, they take a while to run and send back to you. Where possible/feasible, try to chain multiple of these calls all into one function calls request.
-            * The current date is {self.start_date}.
+            * The current date is {dt.datetime.today().strftime('%A, %B %-d, %Y')}.
             </SYSTEM_CAPABILITY>
 
             <YOUR_USECASE>
@@ -145,6 +153,7 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
             {json.dumps(Event.model_json_schema())}
             Note: The schema represents ONE object, you will provide a list of these objects.
             Note: The data attribute represents the date or date range of the event in ISO 8601 format (YYYY-MM-DD). Make sure to follow this format when providing the date.
+            IMPORTANT: DO NOT ADD ANY ADDITIONAL TEXT IN YOUR FINAL MESSAGE TO USER, ONLY JSON OBJECTS THAT FIT THE SCHEMA PROVIDED.
             </JSON_SCHEMA>
 
             <IMPORTANT>
@@ -246,90 +255,27 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
             page = browser.new_page()
             page.goto(url)
             page.wait_for_load_state("load")
-
-
-    def _response_to_params(self, response):
-        res = []
-        for block in response.content:
-            if block.type == "text":
-                res.append({"type": "text", "text": block.text})
-            else:
-                res.append(block.model_dump())
-
-        return res
     
 
     def _run(self, zip_code: str) -> dict[str, str]:
-        """Core implementation of the event generation loop."""
-        self.initialize_instance()
+        """Core implementation of the event generation loop, now abstracted through the act method."""
         
-        self.go_to_page(self.instance, "https://www.google.com")  # initial starting point, its faster to start from here
+        self.initialize_instance()
+        self.go_to_page(self.instance, "https://www.google.com")
         system, user = self.prompt(zip_code)
 
-        messages: list[BetaMessageParam] = []
+        output: ActResponse = self.scrapybara_client.act(
+            tools=[
+                ComputerTool(self.instance),
+                SearchTool(self.instance)    
+            ],
+            model= Model(provider="anthropic", name="claude-3-5-sonnet-20241022", api_key=self.anthropic_client.api_key),
+            system=system,
+            prompt=user,
+            on_step=lambda step: log_step(step)
+        )
 
-        # Add initial command to messages
-        messages.append({
-            "role": "user",
-            "content": [{"type": "text", "text": user}],
-        })
-
-        while True:
-            # Get Claude's response
-            response = self.anthropic_client.beta.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=4096,
-                messages=messages,
-                system=[{"type": "text", "text": system}],
-                tools=self.tools.to_params(),
-                betas=["computer-use-2024-10-22"]
-            )
-
-            # Convert response to params
-            response_params = self._response_to_params(response)
-
-            # Process response content and handle tools before adding to messages
-            tool_result_content: list[BetaToolResultBlockParam] = []
-
-            for content_block in response_params:
-                if content_block["type"] == "text":
-                    log("trace", f"Assistant response: {content_block['text']}")
-
-                elif content_block["type"] == "tool_use":
-                    log("trace", f"Tool use requested: {content_block['name']} with input: {content_block['input']}")
-                
-                    # Execute the tool
-                    result = self.tools.run(
-                        name=content_block["name"],
-                        tool_input=cast(dict[str, Any], content_block["input"])
-                    )            
-
-                    if result:
-                        tool_result = _make_api_tool_result(result, content_block["id"])
-
-                        if result.output:
-                            log("trace", f"Tool output: {result.output}")
-                        if result.error:
-                            log("debug", f"Tool error: {result.error}")
-                        tool_result_content.append(tool_result)
-
-            # Add assistant's response to messages
-            messages.append({
-                "role": "assistant",
-                "content": response_params,
-            })
-
-            # If tools were used, add their results to messages
-            if tool_result_content:
-                messages.append({
-                    "role": "user",
-                    "content": tool_result_content
-                })
-            else:
-                # No tools used, task is complete
-                self.stop_instance()
-                log("info", f"Sampling loop completed. Last response received: {content_block['text']}")
-                return content_block['text']
+        return output.text
 
 
     def run(self, zip_code: str) -> dict[str, str]:
@@ -353,7 +299,6 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
             raise
         finally:
             self.stop_instance()
-
 
     @retry_generation
     def _generate_events(self, zip_code: str) -> EventsResponse:
