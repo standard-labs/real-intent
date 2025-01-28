@@ -4,6 +4,16 @@ description: 'Written by: Aaron Rafferty'
 
 # The FCC 1-to-1 Consent Update: How Will It Impact Your Marketing Strategy in 2025?
 
+{% hint style="info" %}
+UPDATE: At 4:57 PM EST, January 24, 2024—the Eleventh Circuit Court of Appeals issued a stunning ruling **striking down the ruling** entirely.
+{% endhint %}
+
+{% hint style="info" %}
+UPDATE: As of January 24, 2025 the FCC issued a ruling _sua sponte_ delaying the effective date to effective date by up to 12 months or an earlier period of time depending on the outcome of the IMC appeal.
+{% endhint %}
+
+
+
 Hi there,
 
 It’s Aaron. I am reaching out because The Federal Communications Commission (FCC) 1-to-1 consent update is coming in 2025, but most agents I have spoken to don’t know how it will affect their business. I wanted to put out this article to address some concerns I have been hearing like,
