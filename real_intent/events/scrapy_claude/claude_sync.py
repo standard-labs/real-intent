@@ -1,16 +1,13 @@
 """Synchronous implementation of tools for the Anthropic API."""
-
 from scrapybara.client import UbuntuInstance
 from scrapybara.anthropic.base import ToolResult, ToolError, CLIResult
 from scrapybara.tools import Tool
+from pydantic import BaseModel, Field
 
 from playwright.sync_api import sync_playwright
 
-from pydantic import BaseModel, Field
 from typing import Literal, Any
 import base64
-
-from real_intent.internal_logging import log
 
 
 class SearchParameters(BaseModel):
@@ -47,6 +44,7 @@ class SearchTool(Tool):
     def perform_search(self, query: str) -> ToolResult:
         url = f"https://www.google.com/search?q={query}"
         cdp_url = self._instance.browser.start().cdp_url
+
         with sync_playwright() as playwright:
             browser = playwright.chromium.connect_over_cdp(cdp_url)
             page = browser.new_page()
@@ -62,4 +60,3 @@ class SearchTool(Tool):
             base64_image=result.get("base64_image") if result else None,
             system=result.get("system") if result else None,
         )
-
