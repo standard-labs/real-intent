@@ -53,7 +53,6 @@ def log_step(step: Step) -> None:
             log("trace", f"Output for tool: {tool_result.tool_name}: {result.output}")
             if tool_result.is_error:
                 log("debug", f"Tool Error: {result.error}")
-
     except Exception as e:
         log("error", f"Error processing step: {e}", _exc_info=e)
 
@@ -103,7 +102,6 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
         self.start_date: str = start.strftime("%B %d, %Y")
         self.end_date: str = end.strftime("%B %d, %Y")
 
-
     def stop_instance(self) -> None:
         """ Stop the Scrapybara instance. """
         if self.instance:
@@ -112,11 +110,9 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
         else:
             log("info", "No Scrapybara instance to stop.")
 
-
     def initialize_instance(self) -> None:
         """ Intialize the Scrapybara instance and tools. """
         self.instance = self.scrapybara_client.start_ubuntu(timeout_hours=.06)
-
 
     def prompt(self, zip_code: str) -> tuple[str, str]:
         """Generate the prompts for event generation."""
@@ -200,7 +196,6 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
             - Submit a list of the JSON objects conforming to the provided schema. Do NOT provide any additional information or text outside of the JSON object.
             """
 
-
     def summary_prompt(self, events: list[Event], zip_code: str) -> tuple[str, str]:
         """
         Generate the prompt for summary generation.
@@ -239,7 +234,6 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
 
         return system, user
 
-
     def go_to_page(self, instance: UbuntuInstance, url: str) -> None:
         cdp_url = instance.browser.start().cdp_url
         with sync_playwright() as playwright:
@@ -247,11 +241,9 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
             page = browser.new_page()
             page.goto(url)
             page.wait_for_load_state("load")
-    
 
     def _run(self, zip_code: str) -> dict[str, str]:
         """Core implementation of the event generation loop, now abstracted through the act method."""
-        
         self.initialize_instance()
         self.go_to_page(self.instance, "https://www.google.com")
         system, user = self.prompt(zip_code)
@@ -268,7 +260,6 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
         )
 
         return output.text
-
 
     def run(self, zip_code: str) -> dict[str, str]:
         """Run the event generation with error handling."""
@@ -311,7 +302,6 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
         log("debug", f"Events and summary generated successfully. Events: {events}, Summary: {summary_dict['summary']}")
         return EventsResponse(events=events, summary=summary_dict['summary'])
 
-
     def generate_summary(self, events: list[Event], zip_code: str) -> str:
         """Generate a summary of the events."""
         system, user = self.summary_prompt(events=events, zip_code=zip_code)        
@@ -326,11 +316,9 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
 
             
             return response.completion
-
         except APIStatusError as e:
             log("error", f"APIStatusError generating summary with Anthropic: {e}")
             raise
-   
 
     def _generate(self, zip_code: str) -> EventsResponse:
         """
