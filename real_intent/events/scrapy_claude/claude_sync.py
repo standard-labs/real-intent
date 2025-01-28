@@ -1,6 +1,6 @@
 """Synchronous implementation of tools for the Anthropic API."""
 
-from scrapybara.client import Instance
+from scrapybara.client import UbuntuInstance
 from scrapybara.anthropic.base import ToolResult, ToolError, CLIResult
 from scrapybara.tools import Tool
 
@@ -27,9 +27,9 @@ class SearchParameters(BaseModel):
 
 
 class SearchTool(Tool):
-    _instance: Instance
+    _instance: UbuntuInstance
 
-    def __init__(self, instance: Instance) -> None:
+    def __init__(self, instance: UbuntuInstance) -> None:
         super().__init__(
             name="search",
             description="Custom tool used to search for a query on Google.",

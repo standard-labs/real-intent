@@ -8,7 +8,7 @@ reportlab==4.2.5
 
 python-dotenv
 
-scrapybara==2.1.3
+scrapybara==2.2.1
 playwright>=1.49.1
 
 httpx==0.27.0

@@ -1,15 +1,13 @@
 """Implementation of event generation using Scrapybara and Claude."""
 import datetime as dt
 import json
-from typing import Literal
 
 from anthropic import Anthropic, APIStatusError
 
-from pydantic import BaseModel
 from scrapybara import Scrapybara
 from scrapybara.core.api_error import ApiError
 from scrapybara.anthropic.base import ToolError, CLIResult
-from scrapybara.client import Instance
+from scrapybara.client import UbuntuInstance
 from scrapybara.tools import ComputerTool
 from scrapybara.types.act import ActResponse, Step, Model
 
@@ -21,11 +19,6 @@ from real_intent.events.base import BaseEventsGenerator
 from real_intent.events.errors import NoValidJSONError, NoEventsFoundError
 from real_intent.events.utils import extract_json_only, retry_generation
 from real_intent.internal_logging import log
-
-
-# ---- Types ----
-
-type InstanceType = Literal["small"]
 
 
 # ---- Helpers ----
@@ -73,7 +66,6 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
         self, 
         scrapybara_key: str, 
         anthropic_key: str, 
-        instance_type: InstanceType = "small",
         start_date: dt.datetime | None = None,
         end_date: dt.datetime | None = None
     ):
@@ -96,7 +88,6 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
         self.scrapybara_client = Scrapybara(api_key=scrapybara_key)
         self.anthropic_client = Anthropic(api_key=anthropic_key)
     
-        self.instance_type: str = instance_type
         self.instance = None
 
         # Set dates with defaults if not provided
@@ -123,7 +114,7 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
 
     def initialize_instance(self) -> None:
         """ Intialize the Scrapybara instance and tools. """
-        self.instance = self.scrapybara_client.start(instance_type=self.instance_type, timeout_hours=.06)
+        self.instance = self.scrapybara_client.start_ubuntu(timeout_hours=.06)
 
 
     def prompt(self, zip_code: str) -> tuple[str, str]:
@@ -248,7 +239,7 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
         return system, user
 
 
-    def go_to_page(self, instance: Instance, url: str) -> None:
+    def go_to_page(self, instance: UbuntuInstance, url: str) -> None:
         cdp_url = instance.browser.start().cdp_url
         with sync_playwright() as playwright:
             browser = playwright.chromium.connect_over_cdp(cdp_url)
