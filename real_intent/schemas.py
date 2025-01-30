@@ -302,7 +302,8 @@ class PII(BaseModel):
             random.seed(seed)
 
         # Lists for generating realistic data
-        first_names = ["James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda", "William", "Elizabeth"]
+        male_first_names = ["James", "John", "Robert", "Michael", "William"]
+        female_first_names = ["Mary", "Patricia", "Jennifer", "Linda", "Elizabeth"]
         last_names = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez"]
         streets = ["Main", "Oak", "Maple", "Cedar", "Pine", "Elm", "Washington", "Lake", "Hill", "Park"]
         cities = ["Springfield", "Franklin", "Clinton", "Madison", "Georgetown", "Salem", "Greenville", "Bristol", "Manchester", "Oxford"]
@@ -334,10 +335,15 @@ class PII(BaseModel):
         )
         gen_phone = lambda: f"{random.randint(100,999)}{random.randint(100,999)}{random.randint(1000,9999)}"
 
+        # Determine gender first, to choose first name
+        gender = random.choice([Gender.MALE, Gender.FEMALE])
+        first_name = random.choice(male_first_names if gender == Gender.MALE else female_first_names)
+
         # Create fake PII data
         fake_data = {
             "Id": f"TEST_{random.randint(10000,99999)}",
-            "First_Name": random.choice(first_names),
+            "Gender": gender,
+            "First_Name": first_name,
             "Last_Name": random.choice(last_names),
             "Address": f"{random.randint(100,9999)} {random.choice(streets)} St",
             "City": random.choice(cities),
@@ -354,7 +360,6 @@ class PII(BaseModel):
             "Census_Tract": str(random.randint(100000,999999)),
             "Census_Block_Group": str(random.randint(1,9)),
             "Census_Block": str(random.randint(1000,9999)),
-            "Gender": random.choice([Gender.MALE, Gender.FEMALE]),
             "SCF": str(random.randint(100,999)),
             "DMA": str(random.randint(100,999)),
             "MSA": str(random.randint(100,999)),
