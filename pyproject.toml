@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "real-intent"
-version = "v3.3.4"
+version = "v3.3.5"
 dependencies = [
   "requests",
   "pandas",
