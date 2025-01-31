@@ -321,7 +321,7 @@ class PII(BaseModel):
         today = datetime.now()
         birth_date = today - timedelta(days=random.randint(365*18, 365*80))  # Between 18 and 80 years old
         age = str((today - birth_date).days // 365)
-        birth_month_year = birth_date.strftime("%m/%Y")
+        birth_month_year = birth_date.strftime(r"%m/%d/%Y")
 
         # Generate random coordinates in continental US
         lat = random.uniform(24.396308, 49.384358)  # Approximate US boundaries
