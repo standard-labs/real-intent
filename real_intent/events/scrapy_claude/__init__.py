@@ -54,7 +54,7 @@ def log_step(step: Step) -> None:
             if tool_result.is_error:
                 log("debug", f"Tool Error: {result.error}")
     except Exception as e:
-        log("error", f"Error processing step: {e}", _exc_info=e)
+        log("error", f"Error processing step: {e}", exc_info=e)
 
 
 # ---- Implementation ----
