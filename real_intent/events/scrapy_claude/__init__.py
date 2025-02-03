@@ -11,7 +11,7 @@ from scrapybara.client import UbuntuInstance
 from scrapybara.tools import ComputerTool
 from scrapybara.types.act import ActResponse, Step, Model
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, Error as PlaywrightError
 
 from real_intent.events.scrapy_claude.claude_sync import SearchTool
 from real_intent.events.models import Event, EventsResponse
@@ -48,11 +48,20 @@ def log_step(step: Step) -> None:
         log("trace", f"Step Text: {text}")
         
         for tool_result in tool_results:
-            result: CLIResult = tool_result.result
 
-            log("trace", f"Output for tool: {tool_result.tool_name}: {result.output}")
-            if tool_result.is_error:
-                log("debug", f"Tool Error: {result.error}")
+            result = tool_result.result
+
+            if isinstance(result, CLIResult):
+                log("trace", f"Output for tool: {tool_result.tool_name}: {result.output}")
+                if tool_result.is_error:
+                    log("debug", f"Tool Error: {result.error}")
+
+            elif isinstance(result, str):
+                if tool_result.is_error:
+                    log("debug", f"Error for tool: {tool_result.tool_name} Got type String result: {result}")
+                else:
+                    log("trace", f"Received Type String Output for tool: {tool_result.tool_name}: {result}")
+                        
     except Exception as e:
         log("error", f"Error processing step: {e}", exc_info=e)
 
@@ -276,6 +285,9 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
             raise
         except APIStatusError as e:
             log("error", f"Anthropic APIStatusError running Scrapybara event generation: {e}", exc_info=e)
+            raise
+        except PlaywrightError as e:
+            log("error", f"PlaywrightError running Scrapybara event generation: {e}", exc_info=e)
             raise
         except Exception as e:
             log("error", f"Error running Scrapybara event generation: {e}", exc_info=e)
