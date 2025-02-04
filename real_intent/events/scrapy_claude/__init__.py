@@ -143,7 +143,7 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
             Essentially, you are a smart information retriever. After your JSON object answer is received, a Pydantic model will be instantiated based on it and returned to user.
             Never respond with common text. Always respond with a valid JSON object, according to user's instructions and schema.
 
-            Note: The schema represents ONE object, you will provide a list of these objects, as in surrond multiple objects with square brackets.
+            Note: The schema represents ONE object, you will provide a list of these objects, as in surround multiple objects with square brackets.
             </YOUR_USECASE>
 
             <JSON_SCHEMA>
@@ -171,6 +171,7 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
             - In your final answer never write anything beyond of {{}} JSON object, never, NOBODY WILL READ ANYTHING BEYOND JSON.
             - Utilize the 'search' tool to make ANY searches in the browser, do not attempt to type in the search bar.
             - After you utilize the 'search' tool, inspect the page to find the information requested, do not just attemp to search again right away without thoroughly inspecting the page.
+            - All 'search' tool usage must include the city name at minimum, and the state and county name if found.
             
             <ATTENTION>
             IN YOUR LAST MESSAGE TO USER, FINAL RESPONSE, YOU MUST RESPOND EXCLUSIVELY WITH JSON SCHEMA WITHOUT SURROUNDING CONTENT OUTSIDE OF JSON SCHEMA, MANDATORY
@@ -181,14 +182,16 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
 
         """, f""" 
             Task:
-            1. Retrieve events happening in the city with ZIP code: {zip_code} within the next 7 days, from {self.start_date} to {self.end_date}. First, find the city corresponding to ZIP code {zip_code} to ensure events are within the correct area.
-            2. Focus on public events, community activities, festivals, and major holidays during this period (e.g., Christmas, New Year) if there are any.
+            1. Retrieve events happening in the city with ZIP code: {zip_code} from {self.start_date} to {self.end_date}. First, find the city, county, and state corresponding to ZIP code {zip_code} to ensure events are within the correct area. For every event validate the location to ensure it is in the correct city, county, and state.
+            2. Focus on public events, community activities, festivals, and major holidays during this period (e.g., Christmas, New Year) if there are any. Ensure events are appropriate for families and the general public. Avoid political, religious, or controversial events.
             3. Include 3–5 unique events relevant to the specified ZIP code and timeframe. Include more if there are many events available that meet the criteria. 
             4. Exclude repeated or duplicate events.
 
             Requirements:
             - Perform TWO distinct searches:
-            - First, search for events based on the city name derived from ZIP code {zip_code}. Find appropriate community events within the zip code area and timeframe, and if and only if this criteria is met, you will add that event to the list.
+            - First, search for events based on the city name derived from ZIP code {zip_code}. Include the city, county and state name in your query to ensure events are located in the correct area. The county and state names are there just to ensure you're searching for the correct events. Events must still be validated to ensure they're in the correct city!
+              Find appropriate community events within the zip code area and timeframe, and if and only if this criteria is met, you will add that event to the list.
+              Just because a event is shown in the search results does not mean it is in the correct area. You must validate the location of the event.
             - If the first search yields no results or not enough results, PERFORM a NEW SEARCH and refine your query and adjust search terms and perform a second search. Once again, only add events that meet the criteria.
             - If no results are found after two searches, stop searching and respond with an empty JSON list([]).
             - It is acceptable to return an empty list if there are no events matching the criteria. Avoid fabricated results or predictions of events. All your events must be real and verifiable.
@@ -196,7 +199,7 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
             - Ensure events are relevant to the area {zip_code} and date range {self.start_date} to {self.end_date}.
 
             Instructions:
-            1. Start by finding the city corresponding to the ZIP code {zip_code}.
+            1. Start by finding the city, county and state name corresponding to the ZIP code {zip_code}.
             2. Perform the first search for public events, community activities, festivals, or major holidays in the city and timeframe.
             3. If the first search returns no results, refine or adjust the query and perform a second search.
             4. If the second search also yields no results, return an empty JSON list ([]).
