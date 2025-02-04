@@ -19,6 +19,8 @@ from scrapybara.core.api_error import ApiError
 
 from anthropic import APIStatusError
 
+from playwright.sync_api import Error as PlaywrightError
+
 
 def extract_json_only(response_str: str) -> dict[str, Any]:
     """
@@ -44,7 +46,7 @@ def retry_generation(func: Callable):
         for attempt in range(1, MAX_ATTEMPTS+1):
             try:
                 return func(*args, **kwargs)
-            except (ValidationError, KeyError, NoValidJSONError, json.decoder.JSONDecodeError, ApiError, APIStatusError) as err:
+            except (ValidationError, KeyError, NoValidJSONError, json.decoder.JSONDecodeError, ApiError, APIStatusError, PlaywrightError) as err:
                 if attempt < MAX_ATTEMPTS:  # Log warning for first n-1 attempts
                     log("warn", f"Function {func.__name__} failed validation, attempt {attempt} of {MAX_ATTEMPTS}.")
                 else:  # Log error for the last attempt
