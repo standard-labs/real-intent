@@ -1,25 +1,22 @@
 """Utilities for event generation."""
-import json
-from typing import Any, Callable
+from scrapybara.core.api_error import ApiError
+from anthropic import APIStatusError
+from playwright.sync_api import Error as PlaywrightError
 from pydantic import ValidationError
 
 from reportlab.lib.pagesizes import letter
-
-from real_intent.events.errors import NoValidJSONError
 from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
+
+import json
+from typing import Any, Callable
 from io import BytesIO
 
-from real_intent.events.models import EventsResponse
 from real_intent.internal_logging import log
-
-from scrapybara.core.api_error import ApiError
-
-from anthropic import APIStatusError
-
-from playwright.sync_api import Error as PlaywrightError
+from real_intent.events.errors import NoValidJSONError
+from real_intent.events.models import EventsResponse
 
 
 def extract_json_only(response_str: str) -> dict[str, Any]:
