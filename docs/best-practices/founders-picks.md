@@ -1,6 +1,6 @@
 ---
 description: >-
-  Discover a curated selection of tools personally recommended by our founder to
+  Discover a curated selection of tools personally recommended by our team to
   help real estate professionals streamline their workflows, engage clients, and
   drive success.
 ---
