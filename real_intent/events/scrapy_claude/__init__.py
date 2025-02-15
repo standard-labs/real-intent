@@ -50,18 +50,22 @@ def log_step(step: Step) -> None:
         for tool_result in tool_results:
 
             result = tool_result.result
-
+            
             if isinstance(result, CLIResult):
-                log("trace", f"Output for tool: {tool_result.tool_name}: {result.output}")
                 if tool_result.is_error:
-                    log("debug", f"Tool Error: {result.error}")
+                    raise ToolError(f"Error for tool: {tool_result.tool_name} Got type CLIResult Error: {result.error}")
+                else:
+                    log("trace", f"Output for tool: {tool_result.tool_name}: {result.output}")
 
             elif isinstance(result, str):
                 if tool_result.is_error:
-                    log("debug", f"Error for tool: {tool_result.tool_name} Got type String result: {result}")
+                    raise ToolError(f"Error for tool: {tool_result.tool_name} Got type String result: {result}")
                 else:
                     log("trace", f"Received Type String Output for tool: {tool_result.tool_name}: {result}")
                         
+    except ToolError:
+        raise
+
     except Exception as e:
         log("error", f"Error processing step: {e}", exc_info=e)
 
@@ -254,7 +258,7 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
             page.goto(url)
             page.wait_for_load_state("load")
 
-    def _run(self, zip_code: str) -> dict[str, str]:
+    def _run(self, zip_code: str) -> str:
         """Core implementation of the event generation loop, now abstracted through the act method."""
         self.initialize_instance()
         self.go_to_page(self.instance, "https://www.google.com")
@@ -273,7 +277,7 @@ class ScrapybaraEventsGenerator(BaseEventsGenerator):
 
         return output.text
 
-    def run(self, zip_code: str) -> dict[str, str]:
+    def run(self, zip_code: str) -> str:
         """Run the event generation with error handling."""
         try:
             return self._run(zip_code)
