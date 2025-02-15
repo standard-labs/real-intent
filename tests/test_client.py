@@ -73,8 +73,8 @@ def test_phones_to_pii(bigdbm_client: BigDBMClient) -> None:
     assert result[0].first_name == "Donna", "First name should be 'Donna'"
     assert result[0].last_name == "Weiss", "Last name should be 'Weiss'"
 
-    assert result[1].first_name == "Clement", "First name should be 'Zhang'"
-    assert result[1].last_name == "Zhang", "Last name should be 'Jiqiang'"
+    assert result[1].first_name == "Clement", "First name should be 'Clement'"
+    assert result[1].last_name == "Zhang", "Last name should be 'Zhang'"
     
 
 def test_pii_to_pii(bigdbm_client: BigDBMClient) -> None:
