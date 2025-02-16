@@ -174,6 +174,7 @@ def test_invalid_api_key_scrapybara():
         ScrapybaraEventsGenerator(None, None)
 
 
+@pytest.mark.skip(reason="Perplexity unreliable and not in use")
 def test_chicago_events_perplexity(perplexity_events_generator):
     """Test generating events for Chicago (60629) using Perplexity."""
     try:
@@ -211,6 +212,7 @@ def test_chicago_events_perplexity(perplexity_events_generator):
     assert len(response.summary.split()) >= 20, "Summary should be meaningful (at least 20 words)"
 
 
+@pytest.mark.skip(reason="Perplexity unreliable and not in use")
 def test_invalid_zip_code_perplexity(perplexity_events_generator):
     """Test generation with invalid zip code for Perplexity."""
     # Test non-string zip code
@@ -230,6 +232,7 @@ def test_invalid_zip_code_perplexity(perplexity_events_generator):
         perplexity_events_generator.generate("abcde")
 
 
+@pytest.mark.skip(reason="Perplexity unreliable and not in use")
 def test_invalid_api_key_perplexity():
     """Test initialization with invalid API key for Perplexity."""
     # Test non-string API key
