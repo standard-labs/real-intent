@@ -57,7 +57,7 @@ class PhoneValidator(BaseValidator):
                 time.sleep(random.uniform(3, 5))
 
         log("error", f"All validation attempts failed for phone {phone}")
-        raise
+        raise e  # re-raise the last exception
 
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove any phone numbers that are not considered valid."""
