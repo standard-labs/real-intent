@@ -1,6 +1,5 @@
 """Utilities for event generation."""
 from scrapybara.core.api_error import ApiError
-from scrapybara.anthropic.base import ToolError
 from anthropic import APIStatusError
 from playwright.sync_api import Error as PlaywrightError
 from pydantic import ValidationError
@@ -18,6 +17,33 @@ from io import BytesIO
 from real_intent.internal_logging import log
 from real_intent.events.errors import NoValidJSONError
 from real_intent.events.models import EventsResponse
+
+# --- Temporary ---
+
+class ToolResult:
+    """Represents the result of a tool execution."""
+
+    def __init__(self, output: str | None = None, error: str | None = None, 
+                 base64_image: str | None = None, system: str | None = None):
+        self.output = output
+        self.error = error
+        self.base64_image = base64_image
+        self.system = system
+
+
+class CLIResult(ToolResult):
+    """A ToolResult that can be rendered as a CLI output."""
+
+    def __init__(self, output:str | None = None, error: str | None = None, 
+                 base64_image: str | None = None, system: str | None = None):
+        super().__init__(output, error, base64_image, system)
+
+
+class ToolError(Exception):
+    """Raised when a tool encounters an error."""
+    def __init__(self, message):
+        self.message = message
+
 
 
 def extract_json_only(response_str: str) -> dict[str, Any]:

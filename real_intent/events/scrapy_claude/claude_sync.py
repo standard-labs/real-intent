@@ -1,7 +1,7 @@
 """Synchronous implementation of tools for the Anthropic API."""
 from scrapybara.client import UbuntuInstance
-from scrapybara.anthropic.base import ToolResult, ToolError, CLIResult
 from scrapybara.tools import Tool
+from real_intent.events.utils import CLIResult, ToolResult, ToolError
 from pydantic import BaseModel, Field
 
 from playwright.sync_api import sync_playwright
