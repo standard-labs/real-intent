@@ -8,8 +8,10 @@ reportlab==4.2.5
 
 python-dotenv
 
-scrapybara==2.2.5
+scrapybara==2.3.0
 playwright>=1.49.1
 
 httpx==0.27.0
 pymongo
+
+anthropic
