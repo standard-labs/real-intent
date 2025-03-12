@@ -3,6 +3,16 @@ from real_intent.schemas import MD5WithPII
 from real_intent.validate.base import BaseValidator
 
 
+class HomeownerValidator(BaseValidator):
+    """Remove leads who aren't designated as homeowners."""
+
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove leads that are not homeowners."""
+        return [
+            md5 for md5 in md5s if md5.pii.home_owner_status == "Home Owner"
+        ]
+
+
 class NotRenterValidator(BaseValidator):
     """Remove leads where 'home_owner_status' is "Renter"."""
 
