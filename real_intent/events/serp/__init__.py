@@ -1,4 +1,4 @@
-"""Implementation of event generation using olostep api."""
+"""Implementation of event generation using olostep's serp api."""
 
 import json
 import requests
@@ -16,7 +16,8 @@ from real_intent.events.errors import NoValidJSONError
 from real_intent.events.scrapy_claude import extract_json_array
 from real_intent.internal_logging import log
 from real_intent.events.models import Event, EventsResponse
-from real_intent.events.utils import extract_json_only
+from real_intent.events.utils import extract_json_only, retry_generation    
+from real_intent.events.errors import NoValidJSONError, NoEventsFoundError
 
 
 # --- Begin Models & Utils ---
@@ -33,7 +34,6 @@ class OrganicLink(BaseModel):
     title: str | None = None
     link: str | None = None
     snippet: str | None = None
-
 
 # --- End Models & Utils ---
 
@@ -91,102 +91,65 @@ class SerpEventsGenerator(BaseEventsGenerator):
             zip_code (str): The zip code to look up.
 
         Returns:
-            tuple[str, str]: A tuple containing the city and state.
+            str | None: A string containing city and state information, or None if lookup fails.
         """
-        if not self.geo_key:
+        try:
+            if not self.geo_key:
+                return None
+
+            endpoint = f"https://api.api-ninjas.com/v1/zipcode?zip={zip_code}"
+            headers = {
+                "X-Api-Key": self.geo_key, 
+            }
+            response = requests.get(endpoint, headers=headers)
+            response.raise_for_status()
+
+            data = response.json()
+
+            if not data or not isinstance(data, list) or len(data) == 0:
+                return None
+
+            data = data[0] # get the first result
+            
+            city_state = ""
+
+            if not data:
+                return None
+            if data.get("city", None):
+                city_state += f"{data.get('city')}, "
+            if data.get("state", None):
+                city_state += f"{data.get('state')}, "
+            if data.get("county", None):
+                city_state += f"{data.get('county')}"
+
+            return city_state
+        except Exception as e:
+            log("warn", f"Error getting city/state for zip code {zip_code}: {e}")
             return None
-
-        endpoint = f"https://api.api-ninjas.com/v1/zipcode?zip={zip_code}"
-        headers = {
-            "X-Api-Key": self.geo_key, 
-        }
-        response = requests.get(endpoint, headers=headers)
-        response.raise_for_status()
-
-        data = response.json()
-
-        if not data or not isinstance(data, list) or len(data) == 0:
-            return None
-
-        data = data[0]
-        
-        city_state = ""
-
-        if not data:
-            return None
-        if data.get("city", None):
-            city_state += f"{data.get("city")}, "
-        if data.get("state", None):
-            city_state += f"{data.get("state")}, "
-        if data.get("county", None):
-            city_state += f"{data.get("county")}"
-
-        return city_state
 
 
     def _request(self, endpoint: str, method: str = "GET", payload: dict = None):
-        """Make a request to the specified URL with the given method and payload."""
+        """Make a request to the specified endpoint for olostep api with the given method and payload."""
+        try:
+            log("trace", f"Making {method} request to {endpoint} with payload: {payload}")
 
-        log("trace", f"Making {method} request to {endpoint} with payload: {payload}")
+            headers = {
+                "Authorization": f"Bearer {self.serp_key}",
+                "Content-Type": "application/json"
+            }
+            if method == "GET":
+                response = requests.get(f"https://api.olostep.com/v1{endpoint}", headers=headers)
+            else:
+                response = requests.post(f"https://api.olostep.com/v1{endpoint}", json=payload, headers=headers)
+            
+            response.raise_for_status()
 
-        headers = {
-            "Authorization": f"Bearer {self.serp_key}",
-            "Content-Type": "application/json"
-        }
-        if method == "GET":
-            response = requests.get(f"https://api.olostep.com/v1{endpoint}", headers=headers)
-        else:
-            response = requests.post(f"https://api.olostep.com/v1{endpoint}", json=payload, headers=headers)
-        
-        response.raise_for_status()
-
-        log("trace", f"Response status for {method} request to {endpoint}: {response.status_code}")
-        
-        return response.json()
-
-
-    def poll_batch_status(self, batch_id: str, max_retries: int = 5, initial_wait_time: int = 10, max_wait_time: int = 6):
-        """
-        Polls the batch status until it is completed with exponential backoff.
-
-        Args:
-            batch_id (str): The batch ID to check.
-            max_retries (int): Maximum number of retries before raising an error.
-            initial_wait_time (int): Initial wait time (in seconds) before polling again.
-            max_wait_time (int): Maximum wait time (in seconds) between polls.
-
-        Returns:
-            dict: The final batch status if successful.
-
-        Raises:
-            Exception: If the polling fails after the maximum retries.
-        """
-        wait_time = initial_wait_time
-        retries = 0
-
-        while retries < max_retries:
-            try:
-                # Poll the batch status
-                status_response = self._request(f"/batches/{batch_id}", "GET")
-
-                # Check if the batch status is completed
-                if status_response.get("status") == "completed":
-                    log("trace", "Batch completed successfully.")
-                    return
-                
-                log("trace", f"Batch {batch_id} status: {status_response.get('status')}. Retrying...")
-            except Exception as e:
-                log("error", f"Error while polling: {e}")
-
-            wait_time = min(wait_time * 2, max_wait_time)
-            wait_time += random.randint(1, 5)  
-            retries += 1
-
-            log("trace", f"Waiting for {wait_time} seconds before retrying...")
-            time.sleep(wait_time)
-
-        # If max retries exceeded
-        raise Exception(f"Polling failed after {max_retries} attempts. Batch status not completed.")
+            log("trace", f"Response status for {method} request to {endpoint}: {response.status_code}")
+            
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            log("error", f"Request error for {method} request to {endpoint}: {e}")
+            raise
 
 
     def extract_links(self, query: str) -> List[OrganicLink]:
@@ -210,16 +173,16 @@ class SerpEventsGenerator(BaseEventsGenerator):
             OrganicLink(**item) for item in parsed_json_content.get('organic', [])
         ]
 
-        log("trace", f"Links Extracted: {organic_links}")
-
         filtered_domains = ["facebook.com", "wikipedia.org"]
 
         filtered_links = [
             link for link in organic_links if link.link and not any(domain in link.link for domain in filtered_domains)
         ]
+        
+        log("trace", f"(Filtered) Links Extracted: {filtered_links}")
 
-        return filtered_links
-
+        return filtered_links[:5]  # Limit to a maximum of 5 links
+    
 
     def start_batch(self, organic_links: List[OrganicLink]) -> Dict[str, str]:
         """
@@ -277,24 +240,38 @@ class SerpEventsGenerator(BaseEventsGenerator):
                 raise Exception(f"No valid markdown_content for retrieve_id: {retrieve_id}")
                                     
             return markdown_content
-
+        
         prompt = (
-                f"You are a helpful events aggregator expert. You will be given multiple messages containing a link, the link's title, and the link's content for an events page for zipcode {zip_code}. These links will be related to community events in the zipcode {zip_code}. "
-                f"Your job is to parse through all of them, extract community events in the zipcode {zip_code} {city_state if city_state else ""}, and validate them to ensure they are relevant to the community and fall within the correct zipcode of {zip_code} and timeframe of {self.start_date} to {self.end_date}. "
-                f"The events given are NOT guaranteed to be relevant or appropriate for the community, so you must validate them nor are they guaranteed to be in {zip_code} {city_state if city_state else ""} or within {self.start_date} to {self.end_date}. "
-                "Your task is to prioritize fun, engaging events such as networking events, educational opportunities, car shows, outdoor festivals, art exhibitions, and family-friendly activities. "
-                "Please avoid religious events, dating events (including speed dating), or events that are not appropriate for the general community. You must go through EVERY message provided."
-                "For each event, extract the title, date, description, and link (which is given to you already)."
-                "Maintain a list of as many events that fit the criteria as possible, but your final response should be a JSON list of the top 5 most relevant events, with the events you are the most confident about adhering to this prompt"
-                f"The events should match the given zipcode {zip_code} {city_state if city_state else ""} and timeframe of {self.start_date} to {self.end_date}. "
-                "If you are not sure about an event's link, BUT it meets the criteria, please just include the link of the source page which was provided to you initially with the content where you extracted the event from. "
-                "If you cannot find any events, return an empty JSON list. If you find less than 5, return only the events you found, but ensure you return at least 3 events. "
-                "If you find any events that are not relevant to the community or are outside the specified zipcode or timeframe, ignore them."
-                "Before returning the results, ensure no event is part of the invalid events list, which includes religious events, dating events, or any other events that do not fit the criteria. "
-                "You must also ensure that the events are not duplicated, so if you find any duplicates, remove them from the final list. "
-                f"Ensure that each event is appropriate for the community and aligns with the specified criteria. You must NOT include any event that isn't within the zipcode {zip_code} {city_state if city_state else ""} or the specified timeframe {self.start_date} to {self.end_date}. "
-                f"Return the results in the following format: {json.dumps(Event.model_json_schema())}, where one of these objects represents a single event. "
+            f"""You are an events aggregator expert tasked with identifying relevant community events within zipcode {zip_code} {city_state if city_state else ""} between {self.start_date} and {self.end_date}.
+
+            Your job is to extract event details (title, date, description, link) from provided messages, prioritizing fun, engaging events like networking events, educational opportunities, car shows, outdoor festivals, art exhibitions, and family-friendly activities.
+
+            **Exclusions:**  Do not include religious events, events that are dating-focused, or anything that isn't appropriate for families.  Ignore events outside of the specified zipcode or timeframe.
+
+            **Output:**  Generate a JSON list of the top 5 most relevant events, ranked by confidence. If fewer than 5 events are found, return all found events.  Ensure no duplicate events are included.
+
+            **Format:**  Each event should be represented as a JSON object conforming to the schema: {json.dumps(Event.model_json_schema())}
+            """
         )
+
+
+        # prompt = (
+        #         f"You are a helpful events aggregator expert. You will be given multiple messages containing a link, the link's title, and the link's content for an events page for zipcode {zip_code}. These links will be related to community events in the zipcode {zip_code}. "
+        #         f"Your job is to parse through all of them, extract community events in the zipcode {zip_code} {city_state if city_state else ""}, and validate them to ensure they are relevant to the community and fall within the correct zipcode of {zip_code} and timeframe of {self.start_date} to {self.end_date}. "
+        #         f"The events given are NOT guaranteed to be relevant or appropriate for the community, so you must validate them nor are they guaranteed to be in {zip_code} {city_state if city_state else ""} or within {self.start_date} to {self.end_date}. "
+        #         "Your task is to prioritize fun, engaging events such as networking events, educational opportunities, car shows, outdoor festivals, art exhibitions, and family-friendly activities. "
+        #         "Please avoid religious events, dating events (including speed dating), or events that are not appropriate for the general community. You must go through EVERY message provided."
+        #         "For each event, extract the title, date, description, and link (which is given to you already)."
+        #         "Maintain a list of as many events that fit the criteria as possible, but your final response should be a JSON list of the top 5 most relevant events, with the events you are the most confident about adhering to this prompt"
+        #         f"The events should match the given zipcode {zip_code} {city_state if city_state else ""} and timeframe of {self.start_date} to {self.end_date}. "
+        #         "If you are not sure about an event's link, BUT it meets the criteria, please just include the link of the source page which was provided to you initially with the content where you extracted the event from. "
+        #         "If you cannot find any events, return an empty JSON list. If you find less than 5, return only the events you found, but ensure you return at least 3 events. "
+        #         "If you find any events that are not relevant to the community or are outside the specified zipcode or timeframe, ignore them."
+        #         "Before returning the results, ensure no event is part of the invalid events list, which includes religious events, dating events, or any other events that do not fit the criteria. "
+        #         "You must also ensure that the events are not duplicated, so if you find any duplicates, remove them from the final list. "
+        #         f"Ensure that each event is appropriate for the community and aligns with the specified criteria. You must NOT include any event that isn't within the zipcode {zip_code} {city_state if city_state else ""} or the specified timeframe {self.start_date} to {self.end_date}. "
+        #         f"Return the results in the following format: {json.dumps(Event.model_json_schema())}, where one of these objects represents a single event. "
+        # )
 
         messages = [
             {"role": "assistant", "content": prompt}
@@ -329,7 +306,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
         )
 
-        log("trace", f"Anthropic response FULL: {message}")
+        log("debug", f"Anthropic response FULL: {message}")
 
         content = message.content  
         if content:
@@ -346,6 +323,50 @@ class SerpEventsGenerator(BaseEventsGenerator):
             raise Exception("No content returned from Anthropic.")
         
 
+    def poll_batch_status(self, batch_id: str, max_retries: int = 5, initial_wait_time: int = 10, max_wait_time: int = 6): 
+        """
+        Polls the batch status until it is completed with exponential backoff.
+
+        Args:
+            batch_id (str): The batch ID to check.
+            max_retries (int): Maximum number of retries before raising an error.
+            initial_wait_time (int): Initial wait time (in seconds) before polling again.
+            max_wait_time (int): Maximum wait time (in seconds) between polls.
+
+        Returns:
+            None: Returns when batch is completed.
+
+        Raises:
+            Exception: If the polling fails after the maximum retries.
+        """
+        wait_time = initial_wait_time
+        retries = 0
+
+        while retries < max_retries:
+            try:
+                # Poll the batch status
+                status_response = self._request(f"/batches/{batch_id}", "GET")
+
+                # Check if the batch status is completed
+                if status_response.get("status") == "completed":
+                    log("trace", "Batch completed successfully.")
+                    return
+                
+                log("trace", f"Batch {batch_id} status: {status_response.get('status')}. Retrying...")
+            except Exception as e:
+                log("error", f"Error while polling: {e}")
+
+            wait_time = min(wait_time * 2, max_wait_time)
+            wait_time += random.randint(1, 5)  
+            retries += 1
+
+            log("trace", f"Waiting for {wait_time} seconds before retrying...")
+            time.sleep(wait_time)
+
+        # If max retries exceeded
+        raise Exception(f"Polling failed after {max_retries} attempts. Batch status not completed.")
+   
+   
     def summary_prompt(self, events: list[Event], zip_code: str, city_state: str | None = None) -> tuple[str, str]:
         """
         Generate the prompt for summary generation.
@@ -387,48 +408,78 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
     def generate_summary(self, events: list[Event], zip_code: str, city_state: str | None = None) -> str:
         """Generate a summary of the events."""
-        system, user = self.summary_prompt(events=events, zip_code=zip_code, city_state=city_state)        
-        log("trace", "Generating summary with Anthropic.")
-
         try:
-            response = self.anthropic_client.completions.create(
-            model="claude-2.1",  
-            prompt=system + "\n\nHuman:" + user + "\n\nAssistant:", 
-            max_tokens_to_sample=500,
-            temperature=0.5,
-        )
+            system, user = self.summary_prompt(events=events, zip_code=zip_code, city_state=city_state)        
+            log("trace", "Generating summary with Anthropic.")
 
-            
+            response = self.anthropic_client.completions.create(
+                model="claude-2.1",  
+                prompt=system + "\n\nHuman:" + user + "\n\nAssistant:", 
+                max_tokens_to_sample=500,
+                temperature=0.5,
+            )
+                
             return response.completion
         except APIStatusError as e:
-            log("error", f"APIStatusError generating summary with Anthropic: {e}")
+            log("error", f"APIStatusError generating summary with Anthropic: {e}", exc_info=e)
+            raise
+        except Exception as e:
+            log("error", f"Error generating summary: {e}", exc_info=e)
             raise
 
-        
+
+    @retry_generation
     def _generate_events(self, zip_code: str) -> EventsResponse:
-
-        city_state = self.get_city_state(zip_code)  # Ensure we have the city and state for the zip code
-        log("trace", f"City and state for zip code {zip_code}: {city_state}")
-
-        # test out not specifying a date range
-        links: List[OrganicLink] = self.extract_links(f"Events in {zip_code} {city_state if city_state else ""}")
-   
-        id_mappings = self.start_batch(links)
-        response = self.get_events(links, id_mappings, zip_code, city_state)
-
-        response = extract_json_array(response)
-        events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in response]
-        if not events:
-            log("error", f"No events generated for {zip_code}.")
-            raise Exception(f"No events found for {zip_code} between {self.start_date} and {self.end_date}.")
+        """
+        Internal method to process the event generation pipeline.
         
-        log("debug", f"Generated {len(events)} for {zip_code} between {self.start_date} and {self.end_date}")
+        Args:
+            zip_code (str): The zip code to generate events for.
+            
+        Returns:
+            EventsResponse: The generated events and summary.
+            
+        Raises:
+            NoEventsFoundError: If no events could be found for the zip code.
+        """
+        try:
+            city_state = self.get_city_state(zip_code)
+            log("trace", f"City and state for zip code {zip_code}: {city_state}")
 
-        summary = self.generate_summary(events, zip_code, city_state)
-        summary_dict = extract_json_only(summary)
+            links: List[OrganicLink] = self.extract_links(f"Events in {zip_code} {city_state if city_state else ''}")
+       
+            id_mappings = self.start_batch(links)
+            response = self.get_events(links, id_mappings, zip_code, city_state)
+
+            response = extract_json_array(response)
+            events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in response]
+            
+            if not events:
+                log("error", f"No events generated for {zip_code}.")
+                raise NoEventsFoundError(f"No events found for {zip_code} between {self.start_date} and {self.end_date}.")
+            
+            log("debug", f"Generated {len(events)} for {zip_code} between {self.start_date} and {self.end_date}")
+
+            summary = self.generate_summary(events, zip_code, city_state)
+            summary_dict = extract_json_only(summary)
+            
+            log("debug", f"Events and summary generated successfully. Events: {events}, Summary: {summary_dict['summary']}")
+            return EventsResponse(events=events, summary=summary_dict['summary'])
         
-        log("debug", f"Events and summary generated successfully. Events: {events}, Summary: {summary_dict['summary']}")
-        return EventsResponse(events=events, summary=summary_dict['summary'])
+        except NoEventsFoundError:
+            raise
+        except requests.exceptions.RequestException as e:
+            log("error", f"RequestException in _generate_events: {e}", exc_info=e)
+            raise
+        except APIStatusError as e:
+            log("error", f"Anthropic APIStatusError in _generate_events: {e}", exc_info=e)
+            raise
+        except NoValidJSONError as e:
+            log("error", f"NoValidJSONError in _generate_events: {e}", exc_info=e)
+            raise
+        except Exception as e:
+            log("error", f"Error in _generate_events: {e}", exc_info=e)
+            raise
 
 
     def _generate(self, zip_code: str) -> EventsResponse:
@@ -446,14 +497,3 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
         return self._generate_events(zip_code)
 
-
-"""
-    Notes
-    -------
-    definety high token usage, could cut out searching 12-13 links to 5-6 
-
-    thinking extends the time for processign (by a significant amount too), so also keep that in mind
-
-    overall, the olostep api is pretty cheap relatively. it's probably the tokens which will cost us
-
-"""

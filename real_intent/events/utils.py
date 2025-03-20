@@ -156,7 +156,7 @@ def generate_pdf_buffer(events_response: EventsResponse) -> BytesIO:
 
         c.setFont("Helvetica-Oblique", 10)
         c.setFillColor(colors.blue)
-        c.drawString(100, y_position, f"Link: {"Click Here" if event.link else 'N/A'}")
+        c.drawString(100, y_position, f"Link: {event.link[:70] + '...' if event.link and len(event.link) > 70 else event.link if event.link else 'N/A'}")
         c.linkURL(event.link, (100, y_position, width - 100, y_position + 10)) if event.link else None
         y_position -= 20
 
