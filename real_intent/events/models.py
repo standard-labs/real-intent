@@ -1,5 +1,6 @@
 """Event models."""
 from pydantic import BaseModel
+import string
 
 
 class Event(BaseModel):
@@ -13,9 +14,9 @@ class Event(BaseModel):
     def truncated_title(self) -> str:
         """Truncate the title to a maximum length."""
         if len(self.title) > 70:
-            return self.title[:70] + "..."
+            return string.capwords(self.title[:70] + "...")
 
-        return self.title
+        return string.capwords(self.title)
 
 
 class EventsResponse(BaseModel):

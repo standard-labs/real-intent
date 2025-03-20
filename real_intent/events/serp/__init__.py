@@ -212,7 +212,13 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
         log("trace", f"Links Extracted: {organic_links}")
 
-        return organic_links
+        filtered_domains = ["facebook.com", "wikipedia.org"]
+
+        filtered_links = [
+            link for link in organic_links if link.link and not any(domain in link.link for domain in filtered_domains)
+        ]
+
+        return filtered_links
 
 
     def start_batch(self, organic_links: List[OrganicLink]) -> Dict[str, str]:
