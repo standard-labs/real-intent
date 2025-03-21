@@ -7,6 +7,7 @@ import random
 import string
 from datetime import datetime, timedelta
 
+from real_intent.internal_logging import log
 from real_intent.taxonomy import code_to_category, category_to_code
 
 
@@ -49,9 +50,30 @@ class IABJob(BaseModel):
         return self
 
     def as_payload(self) -> dict[str, str | int]:
-        """Convert into dictionary payload."""
+        """
+        Convert into dictionary payload.
+
+        Converts string intent categories into IAB codes.
+        """
+        query_categories: list[str] = []
+
+        for category in self.intent_categories:
+            if not isinstance(category, str):
+                log("warn", f"Category must be a string. Got: {category}")
+                continue
+
+            if category.isnumeric():
+                query_categories.append(int(category))
+                continue
+
+            if not (code_match := category_to_code(category)):
+                log("warn", f"Could not find IAB code for category: {category}")
+                continue
+
+            query_categories.append(str(code_match))
+
         return {
-            "IABs": ",".join(str(category_to_code(category)) for category in self.intent_categories),
+            "IABs": ",".join(query_categories),
             "Zips": ",".join(self.zips),
             "Keywords": ",".join(self.keywords),
             "Domains": ",".join(self.domains),
