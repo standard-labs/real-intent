@@ -226,12 +226,14 @@ class BigDBMClient:
 
     def _extract_intent_events(self, fetch_result_json: dict) -> list[IntentEvent]:
         """Pull the intent events listed on a job's results page."""
+        log("trace", f"Extracting intent events from: {fetch_result_json}")
+
         intent_events = [
             IntentEvent(
-                md5=obj["mD5"],
-                sentence=obj["sentence"]
+                md5=obj["MD5"],
+                sentence=obj["Sentence"]
             )
-            for obj in fetch_result_json["result"]
+            for obj in fetch_result_json["results"]
         ]
 
         log("trace", f"Extracted intent events: {intent_events}")
@@ -242,7 +244,7 @@ class BigDBMClient:
         # First page
         PER_PAGE_COUNT: int = 100
         response_json: dict = self._fetch_result_response(list_queue_id, 1)
-        total_count: int = int(response_json["totalCount"])
+        total_count: int = int(response_json["count"])
         page_count: int = (total_count // PER_PAGE_COUNT) + 1
         intent_events: list[IntentEvent] = self._extract_intent_events(response_json)
 
