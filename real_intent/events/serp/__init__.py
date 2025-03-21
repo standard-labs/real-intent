@@ -11,6 +11,8 @@ from pydantic import BaseModel
 
 from anthropic import Anthropic, APIStatusError
 
+import tldextract
+
 from real_intent.events.base import BaseEventsGenerator
 from real_intent.events.errors import NoValidJSONError
 from real_intent.events.scrapy_claude import extract_json_array
@@ -173,11 +175,17 @@ class SerpEventsGenerator(BaseEventsGenerator):
             OrganicLink(**item) for item in parsed_json_content.get('organic', [])
         ]
 
-        filtered_domains = ["facebook.com", "wikipedia.org"]
+        # api can't parse facebook yet, wikipedia seems to commonly come up in searches
+        filtered_domains = {"facebook", "wikipedia"}
 
-        filtered_links = [
-            link for link in organic_links if link.link and not any(domain in link.link for domain in filtered_domains)
-        ]
+        filtered_links = []
+        
+        for link in organic_links:
+            if link.link:
+                domain = tldextract.extract(link.link).domain
+                if domain not in filtered_domains:
+                    filtered_links.append(link)
+                    filtered_domains.add(domain) 
         
         log("trace", f"(Filtered) Links Extracted: {filtered_links}")
 
@@ -240,38 +248,42 @@ class SerpEventsGenerator(BaseEventsGenerator):
                 raise Exception(f"No valid markdown_content for retrieve_id: {retrieve_id}")
                                     
             return markdown_content
-        
+            
         prompt = (
-            f"""You are an events aggregator expert tasked with identifying relevant community events within zipcode {zip_code} {city_state if city_state else ""} between {self.start_date} and {self.end_date}.
+            f"""You are an expert in aggregating community events, specializing in identifying relevant activities for zipcode {zip_code} {city_state if city_state else ""} between {self.start_date} and {self.end_date}.
 
-            Your job is to extract event details (title, date, description, link) from provided messages, prioritizing fun, engaging events like networking events, educational opportunities, car shows, outdoor festivals, art exhibitions, and family-friendly activities.
+            **Objective:**  
+            Extract event details (title, date, description, link) from the provided messages, focusing on engaging events such as networking meetups, educational opportunities, car shows, outdoor festivals, art exhibitions, and family-friendly activities.
 
-            **Exclusions:**  Do not include religious events, events that are dating-focused, or anything that isn't appropriate for families.  Ignore events outside of the specified zipcode or timeframe.
+            **Instructions:**  
+            - Analyze the provided messages for event information (links, titles, and descriptions) within zipcode {zip_code} {city_state if city_state else ""}.  
+            - Validate each event to ensure:  
+                - It is relevant to the community.  
+                - It falls within the correct timeframe ({self.start_date} to {self.end_date}).  
+                - It is located in the specified area {city_state if city_state else ""}.  
+                - Events **are not guaranteed** to meet these criteria, so you must carefully validate them.  
+                - If an event is slightly outside the specified zipcode but remains **highly relevant to the community** (e.g., within the same county or a neighboring zipcode), you may include it **only as a last resort** and must be able to justify its inclusion.  
 
-            **Output:**  Generate a JSON list of the top 5 most relevant events, ranked by confidence. If fewer than 5 events are found, return all found events.  Ensure no duplicate events are included.
+            **Important Notes:**
+            - If you cannot find the specific link for an event, use the original link of the source of that content provided in the messages to reference the event. Only do this if you cannot find the specific link in the content.
+            
+            **Exclusions:**  
+            Do **not** include:  
+                - Religious events.  
+                - Dating-focused events.  
+                - Events inappropriate for families.  
+                - Events outside the specified location or timeframe.  
 
-            **Format:**  Each event should be represented as a JSON object conforming to the schema: {json.dumps(Event.model_json_schema())}
+            **Output Format:**  
+            - Return a **JSON list** of up to **5 most relevant** events, ranked by confidence.  
+            - If fewer than 5 events meet the criteria, return only the valid ones.  
+            - Ensure **no duplicate events** are included.  
+            - If no suitable events are found, return an **empty JSON list**.  
+
+            **Schema:**  
+            Each event should be structured as a JSON object following this schema: {json.dumps(Event.model_json_schema())}  
             """
         )
-
-
-        # prompt = (
-        #         f"You are a helpful events aggregator expert. You will be given multiple messages containing a link, the link's title, and the link's content for an events page for zipcode {zip_code}. These links will be related to community events in the zipcode {zip_code}. "
-        #         f"Your job is to parse through all of them, extract community events in the zipcode {zip_code} {city_state if city_state else ""}, and validate them to ensure they are relevant to the community and fall within the correct zipcode of {zip_code} and timeframe of {self.start_date} to {self.end_date}. "
-        #         f"The events given are NOT guaranteed to be relevant or appropriate for the community, so you must validate them nor are they guaranteed to be in {zip_code} {city_state if city_state else ""} or within {self.start_date} to {self.end_date}. "
-        #         "Your task is to prioritize fun, engaging events such as networking events, educational opportunities, car shows, outdoor festivals, art exhibitions, and family-friendly activities. "
-        #         "Please avoid religious events, dating events (including speed dating), or events that are not appropriate for the general community. You must go through EVERY message provided."
-        #         "For each event, extract the title, date, description, and link (which is given to you already)."
-        #         "Maintain a list of as many events that fit the criteria as possible, but your final response should be a JSON list of the top 5 most relevant events, with the events you are the most confident about adhering to this prompt"
-        #         f"The events should match the given zipcode {zip_code} {city_state if city_state else ""} and timeframe of {self.start_date} to {self.end_date}. "
-        #         "If you are not sure about an event's link, BUT it meets the criteria, please just include the link of the source page which was provided to you initially with the content where you extracted the event from. "
-        #         "If you cannot find any events, return an empty JSON list. If you find less than 5, return only the events you found, but ensure you return at least 3 events. "
-        #         "If you find any events that are not relevant to the community or are outside the specified zipcode or timeframe, ignore them."
-        #         "Before returning the results, ensure no event is part of the invalid events list, which includes religious events, dating events, or any other events that do not fit the criteria. "
-        #         "You must also ensure that the events are not duplicated, so if you find any duplicates, remove them from the final list. "
-        #         f"Ensure that each event is appropriate for the community and aligns with the specified criteria. You must NOT include any event that isn't within the zipcode {zip_code} {city_state if city_state else ""} or the specified timeframe {self.start_date} to {self.end_date}. "
-        #         f"Return the results in the following format: {json.dumps(Event.model_json_schema())}, where one of these objects represents a single event. "
-        # )
 
         messages = [
             {"role": "assistant", "content": prompt}
