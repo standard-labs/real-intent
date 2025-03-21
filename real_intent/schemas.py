@@ -7,7 +7,7 @@ import random
 import string
 from datetime import datetime, timedelta
 
-from real_intent.taxonomy import code_to_category
+from real_intent.taxonomy import code_to_category, category_to_code
 
 
 class ConfigDates(BaseModel):
@@ -51,7 +51,7 @@ class IABJob(BaseModel):
     def as_payload(self) -> dict[str, str | int]:
         """Convert into dictionary payload."""
         return {
-            "IABs": ",".join(self.intent_categories),
+            "IABs": ",".join(str(category_to_code(category)) for category in self.intent_categories),
             "Zips": ",".join(self.zips),
             "Keywords": ",".join(self.keywords),
             "Domains": ",".join(self.domains),
