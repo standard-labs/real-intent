@@ -135,7 +135,7 @@ class BigDBMClient:
         response_json: dict[str, str] = self._request(
             Request(
                 method="GET",
-                url="https://aws-prod-intent-api.bigdbm.com/intent/configData",
+                url="https://sjbj20ixy5.execute-api.us-west-2.amazonaws.com/Prod/intent/configData",
                 headers={
                     "Content-Type": "application/x-www-form-urlencoded"
                 }
@@ -160,7 +160,7 @@ class BigDBMClient:
         log("trace", f"Creating IABJob: {iab_job}")
         request = Request(
             method="POST",
-            url="https://aws-prod-intent-api.bigdbm.com/intent/createList",
+            url="https://sjbj20ixy5.execute-api.us-west-2.amazonaws.com/Prod/intent/createList",
             headers={
                 "Content-Type": "application/json"
             },
@@ -180,7 +180,7 @@ class BigDBMClient:
         """Get the processing status of a list."""
         request = Request(
             method="GET",
-            url="https://aws-prod-intent-api.bigdbm.com/intent/checkList",
+            url="https://sjbj20ixy5.execute-api.us-west-2.amazonaws.com/Prod/intent/checkList",
             params={"listQueueId": list_queue_id}
         )
 
@@ -217,7 +217,7 @@ class BigDBMClient:
         """Return the JSON API response when pulling a page's results."""
         request = Request(
             method="POST",
-            url="https://aws-prod-intent-api.bigdbm.com/intent/result",
+            url="https://sjbj20ixy5.execute-api.us-west-2.amazonaws.com/Prod/intent/result",
             headers={"Content-Type": "application/json"},
             json={"ListQueueId": list_queue_id, "Page": page_num}
         )
@@ -322,7 +322,7 @@ class BigDBMClient:
             
             request = Request(
                 method="POST",
-                url="https://aws-prod-intent-api.bigdbm.com/intent/queueCount",                
+                url="https://sjbj20ixy5.execute-api.us-west-2.amazonaws.com/Prod/intent/queueCount",                
                 headers={"Content-Type": "application/json"},
                 json={
                     "StartDate": config_dates.start_date, 
@@ -339,7 +339,7 @@ class BigDBMClient:
             # After job completion, fetch the result count
             request_count = Request(
                 method="POST",
-                url="https://aws-prod-intent-api.bigdbm.com/intent/resultCount",
+                url="https://sjbj20ixy5.execute-api.us-west-2.amazonaws.com/Prod/intent/resultCount",
                 headers={"Content-Type": "application/json"},
                 json={"ListQueueId": list_queue_id}
             )
