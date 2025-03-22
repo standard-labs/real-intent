@@ -10,7 +10,6 @@ import tldextract
 from anthropic import Anthropic, APIStatusError
 
 from real_intent.events.base import BaseEventsGenerator
-from real_intent.events.errors import NoValidJSONError
 from real_intent.internal_logging import log
 from real_intent.events.models import Event, EventsResponse, OrganicLink
 from real_intent.events.utils import extract_json_only, extract_json_array, retry_generation    
@@ -263,6 +262,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
                 - It is located in the specified area {city_state if city_state else ""}.  
                 - Events **are not guaranteed** to meet these criteria, so you must carefully validate them.  
                 - If an event is slightly outside the specified zipcode but remains **highly relevant to the community** (e.g., within the same county or a neighboring zipcode), you may include it **only as a last resort** and must be able to justify its inclusion.  
+                - The date attribute represents the date or date range of the event in ISO 8601 format (YYYY-MM-DD). Make sure to follow this format when providing the date.
 
             **Important Notes:**
             - If you cannot find the specific link for an event, use the original link of the source of that content provided in the messages to reference the event. Only do this if you cannot find the specific link in the content.
@@ -335,15 +335,17 @@ class SerpEventsGenerator(BaseEventsGenerator):
             raise Exception("No content returned from Anthropic.")
         
 
-    def poll_batch_status(self, batch_id: str, max_retries: int = 5, initial_wait_time: int = 10, wait_time: int = 10) -> None: 
+    def poll_batch_status(self, batch_id: str, max_retries: int = 5, initial_wait_time: int = 15) -> None: 
         """
-        Polls the batch status until it is completed with exponential backoff.
+        Polls the batch status until it is completed. Implemented with an initial wait time, 
+        then poll every 10 seconds until the batch is completed or the maximum retries are reached.
+        
+        Mainly went with this approach due to the batch processing time taking around 15-30 seconds on average.
 
         Args:
             batch_id (str): The batch ID to check.
             max_retries (int): Maximum number of retries before raising an error.
             initial_wait_time (int): Initial wait time (in seconds) before polling again.
-            wait_time (int): wait time (in seconds) between polls.
 
         Returns:
             None: Returns when batch is completed.
@@ -372,6 +374,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
             log("debug", f"Waiting for {wait_time} seconds before retrying...")
             time.sleep(wait_time)
+            wait_time = 10 # poll every 10 seconds after the first attempt waits for initial_wait_time
 
         raise BatchNotCompleteError(batch_id)
    
@@ -400,7 +403,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             Summarize the events happening in {zip_code} {city_state if city_state else ""} between {self.start_date} and {self.end_date} provided to you here.
             \n{events}\n
             Your summary should be informative and engaging, providing a brief overview of the events, the local community,
-            and any other relevant details such as weather conditions. Provide a maximum of 5 sentences! 
+            and any other relevant details such as weather conditions. Provide a maximum of 5 sentences! Make sure to include the zipcode and the city/state in your summary.
             
             You must only include the key events and highlights from the list provided. Do not include any additional events.
             

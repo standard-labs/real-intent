@@ -122,9 +122,9 @@ def test_beverly_hills_events_scrapybara(scrapybara_events_generator):
     assert "Beverly Hills" in response.summary, "Summary should mention Beverly Hills"
 
 
-def test_beverly_hills_events_serp(serp_events_generator):
-    """Test generating events for Beverly Hills (90210) using Scrapybara."""
-    response = serp_events_generator.generate("90210")
+def test_lawrenceville_ga_events_serp(serp_events_generator):
+    """Test generating events for Lawrenceville, GA (30043) using Olostep's SERP API."""
+    response = serp_events_generator.generate("30043")
     
     # Verify response structure
     assert isinstance(response, EventsResponse)
@@ -153,7 +153,7 @@ def test_beverly_hills_events_serp(serp_events_generator):
     
     # Verify summary
     assert len(response.summary.split()) >= 20, "Summary should be meaningful"
-    assert "Beverly Hills" in response.summary, "Summary should mention Beverly Hills"
+    assert "Lawrenceville" in response.summary, "Summary should mention Lawrenceville"
 
 
 @pytest.fixture
