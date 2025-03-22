@@ -6,6 +6,7 @@ from real_intent.schemas import MD5WithPII, PII, MobilePhone
 from real_intent.validate.email import EmailValidator, HasEmailValidator
 from real_intent.validate.phone import PhoneValidator, DNCValidator, DNCPhoneRemover
 from real_intent.validate.pii import RemoveOccupationsValidator
+from real_intent.validate.simple import ExcludeZipCodeValidator
 
 
 # Load environment variables from .env file
@@ -213,3 +214,37 @@ def test_remove_occupations_validator() -> None:
 
     # Check results
     assert len(result) == 3
+
+
+def test_exclude_zip_code_validator() -> None:
+    # Create test data with different zip codes
+    md5s = [
+        create_md5_with_pii("123", [], []),  # Will set zip code below
+        create_md5_with_pii("456", [], []),  # Will set zip code below
+        create_md5_with_pii("789", [], []),  # Will set zip code below
+        create_md5_with_pii("101", [], [])   # Will set zip code below
+    ]
+    
+    # Set zip codes
+    md5s[0].pii.zip_code = "10001"  # NYC - should be excluded
+    md5s[1].pii.zip_code = "90210"  # Beverly Hills - should be kept
+    md5s[2].pii.zip_code = "60601"  # Chicago - should be kept
+    md5s[3].pii.zip_code = "33139"  # Miami Beach - should be excluded
+    
+    # Initialize validator with zip codes to exclude
+    excluded_zip_codes = ["10001", "33139"]
+    validator = ExcludeZipCodeValidator(excluded_zip_codes)
+    
+    # Validate
+    result = validator.validate(md5s)
+    
+    # Check results
+    assert len(result) == 2
+    assert result[0].md5 == "456"  # Beverly Hills zip should be kept
+    assert result[1].md5 == "789"  # Chicago zip should be kept
+    assert all(md5.md5 != "123" for md5 in result)  # NYC zip should be excluded
+    assert all(md5.md5 != "101" for md5 in result)  # Miami Beach zip should be excluded
+    
+    # Check that the zip codes in the result are the ones we expect to keep
+    assert result[0].pii.zip_code == "90210"
+    assert result[1].pii.zip_code == "60601"
