@@ -21,6 +21,25 @@ class ZipCodeValidator(BaseValidator):
             md5 for md5 in md5s if md5.pii.zip_code in self.zip_codes
         ]
 
+    
+class ExcludeZipCodeValidator(BaseValidator):
+    """
+    Remove leads matching specified zip codes.
+
+    Args:
+        zip_codes: List of zip codes to remove.
+    """
+
+    def __init__(self, zip_codes: list[str]) -> None:
+        """Initialize with a list of zip codes."""
+        self.zip_codes: list[str] = zip_codes
+
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove leads that are in the list of zip codes."""
+        return [
+            md5 for md5 in md5s if md5.pii.zip_code not in self.zip_codes
+        ]
+
 
 class ContactableValidator(BaseValidator):
     """Remove leads without a contact method (mobile or email)."""
