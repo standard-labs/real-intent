@@ -4,40 +4,18 @@ import json
 import requests
 import datetime as dt
 import time
-import random
-
 from typing import List, Dict
-from pydantic import BaseModel
+import tldextract
 
 from anthropic import Anthropic, APIStatusError
 
-import tldextract
-
 from real_intent.events.base import BaseEventsGenerator
 from real_intent.events.errors import NoValidJSONError
-from real_intent.events.scrapy_claude import extract_json_array
 from real_intent.internal_logging import log
-from real_intent.events.models import Event, EventsResponse
-from real_intent.events.utils import extract_json_only, retry_generation    
-from real_intent.events.errors import NoValidJSONError, NoEventsFoundError
+from real_intent.events.models import Event, EventsResponse, OrganicLink
+from real_intent.events.utils import extract_json_only, extract_json_array, retry_generation    
+from real_intent.events.errors import NoValidJSONError, NoEventsFoundError, NoLinksFoundError, BatchNotCompleteError
 
-
-# --- Begin Models & Utils ---
-
-def validate_json_content(v):
-    log("trace", f"Validating json_content: {v}")
-    if v is None:
-        raise NoValidJSONError("json_content is None")
-    if isinstance(v, str):
-        return json.loads(v)
-    return v
-
-class OrganicLink(BaseModel):
-    title: str | None = None
-    link: str | None = None
-    snippet: str | None = None
-
-# --- End Models & Utils ---
 
 class SerpEventsGenerator(BaseEventsGenerator):
     """Implementation of event generation using serp through olostep API"""
@@ -93,7 +71,8 @@ class SerpEventsGenerator(BaseEventsGenerator):
             zip_code (str): The zip code to look up.
 
         Returns:
-            str | None: A string containing city and state information, or None if lookup fails.
+            str | None: A string containing city and/or state and/or county information,
+            or None if lookup fails.
         """
         try:
             if not self.geo_key:
@@ -124,6 +103,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             if data.get("county", None):
                 city_state += f"{data.get('county')}"
 
+            log("trace", f"City/State for zip code {zip_code}: {city_state}")
             return city_state
         except Exception as e:
             log("warn", f"Error getting city/state for zip code {zip_code}: {e}")
@@ -133,7 +113,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
     def _request(self, endpoint: str, method: str = "GET", payload: dict = None):
         """Make a request to the specified endpoint for olostep api with the given method and payload."""
         try:
-            log("trace", f"Making {method} request to {endpoint} with payload: {payload}")
+            log("debug", f"Making {method} request to {endpoint} with payload: {payload}")
 
             headers = {
                 "Authorization": f"Bearer {self.serp_key}",
@@ -146,7 +126,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             
             response.raise_for_status()
 
-            log("trace", f"Response status for {method} request to {endpoint}: {response.status_code}")
+            log("debug", f"Response status for {method} request to {endpoint}: {response.status_code}")
             
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -154,7 +134,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             raise
 
 
-    def extract_links(self, query: str) -> List[OrganicLink]:
+    def extract_links(self, query: str, n_links: int = 5) -> List[OrganicLink]:
         """Extract organic links from Google search results for the given query."""
 
         payload = {
@@ -168,33 +148,49 @@ class SerpEventsGenerator(BaseEventsGenerator):
         }
 
         serp_response = self._request("/scrapes", method="POST", payload=payload)
-
-        parsed_json_content = validate_json_content(serp_response['result']['json_content'])
-
-        organic_links = [
-            OrganicLink(**item) for item in parsed_json_content.get('organic', [])
-        ]
-
-        # api can't parse facebook yet, wikipedia seems to commonly come up in searches
-        filtered_domains = {"facebook", "wikipedia"}
-
-        filtered_links = []
         
-        for link in organic_links:
-            if link.link:
-                domain = tldextract.extract(link.link).domain
-                if domain not in filtered_domains:
-                    filtered_links.append(link)
-                    filtered_domains.add(domain) 
-        
-        log("trace", f"(Filtered) Links Extracted: {filtered_links}")
+        try:
+            parsed_json_content = serp_response['result']['json_content']
+            
+            if isinstance(parsed_json_content, str):
+                parsed_json_content = json.loads(parsed_json_content)
+            else:
+                log("warn", "Parsed json_content response is not a string, attempting to validate as dict.")
+                
+            organic_links = [
+                OrganicLink(**item) for item in parsed_json_content.get('organic', [])
+            ]
 
-        return filtered_links[:5]  # Limit to a maximum of 5 links
-    
+            filtered_domains = {"facebook", "wikipedia"}
+            
+            filtered_links = []
+            
+            for link in organic_links:
+                if link.link:
+                    domain = tldextract.extract(link.link).domain
+                    if domain not in filtered_domains:
+                        filtered_links.append(link)
+                        filtered_domains.add(domain)
+
+            log("trace", f" All Filtered Links Extracted: {filtered_links}")
+
+            if not filtered_links:
+                raise NoLinksFoundError(query)
+
+            return filtered_links[:n_links]  # Limit to a maximum of n_links
+
+        except KeyError as e:
+            log("error", f"Key error extracting links: {str(e)}")
+            raise
+        except json.JSONDecodeError as e:
+            log("error", f"JSON decode error extracting links: {str(e)}")
+            raise
+
 
     def start_batch(self, organic_links: List[OrganicLink]) -> Dict[str, str]:
         """
-            start batch processing for the given organic links and return a mapping of custom_id to retrieve_id.
+            start batch processing for given organic links and return
+            a mapping of custom_id to retrieve_id.
         """
 
         payload = {
@@ -206,7 +202,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             }
         }
 
-        # form payload for batch request
+        # form payload for batch request, mapping each organic link to a custom_id denoted by its index
         for i, link in enumerate(organic_links):
             if link.link:
                 payload["items"].append({
@@ -220,19 +216,23 @@ class SerpEventsGenerator(BaseEventsGenerator):
         if not batch_id:
             raise Exception("No valid batch ID found in the response.")
 
-        log("trace", f"Started Batch ID: {batch_id}")
+        log("debug", f"Started Batch ID: {batch_id}")
 
         self.poll_batch_status(batch_id)
 
-        # if no exception was raised, the batch is completed
-        log("trace", f"Batch {batch_id} completed.")
-
         serp_response = self._request(f"/batches/{batch_id}/items", "GET")
-
-        id_mapping = {item['custom_id']: item['retrieve_id'] for item in serp_response['items']}
-
-        log("trace", f"Items response: {id_mapping}")
-
+        
+        try:
+            id_mapping = {item['custom_id']: item['retrieve_id'] for item in serp_response['items']}
+        
+        except KeyError as e: 
+            log("error", f"Key error mapping retrieve_ids: {str(e)}")
+            raise
+        
+        if not id_mapping:
+            raise Exception("Could not form valid id_mapping.")
+        
+        log("debug", f"ID Mapping: {id_mapping}")
         return id_mapping
 
 
@@ -245,7 +245,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
             markdown_content = serp_response.get("markdown_content", None)
             if not markdown_content:
-                raise Exception(f"No valid markdown_content for retrieve_id: {retrieve_id}")
+                raise Exception(f"No markdown_content for retrieve_id: {retrieve_id}")
                                     
             return markdown_content
             
@@ -256,7 +256,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             Extract event details (title, date, description, link) from the provided messages, focusing on engaging events such as networking meetups, educational opportunities, car shows, outdoor festivals, art exhibitions, and family-friendly activities.
 
             **Instructions:**  
-            - Analyze the provided messages for event information (links, titles, and descriptions) within zipcode {zip_code} {city_state if city_state else ""}.  
+            - Analyze ALL the provided messages for event information (links, titles, and descriptions) within zipcode {zip_code} {city_state if city_state else ""}.  
             - Validate each event to ensure:  
                 - It is relevant to the community.  
                 - It falls within the correct timeframe ({self.start_date} to {self.end_date}).  
@@ -266,6 +266,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
             **Important Notes:**
             - If you cannot find the specific link for an event, use the original link of the source of that content provided in the messages to reference the event. Only do this if you cannot find the specific link in the content.
+            - Try to include events from a variety of the sources if possible, but above all prioritize the most relevant and engaging events for the community.
             
             **Exclusions:**  
             Do **not** include:  
@@ -281,7 +282,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             - If no suitable events are found, return an **empty JSON list**.  
 
             **Schema:**  
-            Each event should be structured as a JSON object following this schema: {json.dumps(Event.model_json_schema())}  
+                Each event should be structured as a JSON object following this schema: {json.dumps(Event.model_json_schema())}  
             """
         )
 
@@ -315,10 +316,9 @@ class SerpEventsGenerator(BaseEventsGenerator):
                 "type": "enabled",
                 "budget_tokens": 2000            
             },
-
         )
 
-        log("debug", f"Anthropic response FULL: {message}")
+        log("debug", f"Anthropic response with thinking: {message}")
 
         content = message.content  
         if content:
@@ -335,7 +335,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             raise Exception("No content returned from Anthropic.")
         
 
-    def poll_batch_status(self, batch_id: str, max_retries: int = 5, initial_wait_time: int = 10, max_wait_time: int = 6): 
+    def poll_batch_status(self, batch_id: str, max_retries: int = 5, initial_wait_time: int = 10, wait_time: int = 10) -> None: 
         """
         Polls the batch status until it is completed with exponential backoff.
 
@@ -343,13 +343,13 @@ class SerpEventsGenerator(BaseEventsGenerator):
             batch_id (str): The batch ID to check.
             max_retries (int): Maximum number of retries before raising an error.
             initial_wait_time (int): Initial wait time (in seconds) before polling again.
-            max_wait_time (int): Maximum wait time (in seconds) between polls.
+            wait_time (int): wait time (in seconds) between polls.
 
         Returns:
             None: Returns when batch is completed.
 
         Raises:
-            Exception: If the polling fails after the maximum retries.
+            BatchNotCompleteError: If the polling fails after the maximum retries.
         """
         wait_time = initial_wait_time
         retries = 0
@@ -361,22 +361,19 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
                 # Check if the batch status is completed
                 if status_response.get("status") == "completed":
-                    log("trace", "Batch completed successfully.")
+                    log("trace", f"Batch {batch_id} completed successfully.")
                     return
                 
-                log("trace", f"Batch {batch_id} status: {status_response.get('status')}. Retrying...")
+                log("debug", f"Batch {batch_id} status: {status_response.get('status')}. Retrying...")
             except Exception as e:
                 log("error", f"Error while polling: {e}")
 
-            wait_time = min(wait_time * 2, max_wait_time)
-            wait_time += random.randint(1, 5)  
             retries += 1
 
-            log("trace", f"Waiting for {wait_time} seconds before retrying...")
+            log("debug", f"Waiting for {wait_time} seconds before retrying...")
             time.sleep(wait_time)
 
-        # If max retries exceeded
-        raise Exception(f"Polling failed after {max_retries} attempts. Batch status not completed.")
+        raise BatchNotCompleteError(batch_id)
    
    
     def summary_prompt(self, events: list[Event], zip_code: str, city_state: str | None = None) -> tuple[str, str]:
@@ -453,10 +450,12 @@ class SerpEventsGenerator(BaseEventsGenerator):
             
         Raises:
             NoEventsFoundError: If no events could be found for the zip code.
+            requests.exceptions.RequestException: If there is an issue with the API request.
+            APIStatusError: If there is an issue with the Anthropic API.
+            NoValidJSONError: If the response from the API is not valid JSON.
         """
         try:
             city_state = self.get_city_state(zip_code)
-            log("trace", f"City and state for zip code {zip_code}: {city_state}")
 
             links: List[OrganicLink] = self.extract_links(f"Events in {zip_code} {city_state if city_state else ''}")
        
@@ -488,6 +487,12 @@ class SerpEventsGenerator(BaseEventsGenerator):
             raise
         except NoValidJSONError as e:
             log("error", f"NoValidJSONError in _generate_events: {e}", exc_info=e)
+            raise
+        except NoLinksFoundError as e:
+            log("error", f"NoLinksFoundError in _generate_events: {e}", exc_info=e)
+            raise
+        except BatchNotCompleteError as e:
+            log("error", f"BatchNotCompleteError in _generate_events: {e}", exc_info=e)
             raise
         except Exception as e:
             log("error", f"Error in _generate_events: {e}", exc_info=e)

@@ -23,3 +23,10 @@ class EventsResponse(BaseModel):
     """Response object, containing events and summary."""
     events: list[Event]
     summary: str
+    
+    
+class OrganicLink(BaseModel):
+    """Model for organic links."""
+    title: str | None = None
+    link: str | None = None
+    snippet: str | None = None
