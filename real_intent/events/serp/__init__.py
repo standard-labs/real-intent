@@ -422,16 +422,35 @@ class SerpEventsGenerator(BaseEventsGenerator):
         """Generate a summary of the events."""
         try:
             system, user = self.summary_prompt(events=events, zip_code=zip_code, city_state=city_state)        
+            
             log("trace", "Generating summary with Anthropic.")
-
-            response = self.anthropic_client.completions.create(
-                model="claude-2.1",  
-                prompt=system + "\n\nHuman:" + user + "\n\nAssistant:", 
-                max_tokens_to_sample=500,
-                temperature=0.5,
+            
+            messages = [
+                {"role": "assistant", "content": system},
+                {"role": "user", "content": user}
+            ]
+            
+            message = self.anthropic_client.messages.create(
+                model="claude-3-7-sonnet-20250219",
+                messages=messages,
+                temperature=1,
+                max_tokens=1000,
             )
-                
-            return response.completion
+
+            content = message.content
+            if content:
+                for block in content:
+                    if block.type == "text":
+                        event_text = block.text
+                        log("trace", f"Anthropic summary response: {event_text}")
+                        return event_text
+                log("error", "No text block found in Anthropic response.")
+                raise Exception("No text block found in Anthropic response.")
+            
+            else:
+                log("error", "No content returned from Anthropic.")
+                raise Exception("No content returned from Anthropic.")
+            
         except APIStatusError as e:
             log("error", f"APIStatusError generating summary with Anthropic: {e}", exc_info=e)
             raise
