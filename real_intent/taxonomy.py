@@ -52,3 +52,14 @@ def code_to_category(code: str | int | None) -> str:
         return str(code)
 
     return str(result.iloc[0]["IAB_Category_Name"])
+
+
+@lru_cache(maxsize=None)
+def category_to_code(category: str) -> int | None:
+    """Return the code for a given category."""
+    result: pd.DataFrame = taxonomy_df[taxonomy_df["IAB_Category_Name"] == category]
+
+    if result.empty:
+        return None
+
+    return int(result.iloc[0]["IAB_Category_ID"])
