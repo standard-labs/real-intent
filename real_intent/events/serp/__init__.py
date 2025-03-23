@@ -11,15 +11,24 @@ from typing import List, Dict
 from real_intent.events.base import BaseEventsGenerator
 from real_intent.internal_logging import log
 from real_intent.events.models import Event, EventsResponse, OrganicLink
-from real_intent.events.utils import extract_json_only, extract_json_array, retry_generation    
-from real_intent.events.errors import NoValidJSONError, NoEventsFoundError, NoLinksFoundError, BatchNotCompleteError
+from real_intent.events.utils import (
+    extract_json_only,
+    extract_json_array,
+    retry_generation,
+)
+from real_intent.events.errors import (
+    NoValidJSONError,
+    NoEventsFoundError,
+    NoLinksFoundError,
+    BatchNotCompleteError,
+)
 
 
 class SerpEventsGenerator(BaseEventsGenerator):
     """Implementation of event generation using serp through olostep API"""
 
     def __init__(
-        self, 
+        self,
         serp_key: str,
         anthropic_key: str,
         start_date: dt.datetime | None = None,
@@ -42,7 +51,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
         if not isinstance(anthropic_key, str) or not anthropic_key:
             raise ValueError("anthropic API key must be a truthy string.")
-        
+
         self.serp_key = serp_key
         self.geo_key = geo_key
 
@@ -51,11 +60,11 @@ class SerpEventsGenerator(BaseEventsGenerator):
         # Set dates with defaults if not provided
         start = start_date or dt.datetime.now()
         end = end_date or (start + dt.timedelta(days=14))
-        
+
         # Validate inputs are datetime objects
         if not isinstance(start, dt.datetime) or not isinstance(end, dt.datetime):
             raise ValueError("Invalid start or end date inputs.")
-        
+
         # Convert to formatted strings for internal use
         self.start_date = start.strftime("%B %d, %Y")
         self.end_date = end.strftime("%B %d, %Y")
@@ -77,7 +86,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
             endpoint = f"https://api.api-ninjas.com/v1/zipcode?zip={zip_code}"
             headers = {
-                "X-Api-Key": self.geo_key, 
+                "X-Api-Key": self.geo_key,
             }
             response = requests.get(endpoint, headers=headers)
             response.raise_for_status()
@@ -87,8 +96,8 @@ class SerpEventsGenerator(BaseEventsGenerator):
             if not data or not isinstance(data, list) or len(data) == 0:
                 return None
 
-            data = data[0] # get the first result
-            
+            data = data[0]  # get the first result
+
             city_state = ""
 
             if not data:
@@ -109,21 +118,33 @@ class SerpEventsGenerator(BaseEventsGenerator):
     def _request(self, endpoint: str, method: str = "GET", payload: dict = None):
         """Make a request to the specified endpoint for olostep api with the given method and payload."""
         try:
-            log("debug", f"Making {method} request to {endpoint} with payload: {payload}")
+            log(
+                "debug",
+                f"Making {method} request to {endpoint} with payload: {payload}",
+            )
 
             headers = {
                 "Authorization": f"Bearer {self.serp_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
             if method == "GET":
-                response = requests.get(f"https://api.olostep.com/v1{endpoint}", headers=headers)
+                response = requests.get(
+                    f"https://api.olostep.com/v1{endpoint}", headers=headers
+                )
             else:
-                response = requests.post(f"https://api.olostep.com/v1{endpoint}", json=payload, headers=headers)
-            
+                response = requests.post(
+                    f"https://api.olostep.com/v1{endpoint}",
+                    json=payload,
+                    headers=headers,
+                )
+
             response.raise_for_status()
 
-            log("debug", f"Response status for {method} request to {endpoint}: {response.status_code}")
-            
+            log(
+                "debug",
+                f"Response status for {method} request to {endpoint}: {response.status_code}",
+            )
+
             return response.json()
         except requests.exceptions.RequestException as e:
             log("error", f"Request error for {method} request to {endpoint}: {e}")
@@ -133,32 +154,33 @@ class SerpEventsGenerator(BaseEventsGenerator):
         """Extract organic links from Google search results for the given query."""
         payload = {
             "formats": ["parser_extract"],
-            "parser_extract": {
-                "parser_id": "@olostep/google-search"
-            },
+            "parser_extract": {"parser_id": "@olostep/google-search"},
             "screen_size": "desktop",
             "url_to_scrape": f"https://www.google.com/search?q={query}&gl=us&hl=en",
-            "wait_before_scraping": 0
+            "wait_before_scraping": 0,
         }
 
         serp_response = self._request("/scrapes", method="POST", payload=payload)
-        
+
         try:
-            parsed_json_content = serp_response['result']['json_content']
-            
+            parsed_json_content = serp_response["result"]["json_content"]
+
             if isinstance(parsed_json_content, str):
                 parsed_json_content = json.loads(parsed_json_content)
             else:
-                log("warn", "Parsed json_content response is not a string, attempting to validate as dict.")
-                
+                log(
+                    "warn",
+                    "Parsed json_content response is not a string, attempting to validate as dict.",
+                )
+
             organic_links = [
-                OrganicLink(**item) for item in parsed_json_content.get('organic', [])
+                OrganicLink(**item) for item in parsed_json_content.get("organic", [])
             ]
 
             filtered_domains = {"facebook", "wikipedia"}
-            
+
             filtered_links = []
-            
+
             for link in organic_links:
                 if link.link:
                     domain = tldextract.extract(link.link).domain
@@ -182,28 +204,23 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
     def start_batch(self, organic_links: List[OrganicLink]) -> Dict[str, str]:
         """
-            start batch processing for given organic links and return
-            a mapping of custom_id to retrieve_id.
+        start batch processing for given organic links and return
+        a mapping of custom_id to retrieve_id.
         """
         payload = {
             "items": [],
             "country": "US",
             "formats": ["parser_extract"],
-            "parser_extract": {
-                "parser_id": "@olostep/google-search"
-            }, 
+            "parser_extract": {"parser_id": "@olostep/google-search"},
             "max_retries": 1,
-            "retry_delay": 3000
+            "retry_delay": 3000,
         }
 
         # form payload for batch request, mapping each organic link to a custom_id denoted by its index
         for i, link in enumerate(organic_links):
             if link.link:
-                payload["items"].append({
-                    "custom_id": str(i),
-                    "url": link.link
-                })
-                
+                payload["items"].append({"custom_id": str(i), "url": link.link})
+
         serp_response = self._request("/batches", "POST", payload)
 
         batch_id = serp_response.get("id", None)
@@ -215,34 +232,44 @@ class SerpEventsGenerator(BaseEventsGenerator):
         self.poll_batch_status(batch_id)
 
         serp_response = self._request(f"/batches/{batch_id}/items", "GET")
-        
+
         try:
-            id_mapping = {item['custom_id']: item['retrieve_id'] for item in serp_response['items']}
-        
-        except KeyError as e: 
+            id_mapping = {
+                item["custom_id"]: item["retrieve_id"]
+                for item in serp_response["items"]
+            }
+
+        except KeyError as e:
             log("error", f"Key error mapping retrieve_ids: {str(e)}")
             raise
-        
+
         if not id_mapping:
             raise Exception("Could not form valid id_mapping.")
-        
+
         log("debug", f"ID Mapping: {id_mapping}")
         return id_mapping
 
-    def get_events(self, organic_links: List[OrganicLink], id_mapping: Dict[str, str], zip_code: str, city_state: str | None = None) -> str | None:
+    def get_events(
+        self,
+        organic_links: List[OrganicLink],
+        id_mapping: Dict[str, str],
+        zip_code: str,
+        city_state: str | None = None,
+    ) -> str | None:
         def _get_content(retrieve_id: str) -> Dict[str, str]:
             """get the content for a given link position and retrieve id"""
 
-            serp_response = self._request(f"/retrieve?retrieve_id={retrieve_id}&formats=markdown", "GET")
+            serp_response = self._request(
+                f"/retrieve?retrieve_id={retrieve_id}&formats=markdown", "GET"
+            )
 
             markdown_content = serp_response.get("markdown_content", None)
             if not markdown_content:
                 raise Exception(f"No markdown_content for retrieve_id: {retrieve_id}")
-                                    
+
             return markdown_content
-            
-        prompt = (
-            f"""You are an expert in aggregating community events, specializing in identifying relevant activities for zipcode {zip_code} {city_state if city_state else ""} between {self.start_date} and {self.end_date}.
+
+        prompt = f"""You are an expert in aggregating community events, specializing in identifying relevant activities for zipcode {zip_code} {city_state if city_state else ""} between {self.start_date} and {self.end_date}.
 
             **Objective:**  
             Extract event details (title, date, description, link) from the provided messages, focusing on engaging events such as networking meetups, educational opportunities, car shows, outdoor festivals, art exhibitions, and family-friendly activities.
@@ -277,43 +304,30 @@ class SerpEventsGenerator(BaseEventsGenerator):
             **Schema:**  
                 Each event should be structured as a JSON object following this schema: {json.dumps(Event.model_json_schema())}  
             """
-        )
 
-        messages = [
-            {"role": "assistant", "content": prompt}
-        ]
+        messages = [{"role": "assistant", "content": prompt}]
 
         for i, link in enumerate(organic_links):
             retrieve_id = id_mapping.get(str(i))
             if retrieve_id:
                 content = _get_content(retrieve_id)
                 if content:
-                    data = {
-                        "title": link.title,
-                        "link": link.link,
-                        "content": content
-                    }
-                    messages.append({
-                        "role": "user",
-                        "content": json.dumps(data)  
-                    })
-        
+                    data = {"title": link.title, "link": link.link, "content": content}
+                    messages.append({"role": "user", "content": json.dumps(data)})
+
         log("trace", "Sending messages to Anthropic for processing.")
-        
+
         message = self.anthropic_client.messages.create(
             model="claude-3-7-sonnet-20250219",
             messages=messages,
             temperature=1,
             max_tokens=4000,
-            thinking={
-                "type": "enabled",
-                "budget_tokens": 2000            
-            },
+            thinking={"type": "enabled", "budget_tokens": 2000},
         )
 
         log("debug", f"Anthropic response with thinking: {message}")
 
-        content = message.content  
+        content = message.content
         if content:
             for block in content:
                 if block.type == "text":
@@ -322,16 +336,18 @@ class SerpEventsGenerator(BaseEventsGenerator):
                     return event_text
             log("error", "No text block found in Anthropic response.")
             raise Exception("No text block found in Anthropic response.")
-        
+
         else:
             log("error", "No content returned from Anthropic.")
             raise Exception("No content returned from Anthropic.")
 
-    def poll_batch_status(self, batch_id: str, max_retries: int = 5, initial_wait_time: int = 15) -> None: 
+    def poll_batch_status(
+        self, batch_id: str, max_retries: int = 5, initial_wait_time: int = 15
+    ) -> None:
         """
-        Polls the batch status until it is completed. Implemented with an initial wait time, 
+        Polls the batch status until it is completed. Implemented with an initial wait time,
         then poll every 10 seconds until the batch is completed or the maximum retries are reached.
-        
+
         Mainly went with this approach due to the batch processing time taking around 15-30 seconds on average.
 
         Args:
@@ -357,8 +373,11 @@ class SerpEventsGenerator(BaseEventsGenerator):
                 if status_response.get("status") == "completed":
                     log("trace", f"Batch {batch_id} completed successfully.")
                     return
-                
-                log("debug", f"Batch {batch_id} status: {status_response.get('status')}. Retrying...")
+
+                log(
+                    "debug",
+                    f"Batch {batch_id} status: {status_response.get('status')}. Retrying...",
+                )
             except Exception as e:
                 log("error", f"Error while polling: {e}")
 
@@ -366,18 +385,20 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
             log("debug", f"Waiting for {wait_time} seconds before retrying...")
             time.sleep(wait_time)
-            wait_time = 10 # poll every 10 seconds after the first attempt waits for initial_wait_time
+            wait_time = 10  # poll every 10 seconds after the first attempt waits for initial_wait_time
 
         raise BatchNotCompleteError(batch_id)
-   
-    def summary_prompt(self, events: list[Event], zip_code: str, city_state: str | None = None) -> tuple[str, str]:
+
+    def summary_prompt(
+        self, events: list[Event], zip_code: str, city_state: str | None = None
+    ) -> tuple[str, str]:
         """
         Generate the prompt for summary generation.
-        
+
         Args:
             events: List of events to summarize.
             zip_code: The zip code the events are for.
-            
+
         Returns:
             A tuple of (system prompt, user prompt).
         """
@@ -407,18 +428,22 @@ class SerpEventsGenerator(BaseEventsGenerator):
         """
         return system, user
 
-    def generate_summary(self, events: list[Event], zip_code: str, city_state: str | None = None) -> str:
+    def generate_summary(
+        self, events: list[Event], zip_code: str, city_state: str | None = None
+    ) -> str:
         """Generate a summary of the events."""
         try:
-            system, user = self.summary_prompt(events=events, zip_code=zip_code, city_state=city_state)        
-            
+            system, user = self.summary_prompt(
+                events=events, zip_code=zip_code, city_state=city_state
+            )
+
             log("trace", "Generating summary with Anthropic.")
-            
+
             messages = [
                 {"role": "assistant", "content": system},
-                {"role": "user", "content": user}
+                {"role": "user", "content": user},
             ]
-            
+
             message = self.anthropic_client.messages.create(
                 model="claude-3-7-sonnet-20250219",
                 messages=messages,
@@ -435,13 +460,17 @@ class SerpEventsGenerator(BaseEventsGenerator):
                         return event_text
                 log("error", "No text block found in Anthropic response.")
                 raise Exception("No text block found in Anthropic response.")
-            
+
             else:
                 log("error", "No content returned from Anthropic.")
                 raise Exception("No content returned from Anthropic.")
-            
+
         except APIStatusError as e:
-            log("error", f"APIStatusError generating summary with Anthropic: {e}", exc_info=e)
+            log(
+                "error",
+                f"APIStatusError generating summary with Anthropic: {e}",
+                exc_info=e,
+            )
             raise
         except Exception as e:
             log("error", f"Error generating summary: {e}", exc_info=e)
@@ -451,13 +480,13 @@ class SerpEventsGenerator(BaseEventsGenerator):
     def _generate_events(self, zip_code: str) -> EventsResponse:
         """
         Internal method to process the event generation pipeline.
-        
+
         Args:
             zip_code (str): The zip code to generate events for.
-            
+
         Returns:
             EventsResponse: The generated events and summary.
-            
+
         Raises:
             NoEventsFoundError: If no events could be found for the zip code.
             requests.exceptions.RequestException: If there is an issue with the API request.
@@ -467,33 +496,55 @@ class SerpEventsGenerator(BaseEventsGenerator):
         try:
             city_state = self.get_city_state(zip_code)
 
-            links: List[OrganicLink] = self.extract_links(f"Events in {zip_code} {city_state if city_state else ''}")
-       
+            links: List[OrganicLink] = self.extract_links(
+                f"Events in {zip_code} {city_state if city_state else ''}"
+            )
+
             id_mappings = self.start_batch(links)
             response = self.get_events(links, id_mappings, zip_code, city_state)
 
             response = extract_json_array(response)
-            events = [Event(title=event['title'], date=event['date'], description=event['description'], link=event['link']) for event in response]
-            
+            events = [
+                Event(
+                    title=event["title"],
+                    date=event["date"],
+                    description=event["description"],
+                    link=event["link"],
+                )
+                for event in response
+            ]
+
             if not events:
                 log("error", f"No events generated for {zip_code}.")
-                raise NoEventsFoundError(f"No events found for {zip_code} between {self.start_date} and {self.end_date}.")
-            
-            log("debug", f"Generated {len(events)} for {zip_code} between {self.start_date} and {self.end_date}")
+                raise NoEventsFoundError(
+                    f"No events found for {zip_code} between {self.start_date} and {self.end_date}."
+                )
+
+            log(
+                "debug",
+                f"Generated {len(events)} for {zip_code} between {self.start_date} and {self.end_date}",
+            )
 
             summary = self.generate_summary(events, zip_code, city_state)
             summary_dict = extract_json_only(summary)
-            
-            log("debug", f"Events and summary generated successfully. Events: {events}, Summary: {summary_dict['summary']}")
-            return EventsResponse(events=events, summary=summary_dict['summary'])
-        
+
+            log(
+                "debug",
+                f"Events and summary generated successfully. Events: {events}, Summary: {summary_dict['summary']}",
+            )
+            return EventsResponse(events=events, summary=summary_dict["summary"])
+
         except NoEventsFoundError:
             raise
         except requests.exceptions.RequestException as e:
             log("error", f"RequestException in _generate_events: {e}", exc_info=e)
             raise
         except APIStatusError as e:
-            log("error", f"Anthropic APIStatusError in _generate_events: {e}", exc_info=e)
+            log(
+                "error",
+                f"Anthropic APIStatusError in _generate_events: {e}",
+                exc_info=e,
+            )
             raise
         except NoValidJSONError as e:
             log("error", f"NoValidJSONError in _generate_events: {e}", exc_info=e)
@@ -511,14 +562,20 @@ class SerpEventsGenerator(BaseEventsGenerator):
     def _generate(self, zip_code: str) -> EventsResponse:
         """
         Internal method to generate events for a given zip code.
-        
+
         Args:
             zip_code: The zip code to generate events for.
-            
+
         Returns:
             EventsResponse: The generated events and summary.
         """
-        if not isinstance(zip_code, str) or not zip_code.isnumeric() or len(zip_code) != 5:
-            raise ValueError("Invalid ZIP code. ZIP code must be a 5-digit numeric string.")
+        if (
+            not isinstance(zip_code, str)
+            or not zip_code.isnumeric()
+            or len(zip_code) != 5
+        ):
+            raise ValueError(
+                "Invalid ZIP code. ZIP code must be a 5-digit numeric string."
+            )
 
         return self._generate_events(zip_code)
