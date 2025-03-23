@@ -60,7 +60,6 @@ class SerpEventsGenerator(BaseEventsGenerator):
         self.start_date = start.strftime("%B %d, %Y")
         self.end_date = end.strftime("%B %d, %Y")
 
-
     def get_city_state(self, zip_code: str) -> str | None:
         """
         Get the city and state for a given zip code.
@@ -107,7 +106,6 @@ class SerpEventsGenerator(BaseEventsGenerator):
             log("warn", f"Error getting city/state for zip code {zip_code}: {e}")
             return None
 
-
     def _request(self, endpoint: str, method: str = "GET", payload: dict = None):
         """Make a request to the specified endpoint for olostep api with the given method and payload."""
         try:
@@ -131,10 +129,8 @@ class SerpEventsGenerator(BaseEventsGenerator):
             log("error", f"Request error for {method} request to {endpoint}: {e}")
             raise
 
-
     def extract_links(self, query: str, n_links: int = 5) -> List[OrganicLink]:
         """Extract organic links from Google search results for the given query."""
-
         payload = {
             "formats": ["parser_extract"],
             "parser_extract": {
@@ -184,13 +180,11 @@ class SerpEventsGenerator(BaseEventsGenerator):
             log("error", f"JSON decode error extracting links: {str(e)}")
             raise
 
-
     def start_batch(self, organic_links: List[OrganicLink]) -> Dict[str, str]:
         """
             start batch processing for given organic links and return
             a mapping of custom_id to retrieve_id.
         """
-
         payload = {
             "items": [],
             "country": "US",
@@ -235,9 +229,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
         log("debug", f"ID Mapping: {id_mapping}")
         return id_mapping
 
-
     def get_events(self, organic_links: List[OrganicLink], id_mapping: Dict[str, str], zip_code: str, city_state: str | None = None) -> str | None:
-
         def _get_content(retrieve_id: str) -> Dict[str, str]:
             """get the content for a given link position and retrieve id"""
 
@@ -334,7 +326,6 @@ class SerpEventsGenerator(BaseEventsGenerator):
         else:
             log("error", "No content returned from Anthropic.")
             raise Exception("No content returned from Anthropic.")
-        
 
     def poll_batch_status(self, batch_id: str, max_retries: int = 5, initial_wait_time: int = 15) -> None: 
         """
@@ -379,7 +370,6 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
         raise BatchNotCompleteError(batch_id)
    
-   
     def summary_prompt(self, events: list[Event], zip_code: str, city_state: str | None = None) -> tuple[str, str]:
         """
         Generate the prompt for summary generation.
@@ -415,9 +405,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             such as cultural aspects, holiday-specific activities, or any notable attractions during this period.
             If there are any major holidays (e.g., Christmas, New Year's), mention how the local events and community activities reflect these.
         """
-
         return system, user
-
 
     def generate_summary(self, events: list[Event], zip_code: str, city_state: str | None = None) -> str:
         """Generate a summary of the events."""
@@ -458,7 +446,6 @@ class SerpEventsGenerator(BaseEventsGenerator):
         except Exception as e:
             log("error", f"Error generating summary: {e}", exc_info=e)
             raise
-
 
     @retry_generation
     def _generate_events(self, zip_code: str) -> EventsResponse:
@@ -521,7 +508,6 @@ class SerpEventsGenerator(BaseEventsGenerator):
             log("error", f"Error in _generate_events: {e}", exc_info=e)
             raise
 
-
     def _generate(self, zip_code: str) -> EventsResponse:
         """
         Internal method to generate events for a given zip code.
@@ -536,4 +522,3 @@ class SerpEventsGenerator(BaseEventsGenerator):
             raise ValueError("Invalid ZIP code. ZIP code must be a 5-digit numeric string.")
 
         return self._generate_events(zip_code)
-
