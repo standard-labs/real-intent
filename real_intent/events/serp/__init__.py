@@ -1,13 +1,12 @@
 """Implementation of event generation using olostep's serp api."""
+from anthropic import Anthropic, APIStatusError
+import requests
+import tldextract
 
 import json
-import requests
 import datetime as dt
 import time
 from typing import List, Dict
-import tldextract
-
-from anthropic import Anthropic, APIStatusError
 
 from real_intent.events.base import BaseEventsGenerator
 from real_intent.internal_logging import log
