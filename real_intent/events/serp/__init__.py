@@ -198,7 +198,9 @@ class SerpEventsGenerator(BaseEventsGenerator):
             "formats": ["parser_extract"],
             "parser_extract": {
                 "parser_id": "@olostep/google-search"
-            }
+            }, 
+            "max_retries": 1,
+            "retry_delay": 3000
         }
 
         # form payload for batch request, mapping each organic link to a custom_id denoted by its index
