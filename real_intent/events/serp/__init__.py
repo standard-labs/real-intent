@@ -342,25 +342,26 @@ class SerpEventsGenerator(BaseEventsGenerator):
             raise Exception("No content returned from Anthropic.")
 
     def poll_batch_status(
-        self, batch_id: str, initial_wait_time: int = 5
+        self, batch_id: str, initial_wait_time: int = 5, max_retries: int = 100
     ) -> None:
         """
-        Polls the batch status until it is completed. Implemented with an initial wait time,
-        then poll every 3 seconds until the batch is completed.
-
-        Mainly went with this approach due to the batch processing time taking around 15-30 seconds on average.
-
+        Polls the batch status until it is completed or max_retries is reached.
+        
         Args:
             batch_id (str): The batch ID to check.
             initial_wait_time (int): Initial wait time (in seconds) before polling again.
-
+            max_retries (int): Maximum number of polling attempts before giving up.
+                Default is 100, which with 3-second intervals gives ~5 minutes of polling.
+                
         Returns:
             None: Returns when batch is completed.
+            
+        Raises:
+            Exception: If max retries are reached without completion.
         """
         wait_time = initial_wait_time
-        retries = 0
-
-        while True:
+        
+        for retry in range(max_retries):
             try:
                 # Poll the batch status
                 status_response = self._request(f"/batches/{batch_id}", "GET")
@@ -372,16 +373,18 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
                 log(
                     "debug",
-                    f"Batch {batch_id} status: {status_response.get('status')}. Retrying...",
+                    f"Batch {batch_id} status: {status_response.get('status')}. Retry {retry+1}/{max_retries}...",
                 )
             except Exception as e:
-                log("error", f"Error while polling: {e}")
-
-            retries += 1
-
+                log("error", f"Error while polling (attempt {retry+1}/{max_retries}): {e}")
+            
             log("debug", f"Waiting for {wait_time} seconds before retrying...")
             time.sleep(wait_time)
-            wait_time = 3  # poll every 3 seconds after the first attempt waits for initial_wait_time
+            wait_time = 3  # poll every 3 seconds after the first attempt
+        
+        # If we've reached here, we've exceeded max_retries
+        log("error", f"Max retries ({max_retries}) reached for batch {batch_id}")
+        raise Exception(f"Batch {batch_id} did not complete after {max_retries} polling attempts")
 
 
     def summary_prompt(
