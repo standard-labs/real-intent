@@ -346,7 +346,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
     ) -> None:
         """
         Polls the batch status until it is completed. Implemented with an initial wait time,
-        then poll every 10 seconds until the batch is completed or the maximum retries are reached.
+        then poll every 3 seconds until the batch is completed.
 
         Mainly went with this approach due to the batch processing time taking around 15-30 seconds on average.
 
@@ -546,9 +546,6 @@ class SerpEventsGenerator(BaseEventsGenerator):
             raise
         except NoLinksFoundError as e:
             log("error", f"NoLinksFoundError in _generate_events: {e}", exc_info=e)
-            raise
-        except BatchNotCompleteError as e:
-            log("error", f"BatchNotCompleteError in _generate_events: {e}", exc_info=e)
             raise
         except Exception as e:
             log("error", f"Error in _generate_events: {e}", exc_info=e)
