@@ -20,7 +20,6 @@ from real_intent.events.errors import (
     NoValidJSONError,
     NoEventsFoundError,
     NoLinksFoundError,
-    BatchNotCompleteError,
 )
 
 
@@ -343,7 +342,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             raise Exception("No content returned from Anthropic.")
 
     def poll_batch_status(
-        self, batch_id: str, max_retries: int = 5, initial_wait_time: int = 15
+        self, batch_id: str, initial_wait_time: int = 5
     ) -> None:
         """
         Polls the batch status until it is completed. Implemented with an initial wait time,
@@ -353,19 +352,15 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
         Args:
             batch_id (str): The batch ID to check.
-            max_retries (int): Maximum number of retries before raising an error.
             initial_wait_time (int): Initial wait time (in seconds) before polling again.
 
         Returns:
             None: Returns when batch is completed.
-
-        Raises:
-            BatchNotCompleteError: If the polling fails after the maximum retries.
         """
         wait_time = initial_wait_time
         retries = 0
 
-        while retries < max_retries:
+        while True:
             try:
                 # Poll the batch status
                 status_response = self._request(f"/batches/{batch_id}", "GET")
@@ -386,9 +381,8 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
             log("debug", f"Waiting for {wait_time} seconds before retrying...")
             time.sleep(wait_time)
-            wait_time = 10  # poll every 10 seconds after the first attempt waits for initial_wait_time
+            wait_time = 3  # poll every 3 seconds after the first attempt waits for initial_wait_time
 
-        raise BatchNotCompleteError(batch_id)
 
     def summary_prompt(
         self, events: list[Event], zip_code: str, city_state: str | None = None

@@ -20,10 +20,3 @@ class NoLinksFoundError(Exception):
 
     def __init__(self, query: str):
         super().__init__(f"No links for query: {query}")
-       
-        
-class BatchNotCompleteError(Exception):
-    """Exception raised when a batch of events is not complete."""
-
-    def __init__(self, batch_id: str):
-        super().__init__(f"Batch with ID {batch_id} is not complete.")
