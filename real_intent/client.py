@@ -150,7 +150,7 @@ class BigDBMClient:
 
         return config_dates
 
-    def create_job(self, iab_job: IABJob) -> int:
+    def create_job(self, iab_job: IABJob, only_pii_matches: bool = True) -> int:
         """
         Creates IAB job and returns an integer of the job number.
         Does not wait for the job to finish.
@@ -167,7 +167,8 @@ class BigDBMClient:
             json={
                 "StartDate": config_dates.start_date,
                 "EndDate": config_dates.end_date,
-                **iab_job.as_payload()
+                **iab_job.as_payload(),
+                "ExistsInConsumer": only_pii_matches
             }
         )
 
@@ -201,12 +202,12 @@ class BigDBMClient:
 
         return
 
-    def create_and_wait(self, iab_job: IABJob) -> int:
+    def create_and_wait(self, iab_job: IABJob, only_pii_matches: bool = True) -> int:
         """
         Create an intent data job and wait until it has processed.
         Returns an (int) of the listQueueId for pulling the results.
         """
-        list_queue_id: int = self.create_job(iab_job)
+        list_queue_id: int = self.create_job(iab_job, only_pii_matches=only_pii_matches)
 
         with log_span(f"Waiting for list {list_queue_id} to finish processing.", _level="trace"):
             self.wait_until_completion(list_queue_id)
