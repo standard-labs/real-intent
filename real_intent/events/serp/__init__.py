@@ -265,6 +265,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
             markdown_content = serp_response.get("markdown_content", None)
             if not markdown_content:
+                log("error", f"No markdown_content for retrieve_id: {retrieve_id}")
                 raise Exception(f"No markdown_content for retrieve_id: {retrieve_id}")
 
             return markdown_content
@@ -445,7 +446,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             ]
 
             message = self.anthropic_client.messages.create(
-                model="claude-3-7-sonnet-20250219",
+                model="claude-3-5-haiku-20241022",
                 messages=messages,
                 temperature=1,
                 max_tokens=1000,
