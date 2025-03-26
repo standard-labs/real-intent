@@ -248,6 +248,34 @@ class SerpEventsGenerator(BaseEventsGenerator):
         log("debug", f"ID Mapping: {id_mapping}")
         return id_mapping
 
+    def _extract_text_from_anthropic_response(self, message, context: str = "") -> str:
+        """
+        Extract text content from an Anthropic API response.
+        
+        Args:
+            message: The Anthropic API response message object
+            context: Optional context string for logging (e.g., "summary" or "events")
+            
+        Returns:
+            str: The extracted text content
+            
+        Raises:
+            Exception: If no text content could be extracted
+        """
+        content = message.content
+        if content:
+            for block in content:
+                if block.type == "text":
+                    text = block.text
+                    log_context = f" {context}" if context else ""
+                    log("trace", f"Anthropic{log_context} response: {text}")
+                    return text
+            log("error", "No text block found in Anthropic response.")
+            raise Exception("No text block found in Anthropic response.")
+        else:
+            log("error", "No content returned from Anthropic.")
+            raise Exception("No content returned from Anthropic.")
+
     def get_events(
         self,
         organic_links: List[OrganicLink],
@@ -327,19 +355,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
         log("debug", f"Anthropic response with thinking: {message}")
 
-        content = message.content
-        if content:
-            for block in content:
-                if block.type == "text":
-                    event_text = block.text
-                    log("trace", f"Anthropic response: {event_text}")
-                    return event_text
-            log("error", "No text block found in Anthropic response.")
-            raise Exception("No text block found in Anthropic response.")
-
-        else:
-            log("error", "No content returned from Anthropic.")
-            raise Exception("No content returned from Anthropic.")
+        return self._extract_text_from_anthropic_response(message, "events")
 
     def poll_batch_status(
         self, batch_id: str, initial_wait_time: int = 5, max_retries: int = 100
@@ -449,19 +465,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
                 max_tokens=1000,
             )
 
-            content = message.content
-            if content:
-                for block in content:
-                    if block.type == "text":
-                        event_text = block.text
-                        log("trace", f"Anthropic summary response: {event_text}")
-                        return event_text
-                log("error", "No text block found in Anthropic response.")
-                raise Exception("No text block found in Anthropic response.")
-
-            else:
-                log("error", "No content returned from Anthropic.")
-                raise Exception("No content returned from Anthropic.")
+            return self._extract_text_from_anthropic_response(message, "summary")
 
         except APIStatusError as e:
             log(
