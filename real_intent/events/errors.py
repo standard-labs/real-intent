@@ -13,3 +13,10 @@ class NoEventsFoundError(Exception):
 
     def __init__(self, zip_code: str):
         super().__init__(f"No events found for zip code {zip_code}")
+
+
+class NoLinksFoundError(Exception):
+    """Exception raised when no links are found in the response."""
+
+    def __init__(self, query: str):
+        super().__init__(f"No links for query: {query}")
