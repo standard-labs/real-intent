@@ -87,7 +87,7 @@ class PerLeadInsightGenerator(BaseAnalyzer):
         @retry_with_backoff()
         def generate_insight():
             return self.openai_client.beta.chat.completions.parse(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 messages=[
                     {
                         "role": "system",
