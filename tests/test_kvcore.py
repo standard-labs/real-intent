@@ -1,5 +1,6 @@
 """Basic kvCORE tests, without actually integrating."""
 from real_intent.deliver.kvcore import KVCoreDeliverer
+from real_intent.schemas import MD5WithPII, PII
 
 
 def test_kvcore_email_body(sample_pii_md5s) -> None:
@@ -28,3 +29,69 @@ def test_kvcore_email_body(sample_pii_md5s) -> None:
         assert pii.state.strip() in email_body, "State should be in agent notes"
     if pii.zip_code.strip():
         assert pii.zip_code.strip() in email_body, "Zip code should be in agent notes"
+
+
+def test_lead_deal_type() -> None:
+    """Test the deal type prediction functionality."""
+    deliverer = KVCoreDeliverer("", "", "", "")
+    
+    # Create test cases for different sentence types
+    pii = PII.create_fake(seed=42)
+    
+    # Test seller detection
+    seller_md5 = MD5WithPII(
+        md5="seller123",
+        sentences=["Sellers", "Some other sentence"],
+        pii=pii
+    )
+    assert deliverer._lead_deal_type(seller_md5) == "Seller", "Should identify as Seller"
+    
+    # Test pre-mover detection (also a seller)
+    pre_mover_md5 = MD5WithPII(
+        md5="premover123",
+        sentences=["Pre-Movers", "Some other sentence"],
+        pii=pii
+    )
+    assert deliverer._lead_deal_type(pre_mover_md5) == "Seller", "Should identify as Seller"
+    
+    # Test buyer detection
+    buyer_md5 = MD5WithPII(
+        md5="buyer123",
+        sentences=["Mortgages", "Some other sentence"],
+        pii=pii
+    )
+    assert deliverer._lead_deal_type(buyer_md5) == "Buyer", "Should identify as Buyer"
+    
+    # Test no match
+    unknown_md5 = MD5WithPII(
+        md5="unknown123",
+        sentences=["Some random sentence", "Another random sentence"],
+        pii=pii
+    )
+    assert deliverer._lead_deal_type(unknown_md5) == "", "Should return empty string for no match"
+
+
+def test_deal_type_in_email_body() -> None:
+    """Test that deal type is included in the email body when it can be determined."""
+    deliverer = KVCoreDeliverer("", "", "", "")
+    
+    # Create a test case with a seller intent
+    pii = PII.create_fake(seed=42)
+    seller_md5 = MD5WithPII(
+        md5="seller123",
+        sentences=["Sellers"],
+        pii=pii
+    )
+    
+    email_body = deliverer._email_body(seller_md5)
+    assert "Deal Type: Seller" in email_body, "Deal Type should be in email body for sellers"
+    
+    # Create a test case with no deal type
+    unknown_md5 = MD5WithPII(
+        md5="unknown123",
+        sentences=["Some random sentence"],
+        pii=pii
+    )
+    
+    email_body = deliverer._email_body(unknown_md5)
+    assert "Deal Type:" not in email_body, "Deal Type should not be in email body when not determined"
