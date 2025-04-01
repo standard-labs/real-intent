@@ -128,6 +128,24 @@ class KVCoreDeliverer(BaseOutputDeliverer):
             attrs["Address"] = address
 
         return "\n".join([f"{k}: {v}" for k, v in attrs.items()])
+    
+    def _lead_deal_type(self, pii_md5: MD5WithPII) -> str:
+        """Calculated guess if the lead is a buyer or a seller."""
+        seller_sentence_matches: set[str] = {
+            "Sellers", "Pre-Movers"
+        }
+
+        buyer_sentence_matches: set[str] = {
+            "Mortgages"
+        }
+
+        if any([sentence in seller_sentence_matches for sentence in pii_md5.sentences]):
+            return "Seller"
+
+        if any([sentence in buyer_sentence_matches for sentence in pii_md5.sentences]):
+            return "Buyer"
+
+        return ""
 
     def _email_body(self, pii_md5: MD5WithPII) -> str:
         """Create the email body."""
@@ -155,6 +173,10 @@ class KVCoreDeliverer(BaseOutputDeliverer):
         # Add zip code if available
         if pii_md5.pii.zip_code:
             email_body += f"\nZipcode: {pii_md5.pii.zip_code}"
+
+        # Add deal type if matched
+        if (deal_type := self._lead_deal_type(pii_md5)):
+            email_body += f"\nDeal Type: {deal_type}"
 
         # Add tag if specified
         if self.tag:
