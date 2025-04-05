@@ -135,7 +135,7 @@ def generate_pdf_buffer(events_response: EventsResponse) -> BytesIO:
     normal_style.leading = 12
 
     # Summary
-    MAX_CHARS = 600
+    MAX_CHARS = 650
     truncated_summary = events_response.summary[:MAX_CHARS] + "..." if len(events_response.summary) > MAX_CHARS else events_response.summary
     summary_paragraph = Paragraph(truncated_summary, normal_style)
     paragraph_width = width - 200
