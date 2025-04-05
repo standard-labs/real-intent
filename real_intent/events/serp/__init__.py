@@ -149,7 +149,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             log("error", f"Request error for {method} request to {endpoint}: {e}")
             raise
 
-    def extract_links(self, query: str, n_links: int = 5) -> List[OrganicLink]:
+    def extract_links(self, query: str, n_links: int = 2) -> List[OrganicLink]:
         """Extract organic links from Google search results for the given query."""
         payload = {
             "formats": ["parser_extract"],
