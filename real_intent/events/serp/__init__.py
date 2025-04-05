@@ -149,7 +149,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             log("error", f"Request error for {method} request to {endpoint}: {e}")
             raise
 
-    def extract_links(self, query: str, n_links: int = 2) -> List[OrganicLink]:
+    def extract_links(self, query: str, n_links: int = 3) -> List[OrganicLink]:
         """Extract organic links from Google search results for the given query."""
         payload = {
             "formats": ["parser_extract"],
@@ -283,7 +283,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
         zip_code: str,
         city_state: str | None = None,
     ) -> str | None:
-        def _get_content(retrieve_id: str) -> Dict[str, str]:
+        def _get_content(retrieve_id: str, max_chars: int = 10000) -> Dict[str, str]:
             """get the content for a given link position and retrieve id"""
 
             serp_response = self._request(
@@ -295,7 +295,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
                 log("error", f"No markdown_content for retrieve_id: {retrieve_id}")
                 raise Exception(f"No markdown_content for retrieve_id: {retrieve_id}")
 
-            return markdown_content
+            return str(markdown_content).strip()[:max_chars]
 
         prompt = f"""You are an expert in aggregating community events, specializing in identifying relevant activities for zipcode {zip_code} {city_state if city_state else ""} between {self.start_date} and {self.end_date}.
 
