@@ -422,19 +422,19 @@ class SerpEventsGenerator(BaseEventsGenerator):
             and date range. Your task is to summarize the events in a concise and informative manner, highlighting the 
             key details and providing a general overview of the local community during that period. The summary should also include 
             weather conditions and any other relevant local insights. Your response should be structured in valid JSON format, 
-            adhering strictly to the user's instructions.
+            adhering strictly to the user's instructions. Provide a maximum of 4 sentences in your summary and less than 600 characters.
             """
 
         user = f"""
             Summarize the events happening in {zip_code} {city_state if city_state else ""} between {self.start_date} and {self.end_date} provided to you here.
             \n{events}\n
             Your summary should be informative and engaging, providing a brief overview of the events, the local community,
-            and any other relevant details such as weather conditions. Provide a maximum of 5 sentences! Make sure to include the zipcode and the city/state in your summary.
+            and any other relevant details such as weather conditions. Provide a maximum of 4 sentences and less than 600 characters.! Make sure to include the zipcode and the city/state in your summary.
             
             You must only include the key events and highlights from the list provided. Do not include any additional events.
             
             It should be structured in valid JSON format with one top level key called "summary" that contains a string
-            summarizing the events and the local community during the specified period with a maximum of 5 sentences. 
+            summarizing the events and the local community during the specified period with a maximum of 4 sentences and less than 600 characters.. 
             The summary should be a detailed paragraph that provides an overview of the expected weather conditions for the week, {self.start_date} to {self.end_date},
             and highlights the key events happening in {zip_code} {city_state if city_state else ""} from the list provided. Include any relevant insights about the local community, 
             such as cultural aspects, holiday-specific activities, or any notable attractions during this period.
