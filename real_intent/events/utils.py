@@ -163,7 +163,7 @@ def generate_pdf_buffer(events_response: EventsResponse) -> BytesIO:
         c.setFillColor(colors.green) 
         c.setFont("Helvetica", 12)
         c.drawString(100, y_position, f"Date: {event.date}")
-        y_position -= 20
+        y_position -= 10
 
         paragraph = Paragraph(event.description, normal_style)
         paragraph_width = width - 200
