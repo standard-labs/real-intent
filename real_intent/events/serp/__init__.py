@@ -283,7 +283,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
         zip_code: str,
         city_state: str | None = None,
     ) -> str | None:
-        def _get_content(retrieve_id: str, max_chars: int = 10000) -> Dict[str, str]:
+        def _get_content(retrieve_id: str, max_chars: int = 8000) -> Dict[str, str]:
             """get the content for a given link position and retrieve id"""
 
             serp_response = self._request(
