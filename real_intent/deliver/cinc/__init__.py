@@ -21,7 +21,7 @@ class CINCProDeliverer(BaseOutputDeliverer):
             system: str,
             tags: list[str] | None = None,
             add_zip_tags: bool = True,
-            base_url: str = "https://public.cincapi.com",
+            base_url: str = "https://public.cincapi.com/v2/site",
             event_type: EventType = EventType.REGISTRATION,
             n_threads: int = 1,
             per_lead_insights: dict[str, str] | None = None
@@ -68,7 +68,7 @@ class CINCProDeliverer(BaseOutputDeliverer):
             dict: A dictionary containing the necessary headers for API requests.
         """
         return {
-            "Authorization": f"Bearer {self.api_key}", # TODO: update headers
+            "Authorization": f"{self.api_key}",
             "Content-Type": "application/json",
         }
     
@@ -80,7 +80,14 @@ class CINCProDeliverer(BaseOutputDeliverer):
         Returns:
             bool: True if the credentials are valid, False otherwise.
         """
-        return True # TODO: implement API credentials verification
+        
+        return True 
+        response = requests.get(
+            f"{self.base_url}/me",
+            headers=self.api_headers
+        )
+
+        return response.ok
 
     @rate_limited(crm="CINCPro")
     def _verify_account_active(self) -> bool:
@@ -154,7 +161,35 @@ class CINCProDeliverer(BaseOutputDeliverer):
         """
         log("trace", f"Preparing event data for MD5: {md5_with_pii.md5}, first_name: {md5_with_pii.pii.first_name}, last_name: {md5_with_pii.pii.last_name}")
         
-        # Prepare sentences for description
+        # Prepare contact info
+        contact_info: dict[str, Any] = {}
+        
+        contact_info["first_name"] = md5_with_pii.pii.first_name or ""
+        contact_info["last_name"] = md5_with_pii.pii.last_name or ""
+        
+        if md5_with_pii.pii.emails:
+            contact_info["email"] = md5_with_pii.pii.emails[0]
+            contact_info["is_validated_email"] = True
+        
+        if md5_with_pii.pii.mobile_phones:
+            phone_numbers: dict[str, str | None] = {"cell_phone": None, "home_phone": None, "work_phone": None, "office_phone": None}
+        
+            for i, key in enumerate(phone_numbers.keys()):
+                if i < len(md5_with_pii.pii.mobile_phones):
+                    phone_numbers[key] = md5_with_pii.pii.mobile_phones[i].phone
+            contact_info["phone_numbers"] = phone_numbers
+            
+        if md5_with_pii.pii.address and md5_with_pii.pii.city and md5_with_pii.pii.state and md5_with_pii.pii.zip_code:
+            contact_info["mailing_address"] = {
+                "street": md5_with_pii.pii.address,
+                "city": md5_with_pii.pii.city,
+                "state": md5_with_pii.pii.state,
+                "postal_or_zip": md5_with_pii.pii.zip_code
+            }
+        
+        # Add Notes (Intent Sentences and Insight)
+        notes: list[dict[str, str]] = []
+
         sentences: list[str] = []
         for sentence in md5_with_pii.sentences:
             if ">" in sentence:
@@ -162,101 +197,46 @@ class CINCProDeliverer(BaseOutputDeliverer):
                 continue
             sentences.append(sentence)
         sentences_str = ", ".join(sentences)
-        
-        # Prepare event data according to CINC API schema
-        event_data: dict[str, Any] = {
-            "id": md5_with_pii.md5,
-            "firstName": md5_with_pii.pii.first_name or "",
-            "lastName": md5_with_pii.pii.last_name or "",
-            "email": md5_with_pii.pii.emails[0] if md5_with_pii.pii.emails else "",
-            "cellPhone": md5_with_pii.pii.mobile_phones[0].phone if md5_with_pii.pii.mobile_phones else "",
-        }
-        
-        details: dict[str, Any] = {
-            "source": self.system,
-            "registrationDate": {
-                "dateTime": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "timeZone": "UTC"
-            }
-        }
-         
-        # Map self.event_type to CINCPro's isBuyerLead or isSellerLead attribute
-        if self.event_type in [EventType.SELLER_INQUIRY]:
-            details["isSellerLead"] = True
-        else:
-            details["isBuyerLead"] = True
-
-        contact_info: dict[str, Any] = {}
-        
-        if md5_with_pii.pii.emails:
-            # Assign the first email again, or second if available
-            contact_info["email"] = md5_with_pii.pii.emails[1] if len(md5_with_pii.pii.emails) > 1 else md5_with_pii.pii.emails[0]
-                
-        if md5_with_pii.pii.mobile_phones:
-            # Assign phone numbers based on available quantity
-            if len(md5_with_pii.pii.mobile_phones) > 2:
-                # use second and third phones
-                contact_info["cellPhone"] = md5_with_pii.pii.mobile_phones[1].phone
-                contact_info["homePhone"] = md5_with_pii.pii.mobile_phones[2].phone
-            elif len(md5_with_pii.pii.mobile_phones) > 1:
-                # use first again and second phone
-                contact_info["cellPhone"] = md5_with_pii.pii.mobile_phones[0].phone
-                contact_info["homePhone"] = md5_with_pii.pii.mobile_phones[1].phone
-            else:
-                # use first phone again if no other are available
-                contact_info["cellPhone"] = md5_with_pii.pii.mobile_phones[0].phone
-
-        # Add address if all required fields are present
-        if md5_with_pii.pii.address and md5_with_pii.pii.city and md5_with_pii.pii.state and md5_with_pii.pii.zip_code:
-            contact_info["address"] = {
-                "line1": md5_with_pii.pii.address,
-                "city": md5_with_pii.pii.city,
-                "state": md5_with_pii.pii.state,
-                "postalCode": md5_with_pii.pii.zip_code
-            }
-        
-        # Add Labels (self.tags)
-        labels: list[dict[str, str]] = []
-                    
-        for tag in self.tags:
-            labels.append({
-                "labelName": tag
-            })
-        
-        # add zip tag if available and enabled
-        if md5_with_pii.pii.zip_code and self.add_zip_tags:    
-            labels.append({
-                "labelName": md5_with_pii.pii.zip_code
-            })
-                        
-        # Add Notes
-        notes: list[dict[str, Any]] = []
 
         if sentences:
             notes.append({
-                "note": sentences_str,
-                "category": "Intents",
-                "createDate": {
-                    "dateTime": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "timeZone": "UTC"
-                }
+                "content": sentences_str,
+                "category": "info",
+                "created_by": self.system,
+                "created_date": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             })
             
         if (insight := self.per_lead_insights.get(md5_with_pii.md5)):
             notes.append({
-                "note": insight,
-                "category": "Insight",
-                "createDate": {
-                    "dateTime": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "timeZone": "UTC"
-                }
-            })
+                "content": insight,
+                "category": "info",
+                "created_by": self.system,
+                "created_date": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            })  
             
-        # Add all data to event_data
-        event_data["details"] = details
-        event_data["contactInfo"] = contact_info
-        event_data["labels"] = labels
-        event_data["notes"] = notes
+        # Add tags as labels
+        if self.tags:
+            pass
+        if self.add_zip_tags and md5_with_pii.pii.zip_code:
+            pass        
+            
+        # Prepare event data according to CINC API schema
+        event_data: dict[str, Any] = {
+            "id": md5_with_pii.md5, # not sure if this is required(conflicting info on docs vs. api endpoint)
+            "registered_date": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),            
+            "info":{
+                "status": "unworked",
+                "source": self.system,
+                "contact": contact_info,
+            },
+            "notes": notes,
+        }
+        
+        # set is_buyer or is_seller based on event_type
+        if self.event_type in [EventType.SELLER_INQUIRY]:
+            event_data["info"]["is_seller"] = True
+        else:
+            event_data["info"]["is_buyer"] = True
                 
         return event_data
 
