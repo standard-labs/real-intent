@@ -57,7 +57,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
         self.anthropic_client = Anthropic(api_key=anthropic_key)
 
         # Set dates with defaults if not provided
-        start = start_date or dt.datetime.now()
+        start = start_date or dt.datetime.now() + dt.timedelta(days=1)
         end = end_date or (start + dt.timedelta(days=14))
 
         # Validate inputs are datetime objects
