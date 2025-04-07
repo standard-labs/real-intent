@@ -163,6 +163,10 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
         try:
             parsed_json_content = serp_response["result"]["json_content"]
+            
+            if not parsed_json_content:
+                log("error", f"No json_content found when extracting links, response: {parsed_json_content}.")
+                raise NoValidJSONError("No valid JSON content found in the response.")
 
             if isinstance(parsed_json_content, str):
                 parsed_json_content = json.loads(parsed_json_content)
