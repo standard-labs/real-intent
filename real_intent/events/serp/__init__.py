@@ -163,6 +163,10 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
         try:
             parsed_json_content = serp_response["result"]["json_content"]
+            
+            if not parsed_json_content:
+                log("error", f"No json_content found when extracting links, response: {parsed_json_content}.")
+                raise NoValidJSONError("No valid JSON content found in the response.")
 
             if isinstance(parsed_json_content, str):
                 parsed_json_content = json.loads(parsed_json_content)
@@ -315,6 +319,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             **Important Notes:**
             - If you cannot find the specific link for an event, use the original link of the source of that content provided in the messages to reference the event. Only do this if you cannot find the specific link in the content.
             - Try to include events from a variety of the sources if possible, but above all prioritize the most relevant and engaging events for the community.
+            - In your final json response, escape any double quotes in the event title, link or descriptions to ensure valid JSON formatting.
             
             **Exclusions:**  
             Do **not** include:  
@@ -328,6 +333,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             - If fewer than 5 events meet the criteria, return only the valid ones.  
             - Ensure **no duplicate events** are included.  
             - If no suitable events are found, return an **empty JSON list**.  
+            - In your final json response, escape any double quotes in the event title, link or descriptions to ensure valid JSON formatting.
 
             **Schema:**  
                 Each event should be structured as a JSON object following this schema: {json.dumps(Event.model_json_schema())}  
