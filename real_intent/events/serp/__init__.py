@@ -57,7 +57,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
         self.anthropic_client = Anthropic(api_key=anthropic_key)
 
         # Set dates with defaults if not provided
-        start = start_date or dt.datetime.now()
+        start = start_date or dt.datetime.now() + dt.timedelta(days=1)
         end = end_date or (start + dt.timedelta(days=14))
 
         # Validate inputs are datetime objects
@@ -149,7 +149,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             log("error", f"Request error for {method} request to {endpoint}: {e}")
             raise
 
-    def extract_links(self, query: str, n_links: int = 5) -> List[OrganicLink]:
+    def extract_links(self, query: str, n_links: int = 3) -> List[OrganicLink]:
         """Extract organic links from Google search results for the given query."""
         payload = {
             "formats": ["parser_extract"],
@@ -163,6 +163,10 @@ class SerpEventsGenerator(BaseEventsGenerator):
 
         try:
             parsed_json_content = serp_response["result"]["json_content"]
+            
+            if not parsed_json_content:
+                log("error", f"No json_content found when extracting links, response: {parsed_json_content}.")
+                raise NoValidJSONError("No valid JSON content found in the response.")
 
             if isinstance(parsed_json_content, str):
                 parsed_json_content = json.loads(parsed_json_content)
@@ -283,7 +287,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
         zip_code: str,
         city_state: str | None = None,
     ) -> str | None:
-        def _get_content(retrieve_id: str) -> Dict[str, str]:
+        def _get_content(retrieve_id: str, max_chars: int = 8000) -> Dict[str, str]:
             """get the content for a given link position and retrieve id"""
 
             serp_response = self._request(
@@ -295,7 +299,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
                 log("error", f"No markdown_content for retrieve_id: {retrieve_id}")
                 raise Exception(f"No markdown_content for retrieve_id: {retrieve_id}")
 
-            return markdown_content
+            return str(markdown_content).strip()[:max_chars]
 
         prompt = f"""You are an expert in aggregating community events, specializing in identifying relevant activities for zipcode {zip_code} {city_state if city_state else ""} between {self.start_date} and {self.end_date}.
 
@@ -315,6 +319,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             **Important Notes:**
             - If you cannot find the specific link for an event, use the original link of the source of that content provided in the messages to reference the event. Only do this if you cannot find the specific link in the content.
             - Try to include events from a variety of the sources if possible, but above all prioritize the most relevant and engaging events for the community.
+            - In your final json response, escape any double quotes in the event title, link or descriptions to ensure valid JSON formatting.
             
             **Exclusions:**  
             Do **not** include:  
@@ -328,6 +333,7 @@ class SerpEventsGenerator(BaseEventsGenerator):
             - If fewer than 5 events meet the criteria, return only the valid ones.  
             - Ensure **no duplicate events** are included.  
             - If no suitable events are found, return an **empty JSON list**.  
+            - In your final json response, escape any double quotes in the event title, link or descriptions to ensure valid JSON formatting.
 
             **Schema:**  
                 Each event should be structured as a JSON object following this schema: {json.dumps(Event.model_json_schema())}  
@@ -422,19 +428,19 @@ class SerpEventsGenerator(BaseEventsGenerator):
             and date range. Your task is to summarize the events in a concise and informative manner, highlighting the 
             key details and providing a general overview of the local community during that period. The summary should also include 
             weather conditions and any other relevant local insights. Your response should be structured in valid JSON format, 
-            adhering strictly to the user's instructions.
+            adhering strictly to the user's instructions. Provide a maximum of 4 sentences in your summary and less than 600 characters.
             """
 
         user = f"""
             Summarize the events happening in {zip_code} {city_state if city_state else ""} between {self.start_date} and {self.end_date} provided to you here.
             \n{events}\n
             Your summary should be informative and engaging, providing a brief overview of the events, the local community,
-            and any other relevant details such as weather conditions. Provide a maximum of 5 sentences! Make sure to include the zipcode and the city/state in your summary.
+            and any other relevant details such as weather conditions. Provide a maximum of 4 sentences and less than 600 characters.! Make sure to include the zipcode and the city/state in your summary.
             
             You must only include the key events and highlights from the list provided. Do not include any additional events.
             
             It should be structured in valid JSON format with one top level key called "summary" that contains a string
-            summarizing the events and the local community during the specified period with a maximum of 5 sentences. 
+            summarizing the events and the local community during the specified period with a maximum of 4 sentences and less than 600 characters.. 
             The summary should be a detailed paragraph that provides an overview of the expected weather conditions for the week, {self.start_date} to {self.end_date},
             and highlights the key events happening in {zip_code} {city_state if city_state else ""} from the list provided. Include any relevant insights about the local community, 
             such as cultural aspects, holiday-specific activities, or any notable attractions during this period.
