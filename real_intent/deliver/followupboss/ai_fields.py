@@ -7,7 +7,8 @@ from typing import Literal, Any
 import time
 
 from real_intent.schemas import MD5WithPII
-from real_intent.deliver.followupboss.vanilla import FollowUpBossDeliverer, EventType, rate_limited
+from real_intent.deliver.followupboss.vanilla import FollowUpBossDeliverer, EventType
+from real_intent.deliver.utils import rate_limited
 from real_intent.deliver.followupboss.ai_prompt import SYSTEM_PROMPT
 from real_intent.internal_logging import log, log_span
 
