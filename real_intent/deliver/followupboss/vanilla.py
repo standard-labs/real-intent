@@ -1,7 +1,6 @@
 """Deliverer for FollowUpBoss CRM."""
 import requests
 import time
-from functools import wraps
 
 import random
 from enum import StrEnum
@@ -11,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from real_intent.deliver.base import BaseOutputDeliverer
 from real_intent.schemas import MD5WithPII
 from real_intent.internal_logging import log
+from real_intent.deliver.utils import rate_limited, InvalidCRMCredentialsError, CRMAccountInactiveError
 
 
 # ---- Models ----
@@ -32,41 +32,6 @@ class EventType(StrEnum):
     VISITED_OPEN_HOUSE = "Visited Open House"
     VIEWED_PAGE = "Viewed Page"
 
-
-# ---- Errors ----
-
-class InvalidFUBCredentialsError(Exception):
-    """Raised when invalid API credentials are provided."""
-
-
-class AccountInactiveError(Exception):
-    """Raised when the account is inactive."""
-
-
-# ---- Helpers ----
-
-def fub_rate_limited(func):
-    """
-    Decorator to handle rate limiting.
-    """
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        for _ in range(10):
-            try:
-                return func(*args, **kwargs)
-            except requests.exceptions.HTTPError as e:
-                if e.response.status_code == 429:  # Too Many Requests
-                    retry_after = int(e.response.headers.get('Retry-After', 10))
-                    sleep_delay: float = retry_after + (random.randint(50, 100) / 100)
-                    log("warn", f"FUB rate limit hit. Retrying in {sleep_delay} seconds.")
-                    time.sleep(sleep_delay)
-                else:
-                    raise
-        raise Exception("Max retries (10) exceeded due to rate limiting.")
-    return wrapper
-
-
-# ---- Deliverer ----
 
 class FollowUpBossDeliverer(BaseOutputDeliverer):
     """Delivers data to FollowUpBoss CRM."""
@@ -108,11 +73,11 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
 
         # Make sure API credentials are valid
         if not self._verify_api_credentials():
-            raise InvalidFUBCredentialsError("Invalid API credentials provided for FollowUpBoss.")
+            raise InvalidCRMCredentialsError("Invalid API credentials provided for FollowUpBoss.")
 
         # Make sure the account is active
         if not self._verify_account_active():
-            raise AccountInactiveError("Account is inactive.")
+            raise CRMAccountInactiveError("FollowUpBoss account is inactive.")
         
     @property
     def api_headers(self) -> dict:
@@ -129,7 +94,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             "X-System-Key": self.system_key
         }
     
-    @fub_rate_limited
+    @rate_limited(crm="FollowUpBoss")
     def _verify_api_credentials(self) -> bool:
         """
         Verify that the API credentials are valid.
@@ -144,7 +109,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
 
         return response.ok
 
-    @fub_rate_limited
+    @rate_limited(crm="FollowUpBoss")
     def _verify_account_active(self) -> bool:
         """
         Verify that the account is active.
@@ -267,7 +232,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
             "person": person_data
         }
 
-    @fub_rate_limited
+    @rate_limited(crm="FollowUpBoss")
     def _send_event(self, event_data: dict) -> dict:
         """
         Send an event to the FollowUpBoss API.
@@ -310,7 +275,7 @@ class FollowUpBossDeliverer(BaseOutputDeliverer):
         response.raise_for_status()
         return response.json()
 
-    @fub_rate_limited
+    @rate_limited(crm="FollowUpBoss")
     def _add_note(self, person_id: int, body: str, subject: str = "", retry: bool = True) -> bool:
         """
         Add a note to a person in Follow Up Boss.
