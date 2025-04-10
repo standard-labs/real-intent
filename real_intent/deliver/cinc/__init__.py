@@ -9,7 +9,7 @@ from typing import Any
 from real_intent.deliver.base import BaseOutputDeliverer
 from real_intent.schemas import MD5WithPII
 from real_intent.internal_logging import log
-from real_intent.deliver.utils import rate_limited, EventType, InvalidCRMCredentialsError, CRMAccountInactiveError
+from real_intent.deliver.utils import rate_limited, InvalidCRMCredentialsError, CRMAccountInactiveError
 
 
 class CINCProDeliverer(BaseOutputDeliverer):
@@ -22,7 +22,6 @@ class CINCProDeliverer(BaseOutputDeliverer):
             tags: list[str] | None = None,
             add_zip_tags: bool = True,
             base_url: str = "https://public.cincapi.com/v2/site",
-            event_type: EventType = EventType.REGISTRATION,
             n_threads: int = 1,
             per_lead_insights: dict[str, str] | None = None
         ):
@@ -35,7 +34,6 @@ class CINCProDeliverer(BaseOutputDeliverer):
             tags (list[str], optional): A list of tags to be added to the lead. Defaults to None.
             add_zip_tags (bool, optional): Whether to add zip code tags. Defaults to True.
             base_url (str, optional): The base URL for the CincPro API. Defaults to "https://public.cincapi.com".
-            event_type (EventType, optional): The event type for adding a lead. Defaults to EventType.REGISTRATION.
             n_threads (int, optional): The number of threads to use for delivering leads. Defaults to 1.
             per_lead_insights (dict[str, str], optional): A dictionary of insights to be added to the lead. Defaults to None.            
         """
@@ -48,7 +46,6 @@ class CINCProDeliverer(BaseOutputDeliverer):
         self.per_lead_insights: dict[str, str] = per_lead_insights or {}
 
         # Configuration stuff
-        self.event_type: EventType = EventType(event_type)
         self.n_threads: int = n_threads
 
         # Make sure API credentials are valid
@@ -81,7 +78,6 @@ class CINCProDeliverer(BaseOutputDeliverer):
             bool: True if the credentials are valid, False otherwise.
         """
         
-        return True 
         response = requests.get(
             f"{self.base_url}/me",
             headers=self.api_headers
@@ -143,7 +139,7 @@ class CINCProDeliverer(BaseOutputDeliverer):
         log(
             "trace", 
             (
-                f"Delivered lead: {md5_with_pii.md5}, event_type: {self.event_type.value}, "
+                f"Delivered lead: {md5_with_pii.md5}"
                 f"response_status: {response.get('status', 'unknown')}"
             )
         )
@@ -231,13 +227,7 @@ class CINCProDeliverer(BaseOutputDeliverer):
             },
             "notes": notes,
         }
-        
-        # set is_buyer or is_seller based on event_type
-        if self.event_type in [EventType.SELLER_INQUIRY]:
-            event_data["info"]["is_seller"] = True
-        else:
-            event_data["info"]["is_buyer"] = True
-                
+                        
         return event_data
 
     @rate_limited(crm="CINCPro")

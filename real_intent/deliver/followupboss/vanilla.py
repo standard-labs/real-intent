@@ -3,13 +3,34 @@ import requests
 import time
 
 import random
+from enum import StrEnum
 import base64
 from concurrent.futures import ThreadPoolExecutor
 
 from real_intent.deliver.base import BaseOutputDeliverer
 from real_intent.schemas import MD5WithPII
 from real_intent.internal_logging import log
-from real_intent.deliver.utils import rate_limited, EventType, InvalidCRMCredentialsError, CRMAccountInactiveError
+from real_intent.deliver.utils import rate_limited, InvalidCRMCredentialsError, CRMAccountInactiveError
+
+
+# ---- Models ----
+
+class EventType(StrEnum):
+    """Event types for adding a lead."""
+    REGISTRATION = "Registration"
+    INQUIRY = "Inquiry"
+    SELLER_INQUIRY = "Seller Inquiry"
+    PROPERTY_INQUIRY = "Property Inquiry"
+    GENERAL_INQUIRY = "General Inquiry"
+    VIEWED_PROPERTY = "Viewed Property"
+    SAVED_PROPERTY = "Saved Property"
+    VISITED_WEBSITE = "Visited Website"
+    INCOMING_CALL = "Incoming Call"
+    UNSUBSCRIBED = "Unsubscribed"
+    PROPERTY_SEARCH = "Property Search"
+    SAVED_PROPERTY_SEARCH = "Saved Property Search"
+    VISITED_OPEN_HOUSE = "Visited Open House"
+    VIEWED_PAGE = "Viewed Page"
 
 
 class FollowUpBossDeliverer(BaseOutputDeliverer):
