@@ -9,7 +9,7 @@ from typing import Any
 from real_intent.deliver.base import BaseOutputDeliverer
 from real_intent.schemas import MD5WithPII
 from real_intent.internal_logging import log
-from real_intent.deliver.utils import rate_limited, InvalidCRMCredentialsError, CRMAccountInactiveError
+from real_intent.deliver.utils import rate_limited, InvalidCRMCredentialsError
 
 
 class CINCProDeliverer(BaseOutputDeliverer):
@@ -33,7 +33,7 @@ class CINCProDeliverer(BaseOutputDeliverer):
             system (str): The system name for source (Real Intent or Webhawk).
             tags (list[str], optional): A list of tags to be added to the lead. Defaults to None.
             add_zip_tags (bool, optional): Whether to add zip code tags. Defaults to True.
-            base_url (str, optional): The base URL for the CincPro API. Defaults to "https://public.cincapi.com".
+            base_url (str, optional): The base URL for the CincPro API. Defaults to "https://public.cincapi.com/v2/site".
             n_threads (int, optional): The number of threads to use for delivering leads. Defaults to 1.
             per_lead_insights (dict[str, str], optional): A dictionary of insights to be added to the lead. Defaults to None.            
         """
@@ -51,10 +51,6 @@ class CINCProDeliverer(BaseOutputDeliverer):
         # Make sure API credentials are valid
         if not self._verify_api_credentials():
             raise InvalidCRMCredentialsError("Invalid API credentials provided for CINCPro.")
-
-        # Make sure the account is active
-        if not self._verify_account_active():
-            raise CRMAccountInactiveError("CINCPro account is inactive.")
         
     @property
     def api_headers(self) -> dict:
@@ -84,16 +80,6 @@ class CINCProDeliverer(BaseOutputDeliverer):
         )
 
         return response.ok
-
-    @rate_limited(crm="CINCPro")
-    def _verify_account_active(self) -> bool:
-        """
-        Verify that the account is active.
-
-        Returns:
-            bool: True if the account is active, False otherwise.
-        """
-        return True # TODO: implement account active verification
     
     def _warn_dnc(self, pii_md5s: list[MD5WithPII]) -> None:
         """Log a warning if any of the leads are on the DNC list."""
@@ -165,7 +151,6 @@ class CINCProDeliverer(BaseOutputDeliverer):
         
         if md5_with_pii.pii.emails:
             contact_info["email"] = md5_with_pii.pii.emails[0]
-            contact_info["is_validated_email"] = True
         
         if md5_with_pii.pii.mobile_phones:
             phone_numbers: dict[str, str | None] = {"cell_phone": None, "home_phone": None, "work_phone": None, "office_phone": None}
@@ -208,6 +193,7 @@ class CINCProDeliverer(BaseOutputDeliverer):
                 "category": "info",
                 "created_by": self.system,
                 "created_date": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "is_pinned": True,
             })  
             
         # Add tags as labels
@@ -218,7 +204,6 @@ class CINCProDeliverer(BaseOutputDeliverer):
             
         # Prepare event data according to CINC API schema
         event_data: dict[str, Any] = {
-            "id": md5_with_pii.md5, # not sure if this is required(conflicting info on docs vs. api endpoint)
             "registered_date": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),            
             "info":{
                 "status": "unworked",
