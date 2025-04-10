@@ -1,4 +1,4 @@
-"""Deliverer for CincPro CRM."""
+"""Deliverer for CINC CRM."""
 import requests
 import datetime
 
@@ -12,8 +12,8 @@ from real_intent.internal_logging import log
 from real_intent.deliver.utils import rate_limited, InvalidCRMCredentialsError
 
 
-class CINCProDeliverer(BaseOutputDeliverer):
-    """Delivers data to CINCPro CRM."""
+class CINCDeliverer(BaseOutputDeliverer):
+    """Delivers data to CINC CRM."""
 
     def __init__(
             self, 
@@ -26,14 +26,14 @@ class CINCProDeliverer(BaseOutputDeliverer):
             per_lead_insights: dict[str, str] | None = None
         ):
         """
-        Initialize the CINCProDeliverer.
+        Initialize the CINCDeliverer.
 
         Args:
-            api_key (str): The API key for CincPro.
+            api_key (str): The API key for CINC.
             system (str): The system name for source (Real Intent or Webhawk).
             tags (list[str], optional): A list of tags to be added to the lead. Defaults to None.
             add_zip_tags (bool, optional): Whether to add zip code tags. Defaults to True.
-            base_url (str, optional): The base URL for the CincPro API. Defaults to "https://public.cincapi.com/v2/site".
+            base_url (str, optional): The base URL for the CINC API. Defaults to "https://public.cincapi.com/v2/site".
             n_threads (int, optional): The number of threads to use for delivering leads. Defaults to 1.
             per_lead_insights (dict[str, str], optional): A dictionary of insights to be added to the lead. Defaults to None.            
         """
@@ -50,12 +50,12 @@ class CINCProDeliverer(BaseOutputDeliverer):
 
         # Make sure API credentials are valid
         if not self._verify_api_credentials():
-            raise InvalidCRMCredentialsError("Invalid API credentials provided for CINCPro.")
+            raise InvalidCRMCredentialsError("Invalid API credentials provided for CINC.")
         
     @property
     def api_headers(self) -> dict:
         """
-        Generate the API headers for CINCPro requests.
+        Generate the API headers for requests.
 
         Returns:
             dict: A dictionary containing the necessary headers for API requests.
@@ -65,7 +65,7 @@ class CINCProDeliverer(BaseOutputDeliverer):
             "Content-Type": "application/json",
         }
     
-    @rate_limited(crm="CINCPro")
+    @rate_limited(crm="CINC")
     def _verify_api_credentials(self) -> bool:
         """
         Verify that the API credentials are valid.
@@ -88,7 +88,7 @@ class CINCProDeliverer(BaseOutputDeliverer):
                 log(
                     "warn",
                     (
-                        f"At least 1 lead in the CINCPro deliverer was on "
+                        f"At least 1 lead in the CINC deliverer was on "
                         f"the DNC list. Please validate the lead before delivery."
                     )
                 )
@@ -96,13 +96,13 @@ class CINCProDeliverer(BaseOutputDeliverer):
 
     def _deliver(self, pii_md5s: list[MD5WithPII]) -> list[dict]:
         """
-        Deliver the PII data to CINCPro.
+        Deliver the PII data to CINC.
 
         Args:
             pii_md5s (list[MD5WithPII]): A list of MD5WithPII objects containing the PII data to be delivered.
 
         Returns:
-            list[dict]: A list of response dictionaries from the CINCPro API for each delivered event.
+            list[dict]: A list of response dictionaries from the CINC API for each delivered event.
         """
         # Log if any of the leads are on the DNC list
         self._warn_dnc(pii_md5s)
@@ -112,13 +112,13 @@ class CINCProDeliverer(BaseOutputDeliverer):
 
     def _deliver_single_lead(self, md5_with_pii: MD5WithPII) -> dict:
         """
-        Deliver a single lead to CINCPro.
+        Deliver a single lead to CINC.
 
         Args:
             md5_with_pii (MD5WithPII): The MD5WithPII object containing the PII data for a single lead.
 
         Returns:
-            dict: A response dictionary from the CINCPro API for the delivered event.
+            dict: A response dictionary from the CINC API for the delivered event.
         """
         event_data = self._prepare_event_data(md5_with_pii)
         response = self._send_event(event_data)
@@ -139,7 +139,7 @@ class CINCProDeliverer(BaseOutputDeliverer):
             md5_with_pii (MD5WithPII): The MD5WithPII object containing the PII data.
 
         Returns:
-            dict: A dictionary containing the prepared event data for the CINCPro API.
+            dict: A dictionary containing the prepared event data for the CINC API.
         """
         log("trace", f"Preparing event data for MD5: {md5_with_pii.md5}, first_name: {md5_with_pii.pii.first_name}, last_name: {md5_with_pii.pii.last_name}")
         
@@ -215,16 +215,16 @@ class CINCProDeliverer(BaseOutputDeliverer):
                         
         return event_data
 
-    @rate_limited(crm="CINCPro")
+    @rate_limited(crm="CINC")
     def _send_event(self, event_data: dict) -> dict:
         """
-        Send an event to the CINCPro API.
+        Send an event to the CINC API.
 
         Args:
             event_data (dict): The prepared event data to be sent to the API.
 
         Returns:
-            dict: The response from the CINCPro API, either the JSON response or an ignored status message.
+            dict: The response from the CINC API, either the JSON response or an ignored status message.
 
         Raises:
             requests.exceptions.HTTPError: If the API request fails.
@@ -232,7 +232,7 @@ class CINCProDeliverer(BaseOutputDeliverer):
         log(
             "trace", 
             (
-                f"Sending event to CINCPro API, event_type: {self.event_type.value}, "
+                f"Sending event to the CINC API"
                 f"person: {event_data}"
             )
         )
