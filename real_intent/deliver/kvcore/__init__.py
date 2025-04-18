@@ -132,11 +132,13 @@ class KVCoreDeliverer(BaseOutputDeliverer):
     def _lead_deal_type(self, pii_md5: MD5WithPII) -> str:
         """Calculated guess if the lead is a buyer or a seller."""
         seller_sentence_matches: set[str] = {
-            "Sellers", "Pre-Movers"
+            "In-Market>Real Estate>Sellers", 
+            "In-Market>Real Estate>Pre-Movers"
         }
 
         buyer_sentence_matches: set[str] = {
-            "Mortgages"
+            "In-Market>Financial>Loans>Mortgages",
+            "In-Market>Real Estate>First-Time Home Buyer"
         }
 
         if any([sentence in seller_sentence_matches for sentence in pii_md5.sentences]):
