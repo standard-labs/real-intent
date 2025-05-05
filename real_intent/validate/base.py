@@ -21,3 +21,11 @@ class BaseValidator(ABC):
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Internal method to be implemented by subclasses to perform the actual validation."""
         pass
+
+
+class PlaceboValidator(BaseValidator):
+    """Placeholder validator that does nothing."""
+
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Do nothing."""
+        return md5s
