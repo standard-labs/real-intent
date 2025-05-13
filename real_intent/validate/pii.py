@@ -151,3 +151,23 @@ class HNWValidator(BaseValidator):
             if md5.pii.household_income in income_levels 
             and md5.pii.household_net_worth in net_worth_levels
         ]
+
+
+class UHNWValidator(BaseValidator):
+    """Remove leads below Ultra High Net Worth (UHNW): $250k+ income and $500k+ net worth."""
+
+    def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
+        """Remove leads that do not match the UHNW requirement."""
+        income_levels = {
+            "O. $250K +"
+        }
+        
+        net_worth_levels = {
+            "J. Greater than $499,999"
+        }
+        
+        return [
+            md5 for md5 in md5s 
+            if md5.pii.household_income in income_levels 
+            and md5.pii.household_net_worth in net_worth_levels
+        ]
