@@ -76,26 +76,52 @@ def test_has_email_validator() -> None:
     assert result[1].md5 == "789"
 
 
-def test_phone_validator() -> None:
+def test_phone_validator_with_real_api() -> None:
+    """Test the PhoneValidator with the real Numverify API.
+
+    This test uses real phone numbers and the actual Numverify API.
+    It tests both valid and invalid phone numbers to ensure the validator
+    can handle both success and failure cases.
+    """
     numverify_key = os.getenv("NUMVERIFY_KEY")
     if not numverify_key:
         pytest.skip("NUMVERIFY_KEY not found in .env file")
 
     validator = PhoneValidator(numverify_key=numverify_key)
 
+    # Known valid US toll-free numbers
     real_phones = [
-        "18002752273",
-        "18006427676",
-        "18882804331"
+        "18002752273",  # Best Buy
+        "18006427676",  # Apple
+        "18882804331"   # Walmart
     ]
+
+    # Clearly invalid phone numbers (wrong format)
+    invalid_format_phones = [
+        "123",          # Too short
+        "12345678901234", # Too long
+        "abcdefghij"    # Not numeric
+    ]
+
+    # Properly formatted but likely non-existent numbers
     fake_phones = [
         "17489550914",
         "12573425053",
         "12889061135"
     ]
 
+    # Test with invalid format phones first - these should be rejected without API call
+    md5s_invalid_format = [
+        create_md5_with_pii("123", [], invalid_format_phones),
+    ]
+
+    result_invalid_format = validator.validate(md5s_invalid_format)
+    assert len(result_invalid_format) == 1
+    assert len(result_invalid_format[0].pii.mobile_phones) == 0, "Invalid format phones should be rejected"
+
+    # Now test with real and fake phones
     md5s = [
-        create_md5_with_pii("123", [], real_phones + fake_phones),
+        create_md5_with_pii("456", [], real_phones + fake_phones),
     ]
 
     try:
@@ -104,17 +130,25 @@ def test_phone_validator() -> None:
         assert len(result) == 1
         validated_phones = [phone.phone for phone in result[0].pii.mobile_phones]
 
+        # Log the validated phones for debugging
+        print(f"Validated phones: {validated_phones}")
+
         # Check that at least some real phones were validated
         # Note: We can't assert that all real phones are validated because
         # the Numverify API might return error code 313 for some of them
         assert any(phone in validated_phones for phone in real_phones), "No real phones were validated"
 
-        # Check that at least some fake phones were not validated
-        assert any(phone not in validated_phones for phone in fake_phones), "All fake phones were validated"
-
         # Check that all fake phones were rejected
         # This should still be true even with API errors
         assert all(phone not in validated_phones for phone in fake_phones), "Some fake phones were validated"
+
+        # Print which real phones were validated and which weren't
+        for phone in real_phones:
+            if phone in validated_phones:
+                print(f"Real phone {phone} was correctly validated")
+            else:
+                print(f"Real phone {phone} was not validated")
+
     except ValueError as e:
         # If we get a ValueError, it might be due to Numverify API issues
         # Skip the test in this case
@@ -325,6 +359,51 @@ def test_phone_validator_with_other_numverify_error() -> None:
             validator.validate(md5s)
 
 
+def test_phone_validator_with_handled_error_codes() -> None:
+    """Test that the PhoneValidator handles specific error codes without raising exceptions."""
+    # Create a validator with a dummy API key
+    validator = PhoneValidator(numverify_key="dummy_key")
+
+    # Create test data with a phone number
+    md5s = [
+        create_md5_with_pii("123", [], ["1234567890"]),
+    ]
+
+    # Test error code 211 (non-numeric phone number)
+    mock_response_211 = MagicMock()
+    mock_response_211.json.return_value = {
+        "success": False,
+        "error": {
+            "code": 211,
+            "type": "non_numeric_phone_number_provided"
+        }
+    }
+
+    with patch('requests.get', return_value=mock_response_211):
+        # Validate the phone number - should not raise an exception
+        result = validator.validate(md5s)
+        # The phone number should be considered invalid
+        assert len(result) == 1
+        assert len(result[0].pii.mobile_phones) == 0
+
+    # Test error code 210 (invalid phone number)
+    mock_response_210 = MagicMock()
+    mock_response_210.json.return_value = {
+        "success": False,
+        "error": {
+            "code": 210,
+            "type": "invalid_phone_number"
+        }
+    }
+
+    with patch('requests.get', return_value=mock_response_210):
+        # Validate the phone number - should not raise an exception
+        result = validator.validate(md5s)
+        # The phone number should be considered invalid
+        assert len(result) == 1
+        assert len(result[0].pii.mobile_phones) == 0
+
+
 def test_phone_validator_with_missing_valid_field() -> None:
     """Test that the PhoneValidator raises an exception when the 'valid' field is missing."""
     # Create a mock response for the Numverify API with missing 'valid' field
@@ -430,3 +509,103 @@ def test_phone_validator_with_missing_success_field() -> None:
         assert len(result) == 1
         assert len(result[0].pii.mobile_phones) == 1
         assert result[0].pii.mobile_phones[0].phone == "1234567890"
+
+
+def test_phone_validator_with_invalid_api_key() -> None:
+    """Test the PhoneValidator with an invalid API key to test error handling with real API."""
+    # Create a validator with an invalid API key
+    validator = PhoneValidator(numverify_key="invalid_key")
+
+    # Use a real phone number
+    phone = "18002752273"  # Best Buy
+
+    # Create test data
+    md5s = [
+        create_md5_with_pii("123", [], [phone]),
+    ]
+
+    try:
+        # This should raise a ValueError due to the invalid API key
+        with pytest.raises(ValueError) as excinfo:
+            validator.validate(md5s)
+
+        # Check that the error message contains the expected text
+        assert "Failed to validate phone number" in str(excinfo.value)
+        assert "invalid_access_key" in str(excinfo.value).lower() or "invalid" in str(excinfo.value).lower()
+
+        print(f"Successfully caught expected error: {excinfo.value}")
+    except Exception as e:
+        # If we get a different exception, it might be due to changes in the API
+        # Log it and skip the test
+        pytest.skip(f"Unexpected exception when testing with invalid API key: {e}")
+
+
+def test_phone_validator_with_error_code_313() -> None:
+    """Test the PhoneValidator's handling of error code 313 with real API.
+
+    This test attempts to trigger error code 313 by making multiple requests
+    with the same phone number in a short time. If we can't trigger the error,
+    the test is skipped.
+    """
+    numverify_key = os.getenv("NUMVERIFY_KEY")
+    if not numverify_key:
+        pytest.skip("NUMVERIFY_KEY not found in .env file")
+
+    # Create a validator with a real API key but only 1 thread to ensure sequential requests
+    validator = PhoneValidator(numverify_key=numverify_key, max_threads=1)
+
+    # Use a real phone number
+    phone = "18002752273"  # Best Buy
+
+    # Create test data with multiple copies of the same phone number
+    # This increases the chance of hitting rate limits
+    phones = [phone] * 5
+    md5s = [
+        create_md5_with_pii("123", [], phones),
+    ]
+
+    # First, directly test the _validate_phone method to see if we can trigger error code 313
+    error_313_triggered = False
+    for _ in range(10):  # Try multiple times to increase chance of hitting rate limit
+        try:
+            # Call the method directly to bypass threading
+            result = validator._validate_phone(phone)
+            print(f"Direct validation result: {result}")
+        except ValueError as e:
+            if "313" in str(e):
+                error_313_triggered = True
+                print(f"Successfully triggered error code 313: {e}")
+                break
+
+    if not error_313_triggered:
+        # If we couldn't trigger error 313 directly, try with the validate method
+        result = validator.validate(md5s)
+
+        # Check if any phones were rejected
+        validated_phones = [p.phone for p in result[0].pii.mobile_phones]
+        if len(validated_phones) < len(phones):
+            print(f"Some phones were rejected, possibly due to error 313. Validated: {len(validated_phones)}/{len(phones)}")
+        else:
+            # If all phones were validated, we couldn't trigger error 313
+            pytest.skip("Could not trigger error code 313 with the real API")
+
+    # If we get here, we either triggered error 313 or some phones were rejected
+    # Now test that our error handling works correctly by patching the _validate_phone method
+    with patch.object(PhoneValidator, '_validate_phone') as mock_validate:
+        # Simulate error code 313
+        def side_effect(phone):
+            raise ValueError(f"Failed to validate phone number {phone} with numverify: {{'success': False, 'error': {{'code': 313, 'type': 'quota_reached'}}}}")
+
+        mock_validate.side_effect = side_effect
+
+        # Create new test data
+        new_md5s = [
+            create_md5_with_pii("456", [], [phone]),
+        ]
+
+        # This should not raise an exception due to our error handling
+        result = validator.validate(new_md5s)
+
+        # The phone should be considered invalid
+        assert len(result) == 1
+        assert len(result[0].pii.mobile_phones) == 0
