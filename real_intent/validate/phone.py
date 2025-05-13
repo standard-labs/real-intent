@@ -23,13 +23,13 @@ class PhoneValidator(BaseValidator):
         phone = str(phone)
         if phone.startswith("+1"):
             phone = phone[2:]
-        
+
         if len(phone) == 11 and phone.startswith("1"):
             phone = phone[1:]
-        
+
         if len(phone) != 10:
             return False
-        
+
         response = requests.get(
             "https://apilayer.net/api/validate",
             params={
@@ -42,6 +42,16 @@ class PhoneValidator(BaseValidator):
         response.raise_for_status()
         response_json = response.json()
 
+        # Handle missing keys in response
+        if "success" not in response_json:
+            # If 'valid' is present and True, consider the phone valid despite missing 'success' key
+            if "valid" in response_json and response_json["valid"]:
+                log("warn", f"Response missing 'success' key but 'valid' is True, considering valid: {response_json}")
+                return True
+
+            log("error", f"Unexpected response format from numverify (missing 'success' key): {response_json}")
+            return False
+
         # Handle errors
         if not response_json["success"]:
             if "error" in response_json and response_json["error"]["code"] == 313:
@@ -53,12 +63,12 @@ class PhoneValidator(BaseValidator):
 
         # Handle unexpected responses
         if "valid" not in response_json:
-            log("error", f"Unexpected response from numverify: {response_json}")
+            log("error", f"Unexpected response from numverify (missing 'valid' key): {response_json}")
             raise ValueError(f"Unexpected response from numverify: {response_json}")
 
         # Handle valid responses
         return response_json["valid"]
-    
+
     def _validate_with_retry(self, phone: str) -> bool:
         """Retry the validation if it fails."""
         for _ in range(3):
@@ -174,8 +184,8 @@ class CallableValidator(BaseValidator):
     """Remove leads without a phone or with primary phone on DNC list."""
 
     def __init__(
-            self, 
-            phone_validator: PhoneValidator | None = None, 
+            self,
+            phone_validator: PhoneValidator | None = None,
             dnc_validator: DNCValidator | None = None
         ):
         self.phone_validator = phone_validator or HasPhoneValidator()
