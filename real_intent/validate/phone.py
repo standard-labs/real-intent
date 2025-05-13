@@ -54,9 +54,22 @@ class PhoneValidator(BaseValidator):
 
         # Handle errors
         if not response_json["success"]:
-            if "error" in response_json and response_json["error"]["code"] == 313:
-                log("warn", f"Numverify hit a (handled) snag and is marking this number invalid. {response_json}")
-                return False
+            if "error" in response_json:
+                error_code = response_json["error"].get("code")
+
+                # Handle specific error codes
+                if error_code == 313:
+                    # Rate limit or quota reached
+                    log("warn", f"Numverify hit a (handled) snag and is marking this number invalid. {response_json}")
+                    return False
+                elif error_code == 211:
+                    # Non-numeric phone number
+                    log("warn", f"Numverify rejected non-numeric phone number. {response_json}")
+                    return False
+                elif error_code == 210:
+                    # Invalid phone number
+                    log("warn", f"Numverify rejected invalid phone number. {response_json}")
+                    return False
 
             log("error", f"Failed to validate phone number {phone} with numverify: {response_json}")
             raise ValueError(f"Failed to validate phone number {phone} with numverify: {response_json}")
