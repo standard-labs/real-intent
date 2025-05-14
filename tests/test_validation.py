@@ -487,12 +487,21 @@ def test_phone_validator_with_missing_success_field() -> None:
         assert len(result[0].pii.mobile_phones) == 0
 
     # Create a mock response with missing 'success' field but 'valid' is True
+    # This is a common response pattern from Numverify and should be handled without logging
     mock_response_valid_true = MagicMock()
     mock_response_valid_true.json.return_value = {
         # 'success' field is missing
         "number": "1234567890",
         "country_code": "US",
-        "valid": True
+        "valid": True,
+        "local_format": "1234567890",
+        "international_format": "+11234567890",
+        "country_prefix": "+1",
+        "country_code": "US",
+        "country_name": "United States of America",
+        "location": "Ohio",
+        "carrier": "",
+        "line_type": "landline"
     }
 
     # Create test data with a phone number
