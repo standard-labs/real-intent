@@ -45,10 +45,11 @@ class PhoneValidator(BaseValidator):
         # Handle missing keys in response
         if "success" not in response_json:
             # If 'valid' is present and True, consider the phone valid despite missing 'success' key
+            # This is a common response pattern from Numverify and not an error condition
             if "valid" in response_json and response_json["valid"]:
-                log("warn", f"Response missing 'success' key but 'valid' is True, considering valid: {response_json}")
                 return True
 
+            # If 'valid' is missing or False, log an error and return False
             log("error", f"Unexpected response format from numverify (missing 'success' key): {response_json}")
             return False
 
