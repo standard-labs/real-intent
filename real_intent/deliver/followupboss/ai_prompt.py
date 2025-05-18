@@ -75,7 +75,7 @@ Custom fields:
 
 You should respond with:
 {
-    "customAge": "79",
+    "customAge": 79,
     "customGender": "Male",
     "customNetWorth": "J. Greater than $499,999"
 }
