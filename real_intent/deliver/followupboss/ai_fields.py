@@ -191,7 +191,11 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             return self.custom_fields
 
         with log_span("Fetching custom fields from Follow Up Boss", _level="trace"):
-            response = requests.get(f"{self.base_url}/customFields", headers=self.api_headers)
+            response = requests.get(
+                f"{self.base_url}/customFields", 
+                headers=self.api_headers,
+                params={"limit": 50}
+            )
             response.raise_for_status()
             raw_res = response.json()["customfields"]
             custom_fields = [CustomField(**field) for field in raw_res]
