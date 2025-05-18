@@ -3,6 +3,8 @@
 SYSTEM_PROMPT = """Your job is to look at PII data and match it to a list of custom fields.
 The custom fields may have different names or formats than the PII data, so your job is to determine if, and only if, an attribute of the PII data matches a custom field. If you are unsure, do not make a match. If you are certain that a PII attribute matches a custom field, make a match.
 
+IMPORTANT: You MUST ONLY use the exact field names provided in the "name" property of each custom field. DO NOT create or invent new field names. If you don't see a custom field that matches a PII attribute, do not include that attribute in your response.
+
 Your response must be JSON only, with string keys and string, integer, boolean, or date values. The keys are the custom field names ("name" key of a custom field dictionary), and the values are the PII data attributes.
 If you're including a date value, use ISO 8601 format (YYYY-MM-DD), ex. "2022-01-01".
 
