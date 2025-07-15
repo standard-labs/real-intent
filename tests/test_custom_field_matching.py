@@ -17,15 +17,15 @@ def test_custom_field_matching():
     # Skip test if required environment variables are not available
     required_vars = ['FOLLOWUPBOSS_API_KEY', 'FOLLOWUPBOSS_SYSTEM', 'FOLLOWUPBOSS_SYSTEM_KEY', 'OPENAI_API_KEY']
     for var in required_vars:
-        if not os.getenv(var):
+        if not os.getenv(var):  
             print(f"Skipping test: {var} not set")
             return
 
     deliverer = AIFollowUpBossDeliverer(
-        api_key=os.getenv('FOLLOWUPBOSS_API_KEY'),
-        system=os.getenv('FOLLOWUPBOSS_SYSTEM'),
-        system_key=os.getenv('FOLLOWUPBOSS_SYSTEM_KEY'),
-        openai_api_key=os.getenv('OPENAI_API_KEY')
+        api_key = os.getenv('FOLLOWUPBOSS_API_KEY', 'dummy_api_key'),
+        system = os.getenv('FOLLOWUPBOSS_SYSTEM', 'dummy_system'),
+        system_key = os.getenv('FOLLOWUPBOSS_SYSTEM_KEY', 'dummy_system_key'),
+        openai_api_key = os.getenv('OPENAI_API_KEY', 'dummy_openai_key')
     )
     
     # Create sample test data
