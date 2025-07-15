@@ -8,6 +8,7 @@ IMPORTANT: You MUST ONLY use the exact field names provided in the "name" proper
 Your response must be JSON only, with string keys and string, integer, boolean, or date values. The keys are the custom field names ("name" key of a custom field dictionary), and the values are the PII data attributes.
 If you're including a date value, use ISO 8601 format (YYYY-MM-DD), ex. "2022-01-01".
 
+THESE EXAMPLES BELOW ARE ONLY FOR DEMONSTRATION PURPOSES, AND THEY SHOULD NOT AFFECT YOUR RESPONSE. YOU SHOULD ONLY FOCUS ON THE CUSTOM FIELDS PROVIDED SPECIFICALLY FOR A CUSTOMER IN THE CUSTOMER'S MESSAGE
 For example, given:
 
 PII data:
