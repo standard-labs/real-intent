@@ -278,7 +278,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         # Match the custom fields with the PII data
         log("debug", "Sending request to OpenAI for field mapping")
         response = self.openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=[
                 {
                     "role": "system",
@@ -316,6 +316,11 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         
         # Merge the AI suggestions with the protected person data
         custom_field_names: list[str] = [field.name for field in custom_fields]
+        
+        # Print custom field names and AI suggestion keys
+        log("trace", f"Available custom field names: {custom_field_names}")
+        log("trace", f"AI suggestion keys: {list(ai_suggestions.keys())}")
+        
         for key, val in ai_suggestions.items():
             if key in custom_field_names:
                 raw_event_data["person"][key] = val
