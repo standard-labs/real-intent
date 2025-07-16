@@ -2,7 +2,7 @@ import os
 import pytest
 from dotenv import load_dotenv
 from real_intent.deliver.followupboss.ai_fields import AIFollowUpBossDeliverer
-from real_intent.schemas import MD5WithPII, PII, Gender, MobilePhone
+from real_intent.schemas import MD5WithPII, PII
 
 import logfire
 # Only configure logfire if running locally with proper auth
@@ -24,10 +24,10 @@ load_dotenv()
 )
 def test_custom_field_matching():
     deliverer = AIFollowUpBossDeliverer(
-        api_key=os.getenv('FOLLOWUPBOSS_API_KEY', 'dummy_api_key'),
-        system=os.getenv('FOLLOWUPBOSS_SYSTEM', 'dummy_system'),
-        system_key=os.getenv('FOLLOWUPBOSS_SYSTEM_KEY', 'dummy_system_key'),
-        openai_api_key=os.getenv('OPENAI_API_KEY', 'dummy_openai_key')
+        api_key=os.getenv('FOLLOWUPBOSS_API_KEY'),
+        system=os.getenv('FOLLOWUPBOSS_SYSTEM'),
+        system_key=os.getenv('FOLLOWUPBOSS_SYSTEM_KEY'),
+        openai_api_key=os.getenv('OPENAI_API_KEY')
     )
     
     # Create sample test data
