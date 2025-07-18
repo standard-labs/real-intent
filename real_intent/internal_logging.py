@@ -1,6 +1,9 @@
 """Global logging infrastructure."""
 from contextlib import contextmanager
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from openai import OpenAI
 
 try:
     import logfire
@@ -35,6 +38,14 @@ def disable_logging():
     """Disable global logging."""
     if LOGFIRE_AVAILABLE:
         GLOBAL_CONFIG.console = False
+
+
+# ---- Instrumentations ----
+
+def instrument_openai(openai_client: "OpenAI" | None = None):
+    """Instrument the OpenAI client."""
+    if LOGFIRE_AVAILABLE:
+        logfire.instrument_openai(openai_client)
 
 
 # Expose log and log_span methods directly
