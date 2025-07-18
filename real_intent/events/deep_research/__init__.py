@@ -3,7 +3,7 @@ from openai import OpenAI
 
 import json
 
-from real_intent.internal_logging import log
+from real_intent.internal_logging import log, log_span, instrument_openai
 from real_intent.events.base import BaseEventsGenerator
 from real_intent.events.models import Event, EventsResponse
 
@@ -72,20 +72,22 @@ class DeepResearchEventsGenerator(BaseEventsGenerator):
             raise ImportError("Please install this package with the 'ai' extra.")
 
         self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
+        instrument_openai(self.openai_client)
 
     def _generate(self, zip_code: str) -> EventsResponse:
         """Use the OpenAI deep research API to generate events."""
         if not isinstance(zip_code, str) or not zip_code.isnumeric() or len(zip_code) != 5:
             raise ValueError("Invalid ZIP code. ZIP code must be a 5-digit numeric string.")
 
-        response = self.openai_client.responses.create(
-            model="o4-mini-deep-research",
-            input=DEEP_RESEARCH_PROMPT.format(
-                zipcode=zip_code,
-                json_schema=EventsResponse.model_json_schema()
-            ),
-            text={"format": {"type": "json_object"}},
-            tools=[{"type": "web_search_preview"}]
-        )
+        with log_span(f"Generating events in {zip_code} with deep research", _level="debug"):
+            response = self.openai_client.responses.create(
+                model="o4-mini-deep-research",
+                input=DEEP_RESEARCH_PROMPT.format(
+                    zipcode=zip_code,
+                    json_schema=EventsResponse.model_json_schema()
+                ),
+                text={"format": {"type": "json_object"}},
+                tools=[{"type": "web_search_preview"}]
+            )
 
         return EventsResponse(**json.loads(response.output_text))
