@@ -31,8 +31,8 @@ Homepage = "https://realintent.co"
 Repository = "https://github.com/Standard-Labs/real-intent.git"
 
 [project.optional-dependencies]
-logfire = ["logfire>=3.0.0"]
-ai = ["openai>=1.58.1"]
+logfire = ["logfire>=3.16.2"]
+ai = ["openai>=1.97.0"]
 events = ["scrapybara>=2.0.6", "playwright>=1.49.1", "httpx==0.27.0", "anthropic>=0.49.0", "tldextract>=5.0.0"]
 pdf = ["reportlab>=4.2.5"]
 dns = ["pymongo"]

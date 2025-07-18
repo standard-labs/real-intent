@@ -37,6 +37,26 @@ def disable_logging():
         GLOBAL_CONFIG.console = False
 
 
+# ---- Instrumentations ----
+
+def instrument_openai(openai_client=None):
+    """Instrument the OpenAI client.
+
+    Raises:
+        ImportError: If the OpenAI package is not installed.
+    """
+    try:
+        from openai import OpenAI
+    except ImportError:
+        raise ImportError("Please install this package with the 'ai' extra.") from None
+
+    if openai_client is not None and not isinstance(openai_client, OpenAI):
+        raise ValueError("OpenAI client must be an instance of OpenAI.")
+
+    if LOGFIRE_AVAILABLE:
+        logfire.instrument_openai(openai_client)
+
+
 # Expose log and log_span methods directly
 log = logger.log
 log_span = logger.span

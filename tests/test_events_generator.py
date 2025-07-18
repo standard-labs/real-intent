@@ -14,6 +14,7 @@ from real_intent.events import (
     ScrapybaraEventsGenerator,
     SerpEventsGenerator
 )
+from real_intent.events.deep_research import DeepResearchEventsGenerator
 from real_intent.events.errors import NoEventsFoundError
 
 # Suppress reportlab deprecation warning
@@ -72,6 +73,17 @@ def serp_events_generator():
         end_date=None,
         geo_key=geo_api_key
     )
+
+
+@pytest.fixture
+def deep_research_events_generator():
+    """Create a DeepResearchEventsGenerator instance."""
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+
+    if not openai_api_key:
+        pytest.skip("OpenAI API key required")
+
+    return DeepResearchEventsGenerator(openai_api_key)
 
 
 def extract_date_from_range(date_str: str) -> str:
@@ -157,6 +169,40 @@ def test_lawrenceville_ga_events_serp(serp_events_generator):
     # Verify summary
     assert len(response.summary.split()) >= 20, "Summary should be meaningful"
     assert "Lawrenceville" in response.summary, "Summary should mention Lawrenceville"
+
+
+def test_beverly_hills_events_deep_research(deep_research_events_generator):
+    """Test generating events for Beverly Hills (90210) using Deep Research."""
+    try:
+        response = deep_research_events_generator.generate("90210")
+    except NoEventsFoundError:
+        pytest.skip("No events found for this zip code.")
+
+    # Verify response structure
+    assert isinstance(response, EventsResponse)
+    assert isinstance(response.events, list)
+    assert isinstance(response.summary, str)
+
+    # Verify each event
+    for event in response.events:
+        assert event.title, "Event should have a title"
+        assert event.date, "Event should have a date"
+        assert event.description, "Event should have a description"
+
+        # Extract and verify date
+        date_str = extract_date_from_range(event.date)
+        event_date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+        # Allow events within the next month
+        today = (datetime.datetime.now() - datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)  # 1 day grace period
+        month_from_now = today + datetime.timedelta(days=32)  # ~1 month + 1 day grace period
+        assert today <= event_date <= month_from_now, f"Event date {event_date} should be within the next month"
+
+        # Verify description is meaningful
+        assert len(event.description.split()) >= 10, "Description should be meaningful"
+
+    # Verify summary
+    if response.summary:
+        assert len(response.summary.split()) >= 20, "Summary should be meaningful"
 
 
 @pytest.fixture
@@ -303,3 +349,37 @@ def test_invalid_api_key_perplexity():
     # Test None API key
     with pytest.raises(ValueError):
         PerplexityEventsGenerator(None)
+
+
+def test_invalid_zip_code_deep_research(deep_research_events_generator):
+    """Test generation with invalid zip code for Deep Research."""
+    # Test non-string zip code
+    with pytest.raises(ValueError):
+        deep_research_events_generator.generate(12345)
+
+    # Test empty zip code
+    with pytest.raises(ValueError):
+        deep_research_events_generator.generate("")
+
+    # Test wrong length zip code
+    with pytest.raises(ValueError):
+        deep_research_events_generator.generate("1234")
+
+    # Test non-numeric zip code
+    with pytest.raises(ValueError):
+        deep_research_events_generator.generate("abcde")
+
+
+def test_invalid_api_key_deep_research():
+    """Test initialization with invalid API key for Deep Research."""
+    # Test non-string API key
+    with pytest.raises(ValueError):
+        DeepResearchEventsGenerator(12345)
+
+    # Test empty API key
+    with pytest.raises(ValueError):
+        DeepResearchEventsGenerator("")
+
+    # Test None API key
+    with pytest.raises(ValueError):
+        DeepResearchEventsGenerator(None)
