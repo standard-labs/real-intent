@@ -1,6 +1,4 @@
 """An events generation implementation using the OpenAI deep research API."""
-from openai import OpenAI
-
 import json
 
 from real_intent.internal_logging import log, instrument_openai
