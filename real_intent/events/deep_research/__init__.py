@@ -39,6 +39,8 @@ Think from the perspective of a local resident; specifically, one with a family 
 
 Your final answer must always be in JSON format, with this exact schema:
 {json_schema}
+
+If you are unable to find any events for any reason, stick to the schema as you always must, but with an empty list of events. With that said, you should be able to find events in almost all cases. Never respond with anything other than JSON in the exact format specified above.
 """
 
 
