@@ -21,7 +21,7 @@ Keep your research process brief and limited. Wrap up your research after you ha
 
 Make sure your events
 - are relevant to the community;
-- fall within the correct timeframe (from yesterday to 14 days from now);  
+- fall within the correct timeframe (from tomorrow to 14 days from now);  
 - are located within or near {zipcode}
 - have date attributes representing the date or date range of the event in ISO 8601 format (YYYY-MM-DD). Make sure to follow this format when providing the date.
 
