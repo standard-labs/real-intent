@@ -43,7 +43,16 @@ def disable_logging():
 # ---- Instrumentations ----
 
 def instrument_openai(openai_client: "OpenAI" | None = None):
-    """Instrument the OpenAI client."""
+    """Instrument the OpenAI client.
+
+    Raises:
+        ImportError: If the OpenAI package is not installed.
+    """
+    try:
+        import openai
+    except ImportError:
+        raise ImportError("Please install this package with the 'ai' extra.")
+
     if LOGFIRE_AVAILABLE:
         logfire.instrument_openai(openai_client)
 
