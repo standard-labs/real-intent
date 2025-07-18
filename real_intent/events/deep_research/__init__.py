@@ -58,21 +58,28 @@ class DeepResearchEventsGenerator(BaseEventsGenerator):
 
         Raises:
             ImportError: If the OpenAI package is not installed.
+            ValueError: If the API key is invalid.
         """
+        if not isinstance(openai_api_key, str) or not openai_api_key:
+            raise ValueError("OpenAI API key must be a truthy string.")
+
         try:
             from openai import OpenAI
         except ImportError:
             log("error", "Failed to import OpenAI. Make sure to install the package with the 'ai' extra.")
             raise ImportError("Please install this package with the 'ai' extra.")
-        
+
         self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
 
     def _generate(self, zip_code: str) -> EventsResponse:
         """Use the OpenAI deep research API to generate events."""
+        if not isinstance(zip_code, str) or not zip_code.isnumeric() or len(zip_code) != 5:
+            raise ValueError("Invalid ZIP code. ZIP code must be a 5-digit numeric string.")
+
         response = self.openai_client.responses.create(
             model="o4-mini-deep-research",
             input=DEEP_RESEARCH_PROMPT.format(
-                zipcode=zip_code, 
+                zipcode=zip_code,
                 json_schema=EventsResponse.model_json_schema()
             ),
             text={"format": {"type": "json_object"}},
