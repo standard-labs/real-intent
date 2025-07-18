@@ -69,7 +69,7 @@ class DeepResearchEventsGenerator(BaseEventsGenerator):
             from openai import OpenAI
         except ImportError:
             log("error", "Failed to import OpenAI. Make sure to install the package with the 'ai' extra.")
-            raise ImportError("Please install this package with the 'ai' extra.")
+            raise ImportError("Please install this package with the 'ai' extra.") from None
 
         self.openai_client: OpenAI = OpenAI(api_key=openai_api_key)
         instrument_openai(self.openai_client)
