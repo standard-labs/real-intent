@@ -42,7 +42,7 @@ def disable_logging():
 
 # ---- Instrumentations ----
 
-def instrument_openai(openai_client: "OpenAI" | None = None):
+def instrument_openai(openai_client: OpenAI | None = None):
     """Instrument the OpenAI client.
 
     Raises:
