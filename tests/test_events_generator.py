@@ -369,19 +369,3 @@ def test_invalid_zip_code_deep_research(deep_research_events_generator):
     # Test non-numeric zip code
     with pytest.raises(ValueError):
         deep_research_events_generator.generate("abcde")
-
-
-@pytest.mark.skip(reason="Always timed out, now deprecated.")
-def test_invalid_api_key_deep_research():
-    """Test initialization with invalid API key for Deep Research."""
-    # Test non-string API key
-    with pytest.raises(ValueError):
-        PerplexityOpenAIEventsGenerator(12345)
-
-    # Test empty API key
-    with pytest.raises(ValueError):
-        PerplexityOpenAIEventsGenerator("")
-
-    # Test None API key
-    with pytest.raises(ValueError):
-        PerplexityOpenAIEventsGenerator(None)
