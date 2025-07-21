@@ -14,7 +14,7 @@ from real_intent.events import (
     ScrapybaraEventsGenerator,
     SerpEventsGenerator
 )
-from real_intent.events.deep_research import DeepResearchEventsGenerator
+from real_intent.events.deep_research import OpenAIDeepResearchEventsGenerator
 from real_intent.events.errors import NoEventsFoundError
 
 # Suppress reportlab deprecation warning
@@ -83,7 +83,7 @@ def deep_research_events_generator():
     if not openai_api_key:
         pytest.skip("OpenAI API key required")
 
-    return DeepResearchEventsGenerator(openai_api_key)
+    return OpenAIDeepResearchEventsGenerator(openai_api_key)
 
 
 def extract_date_from_range(date_str: str) -> str:
@@ -377,12 +377,12 @@ def test_invalid_api_key_deep_research():
     """Test initialization with invalid API key for Deep Research."""
     # Test non-string API key
     with pytest.raises(ValueError):
-        DeepResearchEventsGenerator(12345)
+        OpenAIDeepResearchEventsGenerator(12345)
 
     # Test empty API key
     with pytest.raises(ValueError):
-        DeepResearchEventsGenerator("")
+        OpenAIDeepResearchEventsGenerator("")
 
     # Test None API key
     with pytest.raises(ValueError):
-        DeepResearchEventsGenerator(None)
+        OpenAIDeepResearchEventsGenerator(None)

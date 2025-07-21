@@ -9,7 +9,7 @@ from real_intent.events.deep_research.prompts import DEEP_RESEARCHER_PROMPT
 
 # ---- Implementation ----
 
-class DeepResearchEventsGenerator(BaseEventsGenerator):
+class OpenAIDeepResearchEventsGenerator(BaseEventsGenerator):
     """An events generation implementation using the OpenAI deep research API."""
 
     def __init__(self, openai_api_key: str):
