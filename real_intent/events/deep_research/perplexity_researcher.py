@@ -1,10 +1,8 @@
 """Use Perplexity as the initial web researcher, then triage and compile with GPT-4o."""
 import requests
 
-import json
-
 from real_intent.internal_logging import log, log_span, instrument_openai
-from real_intent.events.models import Event, EventsResponse
+from real_intent.events.models import EventsResponse
 from real_intent.events.base import BaseEventsGenerator
 from real_intent.events.deep_research.prompts import DEEP_RESEARCHER_PROMPT, TRIAGER_PROMPT
 
@@ -59,7 +57,7 @@ class PerplexityOpenAIEventsGenerator(BaseEventsGenerator):
 
         return response.json()
 
-    def _triage_research(self, research: dict) -> EventsResponse:
+    def _openai_triage_research(self, research: dict) -> EventsResponse:
         """
         Take research output and prioritize/compile into a
         proper response with OpenAI.
@@ -80,3 +78,8 @@ class PerplexityOpenAIEventsGenerator(BaseEventsGenerator):
             raise ValueError("Error triaging research with OpenAI")
 
         return openai_parse.output_parsed
+
+    def _generate(self, zip_code: str) -> EventsResponse:
+        """Use the Perplexity researcher then pass to OpenAI traiger."""
+        research: dict = self._perplexity_deep_research(zip_code)
+        return self._openai_triage_research(research)
