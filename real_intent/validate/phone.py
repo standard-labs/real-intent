@@ -30,6 +30,9 @@ class PhoneValidator(BaseValidator):
         if len(phone) != 10:
             return False
 
+        if not phone.isdigit():
+            return False
+
         response = requests.get(
             "https://apilayer.net/api/validate",
             params={
@@ -89,10 +92,11 @@ class PhoneValidator(BaseValidator):
             try:
                 return self._validate_phone(phone)
             except requests.RequestException as e:
+                phone_request_exc = e
                 time.sleep(random.uniform(3, 5))
 
         log("error", f"All validation attempts failed for phone {phone}")
-        raise e  # re-raise the last exception
+        raise phone_request_exc  # re-raise the last exception
 
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove any phone numbers that are not considered valid."""
