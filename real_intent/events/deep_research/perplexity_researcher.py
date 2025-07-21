@@ -47,7 +47,8 @@ class PerplexityOpenAIEventsGenerator(BaseEventsGenerator):
                         "type": "json_schema",
                         "json_schema": {"schema": EventsResponse.model_json_schema()}
                     }
-                }
+                },
+                timeout=600
             )
 
             if not response.ok:
