@@ -34,3 +34,5 @@ Your final answer must always be in JSON format, with this exact schema:
 
 If you are unable to find any events for any reason, stick to the schema as you always must, but with an empty list of events. With that said, you should be able to find events in almost all cases. Never respond with anything other than JSON in the exact format specified above.
 """
+
+TRIAGER_PROMPT: str = "Extract the following agent research scrapbook thinking into the appropriate format. Reorder the list of events based on how likely a resident will be to find value in it.\n\n{research}"
