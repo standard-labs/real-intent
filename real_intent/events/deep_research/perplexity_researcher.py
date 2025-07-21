@@ -3,7 +3,7 @@ import requests
 
 import json
 
-from real_intent.internal_logging import log, log_span
+from real_intent.internal_logging import log, log_span, instrument_openai
 from real_intent.events.models import Event, EventsResponse
 from real_intent.events.base import BaseEventsGenerator
 from real_intent.events.deep_research.prompts import DEEP_RESEARCHER_PROMPT, TRIAGER_PROMPT
@@ -24,6 +24,7 @@ class PerplexityOpenAIEventsGenerator(BaseEventsGenerator):
             raise ImportError("Needs openai. Please install this package with the [ai] extension.")
             
         self.openai_client = OpenAI(api_key=openai_api_key)
+        instrument_openai(self.openai_client)
 
     def _perplexity_deep_research(self, zipcode: str) -> dict:
         """Deep research the zipcode and find a raw response of content."""
@@ -57,3 +58,25 @@ class PerplexityOpenAIEventsGenerator(BaseEventsGenerator):
                 return
 
         return response.json()
+
+    def _triage_research(self, research: dict) -> EventsResponse:
+        """
+        Take research output and prioritize/compile into a
+        proper response with OpenAI.
+        """
+        openai_parse = self.openai_client.responses.parse(
+            model="gpt-4o",
+            input=[
+                {
+                    "role": "user",
+                    "content": TRIAGER_PROMPT.format(research=research)
+                },
+            ],
+            text_format=EventsResponse
+        )
+
+        if not isinstance(openai_parse.output_parsed, EventsResponse):
+            log("error", f"Error triaging research with OpenAI: {openai_parse.output_parsed}")
+            raise ValueError("Error triaging research with OpenAI")
+
+        return openai_parse.output_parsed
