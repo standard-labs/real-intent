@@ -171,7 +171,7 @@ def test_lawrenceville_ga_events_serp(serp_events_generator):
     assert "Lawrenceville" in response.summary, "Summary should mention Lawrenceville"
 
 
-@pytest.skip(reason="Always timed out, now deprecated.")
+@pytest.mark.skip(reason="Always timed out, now deprecated.")
 def test_beverly_hills_events_deep_research(deep_research_events_generator):
     """Test generating events for Beverly Hills (90210) using Deep Research."""
     try:
