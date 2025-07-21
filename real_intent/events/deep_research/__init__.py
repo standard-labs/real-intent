@@ -9,13 +9,13 @@ from real_intent.events.models import EventsResponse
 # ---- Prompts ----
 
 DEEP_RESEARCH_PROMPT: str = """
-You are an expert on local events. Your job is to identify local events in {zipcode} that would be relevant to residents. These events need not be confined exactly to {zipcode}; surrounding areas are ok. 
+You are an expert on local events. Your job is to identify up to 5 local events in {zipcode} that would be relevant to residents. These events need not be confined exactly to {zipcode}; surrounding areas are ok. 
 
 The events you find must be within the date range of tomorrow and 14 days from now. 
 
 Your objective is to extract event details (title, date, description, link) from the provided messages, focusing on engaging events such as networking meetups, educational opportunities, car shows, outdoor festivals, art exhibitions, and family-friendly activities. Also include need to know events like highway closures.
 
-Keep your research process brief and limited. Wrap up your research after you have found enough valid events. Do not spend time digging too deep into minute details. Focus on getting enough events/event info to meet the requirements and fill the output schema. Your research should be surface level and lightweight. 
+Keep your research process brief and limited. Wrap up your research after you have found enough valid events (up to 5). Do not spend time digging too deep into minute details. Focus on getting enough events/event info to meet the requirements and fill the output schema. Your research should be surface level and lightweight. 
 
 Make sure your events
 - are relevant to the community;
