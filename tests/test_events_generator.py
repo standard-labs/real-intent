@@ -14,7 +14,7 @@ from real_intent.events import (
     ScrapybaraEventsGenerator,
     SerpEventsGenerator
 )
-from real_intent.events.deep_research.openai_researcher import OpenAIDeepResearchEventsGenerator
+from real_intent.events.deep_research.perplexity_researcher import PerplexityOpenAIEventsGenerator
 from real_intent.events.errors import NoEventsFoundError
 
 # Suppress reportlab deprecation warning
@@ -77,13 +77,14 @@ def serp_events_generator():
 
 @pytest.fixture
 def deep_research_events_generator():
-    """Create a DeepResearchEventsGenerator instance."""
+    """Create a PerplexityOpenAIEventsGenerator instance."""
+    perplexity_api_key = os.getenv("PERPLEXITY_API_KEY")
     openai_api_key = os.getenv("OPENAI_API_KEY")
 
-    if not openai_api_key:
-        pytest.skip("OpenAI API key required")
+    if not perplexity_api_key or not openai_api_key:
+        pytest.skip("Perplexity and OpenAI API keys required")
 
-    return OpenAIDeepResearchEventsGenerator(openai_api_key)
+    return PerplexityOpenAIEventsGenerator(perplexity_api_key, openai_api_key)
 
 
 def extract_date_from_range(date_str: str) -> str:
@@ -171,9 +172,8 @@ def test_lawrenceville_ga_events_serp(serp_events_generator):
     assert "Lawrenceville" in response.summary, "Summary should mention Lawrenceville"
 
 
-@pytest.mark.skip(reason="Always timed out, now deprecated.")
 def test_beverly_hills_events_deep_research(deep_research_events_generator):
-    """Test generating events for Beverly Hills (90210) using Deep Research."""
+    """Test generating events for Beverly Hills (90210) using PerplexityOpenAI Deep Research."""
     try:
         response = deep_research_events_generator.generate("90210")
     except NoEventsFoundError:
@@ -352,9 +352,8 @@ def test_invalid_api_key_perplexity():
         PerplexityEventsGenerator(None)
 
 
-@pytest.mark.skip(reason="Always timed out, now deprecated.")
 def test_invalid_zip_code_deep_research(deep_research_events_generator):
-    """Test generation with invalid zip code for Deep Research."""
+    """Test generation with invalid zip code for PerplexityOpenAI Deep Research."""
     # Test non-string zip code
     with pytest.raises(ValueError):
         deep_research_events_generator.generate(12345)
@@ -377,12 +376,12 @@ def test_invalid_api_key_deep_research():
     """Test initialization with invalid API key for Deep Research."""
     # Test non-string API key
     with pytest.raises(ValueError):
-        OpenAIDeepResearchEventsGenerator(12345)
+        PerplexityOpenAIEventsGenerator(12345)
 
     # Test empty API key
     with pytest.raises(ValueError):
-        OpenAIDeepResearchEventsGenerator("")
+        PerplexityOpenAIEventsGenerator("")
 
     # Test None API key
     with pytest.raises(ValueError):
-        OpenAIDeepResearchEventsGenerator(None)
+        PerplexityOpenAIEventsGenerator(None)
