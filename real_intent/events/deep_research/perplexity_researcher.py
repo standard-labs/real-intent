@@ -81,5 +81,9 @@ class PerplexityOpenAIEventsGenerator(BaseEventsGenerator):
 
     def _generate(self, zip_code: str) -> EventsResponse:
         """Use the Perplexity researcher then pass to OpenAI traiger."""
+        # Validate zip code input
+        if not isinstance(zip_code, str) or not zip_code.isnumeric() or len(zip_code) != 5:
+            raise ValueError("Invalid ZIP code. ZIP code must be a 5-digit numeric string.")
+
         research: dict = self._perplexity_deep_research(zip_code)
         return self._openai_triage_research(research)
