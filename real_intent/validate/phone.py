@@ -30,6 +30,9 @@ class PhoneValidator(BaseValidator):
         if len(phone) != 10:
             return False
 
+        if not phone.isdigit():
+            return False
+
         response = requests.get(
             "https://apilayer.net/api/validate",
             params={
