@@ -18,8 +18,8 @@ class PerplexityOpenAIEventsGenerator(BaseEventsGenerator):
 
         try:
             from openai import OpenAI
-        except ImportError:
-            raise ImportError("Needs openai. Please install this package with the [ai] extension.")
+        except ImportError as e:
+            raise ImportError("Please install this package with the 'ai' extra.") from e
             
         self.openai_client = OpenAI(api_key=openai_api_key)
         instrument_openai(self.openai_client)
