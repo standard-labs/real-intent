@@ -14,7 +14,7 @@ from real_intent.events import (
     ScrapybaraEventsGenerator,
     SerpEventsGenerator
 )
-from real_intent.events.deep_research import OpenAIDeepResearchEventsGenerator
+from real_intent.events.deep_research.openai_researcher import OpenAIDeepResearchEventsGenerator
 from real_intent.events.errors import NoEventsFoundError
 
 # Suppress reportlab deprecation warning
