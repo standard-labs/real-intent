@@ -13,10 +13,16 @@ from real_intent.internal_logging import log
 class PhoneValidator(BaseValidator):
     """Remove invalid US phone numbers based on format and Numverify API validation."""
 
-    def __init__(self, numverify_key: str, max_threads: int = 10) -> None:
-        """Initialize with numverify key."""
+    def __init__(self, numverify_key: str, max_threads: int = 10, raise_on_error: bool = True) -> None:
+        """
+        Initialize with numverify key.
+
+        If raise_on_error is False, errors from Numverify will be logged but treated as 
+        invalid phone numbers. If True, errors will be raised.
+        """
         self.api_key: str = numverify_key
         self.max_threads: int = max_threads
+        self.raise_on_error = raise_on_error
 
     def _validate_phone(self, phone: str) -> bool:
         """Validate a US phone number with numverify."""
@@ -95,8 +101,12 @@ class PhoneValidator(BaseValidator):
                 phone_request_exc = e
                 time.sleep(random.uniform(3, 5))
 
-        log("error", f"All validation attempts failed for phone {phone}")
-        raise phone_request_exc  # re-raise the last exception
+        log("error", f"All validation attempts failed for phone {phone}", exc_info=phone_request_exc)
+
+        if self.raise_on_error:
+            raise phone_request_exc
+
+        return False
 
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove any phone numbers that are not considered valid."""
