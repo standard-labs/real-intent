@@ -391,15 +391,26 @@ class BigDBMClient:
 
         Note that the resulting list will likely be of shorter len than the input
         given the PII hit rate is often less than 1.00. 
+
+        Pulls 1,000 MD5s at a time, aggregates at the end.
         """
+        if not unique_md5s:
+            return []
+
         md5s_list: list[str] = [md5.md5 for md5 in unique_md5s]
-        pii_data: dict[str, dict[str, Any]] = self._pull_pii(md5s_list)
+        pii_data: dict[str, dict[str, Any]] = {}
+
+        # Pull in batches of 1,000
+        for i in range(0, len(md5s_list), 1000):
+            pii_data.update(
+                self._pull_pii(md5s_list[i:i+1000])
+            )
 
         return_md5s: list[MD5WithPII] = []
         md5: UniqueMD5
 
         for md5 in unique_md5s:
-            if not md5.md5 in pii_data:
+            if md5.md5 not in pii_data:
                 continue
 
             return_md5s.append(
