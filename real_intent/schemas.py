@@ -18,12 +18,23 @@ class ConfigDates(BaseModel):
 
 
 class IABJob(BaseModel):
-    """Payload for creating an IAB job."""
+    """
+    Payload for creating an IAB job.
+
+    Only one of zips, cities, and states should be provided. If multiple are provided,
+    only one will be used with priority of zips > cities > states.
+    """
     intent_categories: list[str] = Field(
         default_factory=list, description="List of IAB intent categories"
     )
     zips: list[str] = Field(
         default_factory=list, description="List of zip codes"
+    )
+    cities: list[str] = Field(
+        default_factory=list, description="List of cities"
+    )
+    states: list[str] = Field(
+        default_factory=list, description="List of state abbreviations"
     )
     keywords: list[str] = Field(
         default_factory=list, description="List of keywords"
@@ -45,6 +56,17 @@ class IABJob(BaseModel):
         ):
             raise ValueError(
                 "Need at least one of intent categories, keywords, or domains.\n" + str(self.model_dump())
+            )
+
+        if all(
+            [
+                not self.zips,
+                not self.cities,
+                not self.states
+            ]
+        ):
+            raise ValueError(
+                "Need at least one of zip codes, cities, or states.\n" + str(self.model_dump())
             )
 
         return self
@@ -72,13 +94,21 @@ class IABJob(BaseModel):
 
             query_categories.append(str(code_match))
 
-        return {
+        payload: dict[str, str | int] = {
             "IABs": ",".join(query_categories),
-            "Zips": ",".join(self.zips),
             "Keywords": ",".join(self.keywords),
             "Domains": ",".join(self.domains),
             "NumberOfHems": self.n_hems
         }
+
+        if self.zips:
+            payload["Zips"] = ",".join(self.zips)
+        elif self.cities:
+            payload["Cities"] = ",".join(self.cities)
+        elif self.states:
+            payload["States"] = ",".join(self.states)
+
+        return payload
 
 
 class IntentEvent(BaseModel):
