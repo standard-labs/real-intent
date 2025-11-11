@@ -18,6 +18,9 @@ Think about how somebody receiving this lead can make the most of it. Actionable
 
 You will be given a "Profile" which is a brief descriptor of the overall category of the IAB categories, so you can make assumptions about who the leads are for and how the recipient of the leads should optimize usage of the leads. Keep the insight focused on the profile, ex. if the profile is Real Estate Broker, focus on how the lead can be useful to a real estate agent selling real estate to the lead.
 
+A few facts/insights that may or may not be useful to you:
+- On average, homeowner downsizing age is 65+
+
 Your response must be valid JSON with the specified keys. Use the "thinking" key FIRST to think thoroughly and critically through your process, before arriving at your final insight. Consider the provided profile when generating your insight.
 """
 
