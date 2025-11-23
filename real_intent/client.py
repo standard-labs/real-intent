@@ -31,12 +31,19 @@ class BigDBMClient:
     This class is thread-safe.
     """
 
-    def __init__(self, client_id: str, client_secret: str) -> None:
+    def __init__(
+            self, 
+            client_id: str, 
+            client_secret: str, 
+            request_timeout_seconds: int = 30,
+            max_request_attempts: int = 3
+        ) -> None:
         """Initialize the BigDBM client."""
         self.client_id: str = client_id
         self.client_secret: str = client_secret
 
-        self.timeout_seconds: int = 30
+        self.request_timeout_seconds: int = request_timeout_seconds
+        self.max_request_attempts: int = max_request_attempts
 
         # Access token declarations (defined by _update_token)
         self._access_token: str = ""
@@ -75,7 +82,7 @@ class BigDBMClient:
 
         return time.time() < self._access_token_expiration
 
-    def __request(self, request: Request, n_attempts: int = 3) -> dict:
+    def __request(self, request: Request) -> dict:
         """
         Abstracted requesting mechanism handling access token.
         Raises for status automatically.
@@ -103,15 +110,24 @@ class BigDBMClient:
             }"
         )
 
-        for n_attempt in range(1, n_attempts+1):
+        for n_attempt in range(1, self.max_request_attempts+1):
             try:
                 with Session() as session:
-                    response = session.send(request.prepare(), timeout=self.timeout_seconds)
+                    response = session.send(
+                        request.prepare(), 
+                        timeout=self.request_timeout_seconds
+                    )
 
                 response.raise_for_status()
             except RequestException as e:
-                if n_attempt > n_attempts:
-                    log("error", f"Request failed after {n_attempts} attempts. Error: {e}")
+                if n_attempt > self.max_request_attempts:
+                    log(
+                        "error", 
+                        (
+                            f"Request failed after {self.max_request_attempts} "
+                            f"attempts. Error: {e}"
+                        )
+                    )
                     raise
 
                 # Log it, sleep, loop again to try again
@@ -122,9 +138,8 @@ class BigDBMClient:
                 log(
                     "warn", 
                     (
-                        f"Request attempt {n_attempt} of {n_attempts} failed. "
-                        f"Retrying in {sleep_time}s. "
-                        f"Error: {e}"
+                        f"Request attempt {n_attempt} of {self.max_request_attempts} "
+                        f"failed. Retrying in {sleep_time}s. Error: {e}"
                     )
                 )
                 time.sleep(sleep_time)
