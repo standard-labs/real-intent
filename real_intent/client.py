@@ -121,6 +121,8 @@ class BigDBMClient:
                 response.raise_for_status()
                 break
             except RequestException as e:
+                last_exception: RequestException = e
+
                 if n_attempt == self.max_request_attempts:
                     continue  # on last failed attempt, skip to else block
 
@@ -142,10 +144,10 @@ class BigDBMClient:
                 "error", 
                 (
                     f"Request failed after {self.max_request_attempts} "
-                    f"attempts. Error: {e}"
+                    f"attempts. Error: {last_exception}"
                 )
             )
-            raise
+            raise last_exception
 
         log("trace", f"Received response: {response.text}")
         return response.json()
