@@ -31,12 +31,36 @@ class BigDBMClient:
     This class is thread-safe.
     """
 
-    def __init__(self, client_id: str, client_secret: str) -> None:
-        """Initialize the BigDBM client."""
+    def __init__(
+            self, 
+            client_id: str, 
+            client_secret: str, 
+            request_timeout_seconds: int = 30,
+            max_request_attempts: int = 3
+        ) -> None:
+        """
+        Initialize the BigDBM client.
+
+        Parameters
+        ----------
+        client_id : str
+            The client ID for authentication.
+        client_secret : str
+            The client secret for authentication.
+        request_timeout_seconds : int, optional
+            Timeout in seconds for each request (default: 30).
+        max_request_attempts : int, optional
+            Maximum number of attempts for each request (default: 3).
+        """
+        # Validate input
+        if not isinstance(max_request_attempts, int) or max_request_attempts < 1:
+            raise ValueError("max_request_attempts must be an int and at least 1")
+            
         self.client_id: str = client_id
         self.client_secret: str = client_secret
 
-        self.timeout_seconds: int = 30
+        self.request_timeout_seconds: int = request_timeout_seconds
+        self.max_request_attempts: int = max_request_attempts
 
         # Access token declarations (defined by _update_token)
         self._access_token: str = ""
@@ -78,7 +102,7 @@ class BigDBMClient:
     def __request(self, request: Request) -> dict:
         """
         Abstracted requesting mechanism handling access token.
-        Raises for status automatically. 
+        Raises for status automatically.
         
         Returns a dictionary of the response's JSON.
         """
@@ -103,24 +127,44 @@ class BigDBMClient:
             }"
         )
 
-        try:
-            with Session() as session:
-                response = session.send(request.prepare(), timeout=self.timeout_seconds)
+        for n_attempt in range(1, self.max_request_attempts+1):
+            try:
+                with Session() as session:
+                    response = session.send(
+                        request.prepare(), 
+                        timeout=self.request_timeout_seconds
+                    )
 
-            response.raise_for_status()
-        except RequestException as e:
-            # If there's an error, wait and try just once more
-            _random_sleep = round(random.uniform(7, 13), 2)
-            log("warn", f"Request failed. Waiting {_random_sleep} seconds and trying again. Error: {e}")
-            time.sleep(_random_sleep)
+                response.raise_for_status()
+                break
+            except RequestException as e:
+                last_exception: RequestException = e
 
-            with Session() as session:
-                response = session.send(request.prepare(), timeout=self.timeout_seconds)
+                if n_attempt == self.max_request_attempts:
+                    continue  # on last failed attempt, skip to else block
 
-            if not response.ok:
-                log("error", f"Request failed again. Error: {response.text}")
-
-            response.raise_for_status()
+                # Log it, sleep, loop again to try again
+                sleep_time = round(
+                    number=random.uniform(30 * n_attempt, (30 * n_attempt) + 10),
+                    ndigits=2
+                )
+                log(
+                    "warn", 
+                    (
+                        f"Request attempt {n_attempt} of {self.max_request_attempts} "
+                        f"failed. Retrying in {sleep_time}s. Error: {e}"
+                    )
+                )
+                time.sleep(sleep_time)
+        else:
+            log(
+                "error", 
+                (
+                    f"Request failed after {self.max_request_attempts} "
+                    f"attempts. Error: {last_exception}"
+                )
+            )
+            raise last_exception
 
         log("trace", f"Received response: {response.text}")
         return response.json()
