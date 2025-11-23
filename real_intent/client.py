@@ -121,6 +121,9 @@ class BigDBMClient:
                 response.raise_for_status()
                 break
             except RequestException as e:
+                if n_attempt == self.max_request_attempts:
+                    continue  # on last failed attempt, skip to else block
+
                 # Log it, sleep, loop again to try again
                 sleep_time = round(
                     number=random.uniform(30 * n_attempt, (30 * n_attempt) + 10),
