@@ -119,17 +119,8 @@ class BigDBMClient:
                     )
 
                 response.raise_for_status()
+                break
             except RequestException as e:
-                if n_attempt > self.max_request_attempts:
-                    log(
-                        "error", 
-                        (
-                            f"Request failed after {self.max_request_attempts} "
-                            f"attempts. Error: {e}"
-                        )
-                    )
-                    raise
-
                 # Log it, sleep, loop again to try again
                 sleep_time = round(
                     number=random.uniform(30 * n_attempt, (30 * n_attempt) + 10),
@@ -143,6 +134,15 @@ class BigDBMClient:
                     )
                 )
                 time.sleep(sleep_time)
+        else:
+            log(
+                "error", 
+                (
+                    f"Request failed after {self.max_request_attempts} "
+                    f"attempts. Error: {e}"
+                )
+            )
+            raise
 
         log("trace", f"Received response: {response.text}")
         return response.json()
