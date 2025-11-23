@@ -75,10 +75,10 @@ class BigDBMClient:
 
         return time.time() < self._access_token_expiration
 
-    def __request(self, request: Request) -> dict:
+    def __request(self, request: Request, n_attempts: int = 3) -> dict:
         """
         Abstracted requesting mechanism handling access token.
-        Raises for status automatically. 
+        Raises for status automatically.
         
         Returns a dictionary of the response's JSON.
         """
@@ -103,24 +103,31 @@ class BigDBMClient:
             }"
         )
 
-        try:
-            with Session() as session:
-                response = session.send(request.prepare(), timeout=self.timeout_seconds)
+        for n_attempt in range(1, n_attempts+1):
+            try:
+                with Session() as session:
+                    response = session.send(request.prepare(), timeout=self.timeout_seconds)
 
-            response.raise_for_status()
-        except RequestException as e:
-            # If there's an error, wait and try just once more
-            _random_sleep = round(random.uniform(7, 13), 2)
-            log("warn", f"Request failed. Waiting {_random_sleep} seconds and trying again. Error: {e}")
-            time.sleep(_random_sleep)
+                response.raise_for_status()
+            except RequestException as e:
+                if n_attempt > n_attempts:
+                    log("error", f"Request failed after {n_attempts} attempts. Error: {e}")
+                    raise
 
-            with Session() as session:
-                response = session.send(request.prepare(), timeout=self.timeout_seconds)
-
-            if not response.ok:
-                log("error", f"Request failed again. Error: {response.text}")
-
-            response.raise_for_status()
+                # Log it, sleep, loop again to try again
+                sleep_time = round(
+                    number=random.uniform(30 * n_attempt, (30 * n_attempt) + 10),
+                    ndigits=2
+                )
+                log(
+                    "warn", 
+                    (
+                        f"Request attempt {n_attempt} of {n_attempts} failed. "
+                        f"Retrying in {sleep_time}s. "
+                        f"Error: {e}"
+                    )
+                )
+                time.sleep(sleep_time)
 
         log("trace", f"Received response: {response.text}")
         return response.json()
