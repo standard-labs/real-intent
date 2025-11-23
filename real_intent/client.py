@@ -52,8 +52,10 @@ class BigDBMClient:
         max_request_attempts : int, optional
             Maximum number of attempts for each request (default: 3).
         """
+        # Validate input
         if max_request_attempts < 1:
             raise ValueError("max_request_attempts must be at least 1")
+            
         self.client_id: str = client_id
         self.client_secret: str = client_secret
 
