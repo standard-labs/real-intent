@@ -38,7 +38,20 @@ class BigDBMClient:
             request_timeout_seconds: int = 30,
             max_request_attempts: int = 3
         ) -> None:
-        """Initialize the BigDBM client."""
+        """
+        Initialize the BigDBM client.
+
+        Parameters
+        ----------
+        client_id : str
+            The client ID for authentication.
+        client_secret : str
+            The client secret for authentication.
+        request_timeout_seconds : int, optional
+            Timeout in seconds for each request (default: 30).
+        max_request_attempts : int, optional
+            Maximum number of attempts for each request (default: 3).
+        """
         if max_request_attempts < 1:
             raise ValueError("max_request_attempts must be at least 1")
         self.client_id: str = client_id
