@@ -142,7 +142,7 @@ class BigDBMClient:
         with log_span(f"Requesting {request.method} {request.url}", _level="trace"):
             for n_attempt in range(1, self.max_request_attempts+1):
                 try:
-                    response = self.__request(request)
+                    response: dict = self.__request(request)
                     break
                 except RequestException as e:
                     last_exception: RequestException = e
@@ -173,8 +173,8 @@ class BigDBMClient:
                 )
                 raise last_exception
 
-            log("trace", f"Received response: {response.text}")
-            return response.json()
+            log("trace", f"Received response: {response}")
+            return response
     
     def get_config_dates(self) -> ConfigDates:
         """Get the configuration dates from /config."""
