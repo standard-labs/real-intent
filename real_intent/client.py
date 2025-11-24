@@ -127,52 +127,50 @@ class BigDBMClient:
             }"
         )
 
-        for n_attempt in range(1, self.max_request_attempts+1):
-            try:
-                with Session() as session:
-                    response = session.send(
-                        request.prepare(), 
-                        timeout=self.request_timeout_seconds
-                    )
-
-                response.raise_for_status()
-                break
-            except RequestException as e:
-                last_exception: RequestException = e
-
-                if n_attempt == self.max_request_attempts:
-                    continue  # on last failed attempt, skip to else block
-
-                # Log it, sleep, loop again to try again
-                sleep_time = round(
-                    number=random.uniform(30 * n_attempt, (30 * n_attempt) + 10),
-                    ndigits=2
-                )
-                log(
-                    "warn", 
-                    (
-                        f"Request attempt {n_attempt} of {self.max_request_attempts} "
-                        f"failed. Retrying in {sleep_time}s. Error: {e}"
-                    )
-                )
-                time.sleep(sleep_time)
-        else:
-            log(
-                "error", 
-                (
-                    f"Request failed after {self.max_request_attempts} "
-                    f"attempts. Error: {last_exception}"
-                )
+        with Session() as session:
+            response = session.send(
+                request.prepare(), 
+                timeout=self.request_timeout_seconds
             )
-            raise last_exception
 
-        log("trace", f"Received response: {response.text}")
+        response.raise_for_status()
+        log("trace", f"Received response: {response}")
         return response.json()
 
     def _request(self, request: Request) -> dict:
-        """Request abstraction with logging."""
+        """Request abstraction with logging and retry backoff."""
         with log_span(f"Requesting {request.method} {request.url}", _level="trace"):
-            return self.__request(request)
+            for n_attempt in range(1, self.max_request_attempts+1):
+                try:
+                    return self.__request(request)
+                except RequestException as e:
+                    last_exception: RequestException = e
+
+                    if n_attempt == self.max_request_attempts:
+                        continue  # on last failed attempt, skip to else block
+
+                    # Log it, sleep, loop again to try again
+                    sleep_time = round(
+                        number=random.uniform(30 * n_attempt, (30 * n_attempt) + 10),
+                        ndigits=2
+                    )
+                    log(
+                        "warn", 
+                        (
+                            f"Request attempt {n_attempt} of {self.max_request_attempts} "
+                            f"failed. Retrying in {sleep_time}s. Error: {e}"
+                        )
+                    )
+                    time.sleep(sleep_time)
+            else:
+                log(
+                    "error", 
+                    (
+                        f"Request failed after {self.max_request_attempts} "
+                        f"attempts. Error: {last_exception}"
+                    )
+                )
+                raise last_exception
     
     def get_config_dates(self) -> ConfigDates:
         """Get the configuration dates from /config."""
