@@ -105,10 +105,7 @@ class PerLeadInsightGenerator(BaseAnalyzer):
                         )
                     }
                 ],
-                temperature=1,
                 top_p=1,
-                frequency_penalty=0,
-                presence_penalty=0,
                 response_format=LeadInsight
             )
 
