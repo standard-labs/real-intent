@@ -81,8 +81,8 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
         
         @retry_with_backoff()
         def generate_insights():
-            return self.openai_client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
+            return self.openai_client.chat.completions.parse(
+                model="gpt-5-mini",
                 messages=[
                     {
                         "role": "system",
@@ -93,11 +93,7 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
                         "content": csv_data
                     }
                 ],
-                max_tokens=4095,
-                temperature=1,
                 top_p=1,
-                frequency_penalty=0,
-                presence_penalty=0,
                 response_format=LeadInsights
             )
 
@@ -257,8 +253,8 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         
         @retry_with_backoff()
         def generate_insights():
-            return self.openai_client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
+            return self.openai_client.chat.completions.parse(
+                model="gpt-5-mini",
                 messages=[
                     {
                         "role": "system",
@@ -273,11 +269,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
                         )
                     }
                 ],
-                max_tokens=4095,
-                temperature=1,
                 top_p=1,
-                frequency_penalty=0,
-                presence_penalty=0,
                 response_format=ValidatedLeadInsights
             )
 

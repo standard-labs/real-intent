@@ -3,7 +3,7 @@ pandas
 requests
 
 logfire>=3.16.2
-openai==1.97.0
+openai==2.14.0
 reportlab>=4.4.2
 
 python-dotenv

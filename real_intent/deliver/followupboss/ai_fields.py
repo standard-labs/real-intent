@@ -278,7 +278,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
         # Match the custom fields with the PII data
         log("debug", "Sending request to OpenAI for field mapping")
         response = self.openai_client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model="gpt-5-mini",
             messages=[
                 {
                     "role": "system",
@@ -292,11 +292,7 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
                     )
                 }
             ],
-            max_tokens=4095,
-            temperature=0.7,
             top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
             response_format={"type": "json_object"}
         )
 
