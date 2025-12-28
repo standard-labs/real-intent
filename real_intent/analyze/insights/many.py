@@ -81,7 +81,7 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
         
         @retry_with_backoff()
         def generate_insights():
-            return self.openai_client.beta.chat.completions.parse(
+            return self.openai_client.chat.completions.parse(
                 model="gpt-5-mini",
                 messages=[
                     {
@@ -253,7 +253,7 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
         
         @retry_with_backoff()
         def generate_insights():
-            return self.openai_client.beta.chat.completions.parse(
+            return self.openai_client.chat.completions.parse(
                 model="gpt-5-mini",
                 messages=[
                     {
