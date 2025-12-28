@@ -292,7 +292,6 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
                     )
                 }
             ],
-            max_tokens=4095,
             temperature=0.7,
             top_p=1,
             frequency_penalty=0,

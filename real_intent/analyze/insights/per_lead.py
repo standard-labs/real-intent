@@ -105,7 +105,6 @@ class PerLeadInsightGenerator(BaseAnalyzer):
                         )
                     }
                 ],
-                max_tokens=2000,
                 temperature=1,
                 top_p=1,
                 frequency_penalty=0,

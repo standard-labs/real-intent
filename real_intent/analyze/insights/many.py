@@ -93,7 +93,6 @@ class OpenAIInsightsGenerator(BaseAnalyzer):
                         "content": csv_data
                     }
                 ],
-                max_tokens=4095,
                 temperature=1,
                 top_p=1,
                 frequency_penalty=0,
@@ -273,7 +272,6 @@ class ValidatedInsightsGenerator(BaseAnalyzer):
                         )
                     }
                 ],
-                max_tokens=4095,
                 temperature=1,
                 top_p=1,
                 frequency_penalty=0,
