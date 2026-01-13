@@ -1,9 +1,9 @@
-pydantic>=2.10.4
-pandas
-requests
+pydantic>=2.12.0
+pandas>=2.3.0
+requests>=2.32.0
 
-logfire>=3.16.2
-openai==2.14.0
+logfire>=4.0.0
+openai>=2.14.0
 reportlab>=4.4.2
 
 python-dotenv
@@ -11,9 +11,9 @@ python-dotenv
 scrapybara>=2.3.0
 playwright>=1.49.1
 
-httpx==0.27.0
-pymongo
+httpx>=0.27.0
+pymongo>=4.16.0
 
-anthropic>=0.49.0
+anthropic>=0.75.0
 
 tldextract>=5.0.0
