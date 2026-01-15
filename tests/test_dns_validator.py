@@ -107,7 +107,7 @@ def test_validate(fillout_dns_validator, dns_test_md5s):
 )
 def test_mongo_dns_validator(dns_test_md5s):
     from pymongo import MongoClient
-    client = MongoClient(os.getenv("MONGO_CONNECT_STR"), serverSelectionTimeoutMS=5000)
+    client = MongoClient(os.getenv("MONGO_CONNECT_STR"))
     coll = client.donotsell.entries
 
     validator = MongoDNSValidator(coll)
