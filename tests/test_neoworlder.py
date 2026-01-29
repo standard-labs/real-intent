@@ -94,16 +94,33 @@ def test_filter_dnc_leads_keeps_non_dnc(neoworlder_deliverer, sample_pii_md5s):
     assert len(filtered) == len(sample_pii_md5s)
 
 
-def test_filter_dnc_leads_removes_all_dnc(neoworlder_deliverer, sample_pii_md5s):
-    """Test that leads where ALL phones are DNC are removed."""
-    # Mark all phones as DNC
+def test_filter_dnc_leads_keeps_all_dnc_with_emails(neoworlder_deliverer, sample_pii_md5s):
+    """Test that leads where ALL phones are DNC are kept if they have emails."""
+    # Mark all phones as DNC but ensure leads have emails
     for lead in sample_pii_md5s:
         for phone in lead.pii.mobile_phones:
             phone.do_not_call = True
+        # Ensure lead has at least one email
+        if not lead.pii.emails:
+            lead.pii.emails = ["test@example.com"]
 
     filtered = neoworlder_deliverer._filter_dnc_leads(sample_pii_md5s)
 
-    # All leads should be filtered out (all phones are DNC)
+    # All leads should be kept (have emails even though all phones are DNC)
+    assert len(filtered) == len(sample_pii_md5s)
+
+
+def test_filter_dnc_leads_removes_all_dnc_no_emails(neoworlder_deliverer, sample_pii_md5s):
+    """Test that leads where ALL phones are DNC and no emails are removed."""
+    # Mark all phones as DNC and remove emails
+    for lead in sample_pii_md5s:
+        for phone in lead.pii.mobile_phones:
+            phone.do_not_call = True
+        lead.pii.emails = []
+
+    filtered = neoworlder_deliverer._filter_dnc_leads(sample_pii_md5s)
+
+    # All leads should be filtered out (all phones are DNC and no emails)
     assert len(filtered) == 0
 
 
@@ -123,16 +140,32 @@ def test_filter_dnc_leads_keeps_mixed(neoworlder_deliverer, sample_pii_md5s):
     assert isinstance(filtered, list)
 
 
-def test_filter_dnc_leads_keeps_no_phone_leads(neoworlder_deliverer, sample_pii_md5s):
-    """Test that leads with no phones are kept (can contact via email)."""
-    # Remove all phones from leads
+def test_filter_dnc_leads_keeps_no_phone_leads_with_email(neoworlder_deliverer, sample_pii_md5s):
+    """Test that leads with no phones but with emails are kept (can contact via email)."""
+    # Remove all phones from leads but ensure they have emails
     for lead in sample_pii_md5s:
         lead.pii.mobile_phones = []
+        # Ensure lead has at least one email
+        if not lead.pii.emails:
+            lead.pii.emails = ["test@example.com"]
 
     filtered = neoworlder_deliverer._filter_dnc_leads(sample_pii_md5s)
 
-    # All leads should be kept (no phones means can contact via email)
+    # All leads should be kept (no phones but have emails)
     assert len(filtered) == len(sample_pii_md5s)
+
+
+def test_filter_dnc_leads_removes_no_contact_leads(neoworlder_deliverer, sample_pii_md5s):
+    """Test that leads with no phones and no emails are filtered out."""
+    # Remove all phones and emails from leads
+    for lead in sample_pii_md5s:
+        lead.pii.mobile_phones = []
+        lead.pii.emails = []
+
+    filtered = neoworlder_deliverer._filter_dnc_leads(sample_pii_md5s)
+
+    # All leads should be filtered out (no contact methods)
+    assert len(filtered) == 0
 
 
 # ---- CSV Conversion Tests ----
@@ -216,6 +249,8 @@ def test_deliver_success(mock_post, neoworlder_deliverer, sample_pii_md5s):
 @patch("real_intent.deliver.neoworlder.requests.post")
 def test_deliver_filters_dnc_before_sending(mock_post, neoworlder_deliverer, sample_pii_md5s):
     """Test that DNC leads are filtered before sending to API."""
+    from real_intent.schemas import PII, MD5WithPII
+
     mock_response = MagicMock()
     mock_response.ok = True
     mock_response.status_code = 200
@@ -223,30 +258,50 @@ def test_deliver_filters_dnc_before_sending(mock_post, neoworlder_deliverer, sam
     mock_response.json.return_value = {"status": "success"}
     mock_post.return_value = mock_response
 
-    # Mark all phones as DNC on half the leads
-    half = len(sample_pii_md5s) // 2
-    for lead in sample_pii_md5s[:half]:
-        for phone in lead.pii.mobile_phones:
-            phone.do_not_call = True
+    # Create multiple leads to properly test filtering
+    # Lead 1: All phones DNC, no emails (should be filtered out)
+    lead1 = sample_pii_md5s[0].model_copy(deep=True)
+    for phone in lead1.pii.mobile_phones:
+        phone.do_not_call = True
+    lead1.pii.emails = []
 
-    # Ensure the other half has non-DNC phones
-    for lead in sample_pii_md5s[half:]:
-        for phone in lead.pii.mobile_phones:
-            phone.do_not_call = False
+    # Lead 2: Non-DNC phone (should be kept)
+    lead2 = MD5WithPII(
+        md5="abcdef1234567890",
+        sentences=["test sentence 2"],
+        pii=PII.create_fake(seed=100)
+    )
+    for phone in lead2.pii.mobile_phones:
+        phone.do_not_call = False
 
-    result = neoworlder_deliverer._deliver(sample_pii_md5s)
+    # Lead 3: All phones DNC but has email (should be kept)
+    lead3 = MD5WithPII(
+        md5="fedcba0987654321",
+        sentences=["test sentence 3"],
+        pii=PII.create_fake(seed=200)
+    )
+    for phone in lead3.pii.mobile_phones:
+        phone.do_not_call = True
+    # Ensure it has an email
+    if not lead3.pii.emails:
+        lead3.pii.emails = ["test@example.com"]
+
+    test_leads = [lead1, lead2, lead3]
+
+    result = neoworlder_deliverer._deliver(test_leads)
 
     # Delivery should succeed with filtered leads (2 calls: register + deliver)
+    # Lead1 should be filtered out, Lead2 and Lead3 should be delivered
     assert result["status"] == "success"
     assert mock_post.call_count == 2
 
 
 @patch("real_intent.deliver.neoworlder.requests.post")
 def test_deliver_all_dnc_returns_skipped(mock_post, neoworlder_deliverer, sample_pii_md5s):
-    """Test that delivery with all DNC leads returns skipped status."""
+    """Test that delivery with all DNC leads and no emails returns skipped status."""
     from real_intent.schemas import MobilePhone
 
-    # Ensure all leads have at least one phone and all are DNC
+    # Ensure all leads have at least one phone and all are DNC, and no emails
     for lead in sample_pii_md5s:
         # Add a DNC phone if none exist
         if not lead.pii.mobile_phones:
@@ -254,6 +309,8 @@ def test_deliver_all_dnc_returns_skipped(mock_post, neoworlder_deliverer, sample
         else:
             for phone in lead.pii.mobile_phones:
                 phone.do_not_call = True
+        # Remove all emails to ensure leads have no usable contact methods
+        lead.pii.emails = []
 
     result = neoworlder_deliverer._deliver(sample_pii_md5s)
 

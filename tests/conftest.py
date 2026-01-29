@@ -42,11 +42,16 @@ def generate_random_name(length=6):
 
 
 @pytest.fixture(scope="session")
-def sample_pii_md5s():
-    """Create a sample MD5WithPII object using fake PII data."""
+def _sample_pii_md5s_template():
+    """
+    Session-scoped template for creating sample MD5WithPII objects.
+
+    This is a private fixture that should not be used directly by tests.
+    Use the `sample_pii_md5s` fixture instead, which creates fresh copies.
+    """
     # Create fake PII with a fixed seed for reproducibility
     pii = PII.create_fake(seed=42)
-    
+
     # Create MD5WithPII with the fake PII
     return [
         MD5WithPII(
@@ -55,3 +60,15 @@ def sample_pii_md5s():
             pii=pii
         )
     ]
+
+
+@pytest.fixture
+def sample_pii_md5s(_sample_pii_md5s_template):
+    """
+    Create fresh copies of sample MD5WithPII objects for each test.
+
+    This prevents state leakage between tests when they mutate the PII data
+    (e.g., changing DNC flags, emails, etc.).
+    """
+    # Create deep copies to prevent mutation of the template
+    return [lead.model_copy(deep=True) for lead in _sample_pii_md5s_template]

@@ -14,6 +14,25 @@ from real_intent.deliver.utils import rate_limited
 # ---- Constants ----
 
 TIMEOUT_SECONDS = 30
+MAX_RESPONSE_LOG_LENGTH = 200  # Maximum characters to log from response bodies
+
+
+# ---- Helper Functions ----
+
+def _truncate_response_body(response_body: str, max_length: int = MAX_RESPONSE_LOG_LENGTH) -> str:
+    """
+    Truncate response body for safe logging to prevent leaking sensitive data.
+
+    Args:
+        response_body: The full response body text.
+        max_length: Maximum number of characters to include.
+
+    Returns:
+        Truncated response body with ellipsis if truncated.
+    """
+    if len(response_body) <= max_length:
+        return response_body
+    return response_body[:max_length] + "... [truncated]"
 
 
 # ---- Exceptions ----
@@ -146,7 +165,7 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
 
         response = requests.post(url, json=payload, headers=headers, timeout=TIMEOUT_SECONDS)
 
-        log("trace", f"Raw response: {response.text}, status_code: {response.status_code}")
+        log("trace", f"Raw response: {_truncate_response_body(response.text)}, status_code: {response.status_code}")
 
         self._handle_response_errors(response, "register_client")
 
@@ -155,33 +174,40 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
 
     def _filter_dnc_leads(self, pii_md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """
-        Filter out leads where ALL phones are on the DNC list.
+        Filter out leads with no usable contact methods.
 
-        Leads are kept if they have at least one non-DNC phone, or no phones at all
-        (can still be contacted via email).
+        Leads are kept if they have at least one non-DNC phone OR at least one email.
+        Leads are filtered out only if they have no usable contact method (all phones
+        are DNC and no emails, or no phones and no emails).
 
         Args:
             pii_md5s: List of leads with PII data.
 
         Returns:
-            list[MD5WithPII]: Filtered list with DNC-only leads removed.
+            list[MD5WithPII]: Filtered list with only contactable leads.
         """
         filtered: list[MD5WithPII] = []
 
         for lead in pii_md5s:
             phones = lead.pii.mobile_phones
+            emails = lead.pii.emails
 
-            # Keep lead if no phones (can contact via email) or has at least one non-DNC phone
-            if not phones:
-                filtered.append(lead)
-            elif any(not phone.do_not_call for phone in phones):
+            has_usable_phone = phones and any(not phone.do_not_call for phone in phones)
+            has_email = bool(emails)
+
+            # Keep lead if it has at least one non-DNC phone OR at least one email
+            if has_usable_phone or has_email:
                 filtered.append(lead)
             else:
-                log("debug", f"Filtering out lead {lead.md5} - all phones are DNC")
+                # Filter out leads with no usable contact methods
+                if phones:
+                    log("debug", f"Filtering out lead {lead.md5} - all phones are DNC and no emails")
+                else:
+                    log("debug", f"Filtering out lead {lead.md5} - no phones and no emails")
 
         removed_count = len(pii_md5s) - len(filtered)
         if removed_count > 0:
-            log("info", f"Filtered out {removed_count} leads where all phones are DNC")
+            log("info", f"Filtered out {removed_count} leads (no usable contact methods)")
 
         return filtered
 
@@ -259,7 +285,7 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
             timeout=TIMEOUT_SECONDS,
         )
 
-        log("trace", f"Raw response: {response.text}, status_code: {response.status_code}")
+        log("trace", f"Raw response: {_truncate_response_body(response.text)}, status_code: {response.status_code}")
 
         self._handle_response_errors(response, "execute_inbound_flow")
 
@@ -290,7 +316,7 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
             return response.json()
         except (json.JSONDecodeError, ValueError):
             raise NeoworlderAPIError(
-                f"Invalid JSON response from NeoWorlder API: {response.text[:200]}",
+                f"Invalid JSON response from NeoWorlder API: {_truncate_response_body(response.text)}",
                 status_code=response.status_code,
                 response_body=response.text,
             )
@@ -326,19 +352,21 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
 
         log(
             "error",
-            f"NeoWorlder API error during {operation}: status={status_code}, body={response_text}"
+            f"NeoWorlder API error during {operation}: status={status_code}, body={_truncate_response_body(response_text)}"
         )
 
         if status_code in (401, 403):
             raise NeoworlderAuthError(
-                f"Authentication failed for NeoWorlder API: {response_text}",
+                f"Authentication failed during {operation}: {_truncate_response_body(response_text)}",
                 status_code=status_code,
                 response_body=response_text,
             )
 
         if status_code == 404:
             raise NeoworlderClientNotFoundError(
-                f"Real Intent client not found: {real_intent_client_id}",
+                f"404 Not Found during {operation} for client '{real_intent_client_id}'. "
+                f"This could indicate the client doesn't exist or the base_url/endpoint is misconfigured. "
+                f"Response: {_truncate_response_body(response_text)}",
                 status_code=status_code,
                 response_body=response_text,
             )
@@ -348,7 +376,7 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
             response.raise_for_status()
 
         raise NeoworlderAPIError(
-            f"NeoWorlder API request failed: {response_text}",
+            f"NeoWorlder API request failed during {operation}: {_truncate_response_body(response_text)}",
             status_code=status_code,
             response_body=response_text,
         )
