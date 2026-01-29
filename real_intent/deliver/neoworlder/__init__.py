@@ -68,12 +68,12 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
     Usage:
         Create a deliverer with customer info and call `deliver()`. The client
         is automatically registered before each delivery (idempotent operation).
+        The customer email is used as the unique client identifier.
 
     Example:
         deliverer = NeoworlderDeliverer(
             api_key="...",
             base_url=NeoworlderDeliverer.STAGING_BASE_URL,
-            real_intent_client_id="ri_12345",
             customer_name="John Doe",
             customer_email="john@example.com",
         )
@@ -92,7 +92,6 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         self,
         api_key: str,
         base_url: str,
-        real_intent_client_id: str,
         customer_name: str,
         customer_email: str,
         customer_phone: str = "",
@@ -105,21 +104,21 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         Args:
             api_key: NeoWorlder API key (neo-api-access-key).
             base_url: NeoWorlder API base URL (use STAGING_BASE_URL or production URL).
-            real_intent_client_id: Unique identifier for the Real Intent client (e.g., "ri_12345").
             customer_name: Customer's full name (required).
-            customer_email: Customer's email address (required).
+            customer_email: Customer's email address (required, also used as client identifier).
             customer_phone: Customer's phone number (optional).
             company_name: Company name (optional).
             address: Customer address (optional).
         """
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
-        self.real_intent_client_id = real_intent_client_id
         self.customer_name = customer_name
         self.customer_email = customer_email
         self.customer_phone = customer_phone
         self.company_name = company_name
         self.address = address
+        # Use customer email as the unique client identifier
+        self.real_intent_client_id = customer_email
 
     @property
     def api_headers(self) -> dict[str, str]:

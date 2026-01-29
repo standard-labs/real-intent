@@ -18,7 +18,6 @@ load_dotenv()
 # Test constants
 TEST_API_KEY = "nk_test_dummy_key_for_unit_tests"
 TEST_BASE_URL = NeoworlderDeliverer.STAGING_BASE_URL
-TEST_CLIENT_ID = "ri_test_12345"
 TEST_CUSTOMER_NAME = "Test Customer"
 TEST_CUSTOMER_EMAIL = "test@example.com"
 
@@ -35,7 +34,6 @@ def neoworlder_deliverer(neoworlder_api_key):
     return NeoworlderDeliverer(
         api_key=neoworlder_api_key,
         base_url=TEST_BASE_URL,
-        real_intent_client_id=TEST_CLIENT_ID,
         customer_name=TEST_CUSTOMER_NAME,
         customer_email=TEST_CUSTOMER_EMAIL,
     )
@@ -46,13 +44,13 @@ def test_deliverer_initialization():
     deliverer = NeoworlderDeliverer(
         api_key=TEST_API_KEY,
         base_url=TEST_BASE_URL,
-        real_intent_client_id=TEST_CLIENT_ID,
         customer_name=TEST_CUSTOMER_NAME,
         customer_email=TEST_CUSTOMER_EMAIL,
     )
 
     assert deliverer.api_key == TEST_API_KEY
-    assert deliverer.real_intent_client_id == TEST_CLIENT_ID
+    # real_intent_client_id is now set to customer_email internally
+    assert deliverer.real_intent_client_id == TEST_CUSTOMER_EMAIL
     assert deliverer.base_url == TEST_BASE_URL
     assert deliverer.customer_name == TEST_CUSTOMER_NAME
     assert deliverer.customer_email == TEST_CUSTOMER_EMAIL
@@ -63,7 +61,6 @@ def test_deliverer_strips_trailing_slash():
     deliverer = NeoworlderDeliverer(
         api_key=TEST_API_KEY,
         base_url=TEST_BASE_URL + "/",
-        real_intent_client_id=TEST_CLIENT_ID,
         customer_name=TEST_CUSTOMER_NAME,
         customer_email=TEST_CUSTOMER_EMAIL,
     )
@@ -236,13 +233,14 @@ def test_deliver_success(mock_post, neoworlder_deliverer, sample_pii_md5s):
     # First call is registration (JSON)
     reg_call_kwargs = mock_post.call_args_list[0][1]
     assert "json" in reg_call_kwargs
-    assert reg_call_kwargs["json"]["real_intent_client_id"] == TEST_CLIENT_ID
+    # real_intent_client_id is now set to customer_email
+    assert reg_call_kwargs["json"]["real_intent_client_id"] == TEST_CUSTOMER_EMAIL
 
     # Second call is delivery (multipart form data)
     delivery_call_kwargs = mock_post.call_args_list[1][1]
     assert "files" in delivery_call_kwargs
     assert "data" in delivery_call_kwargs
-    assert delivery_call_kwargs["data"]["real_intent_client_id"] == TEST_CLIENT_ID
+    assert delivery_call_kwargs["data"]["real_intent_client_id"] == TEST_CUSTOMER_EMAIL
     assert "timeout" in delivery_call_kwargs
 
 
@@ -473,10 +471,10 @@ def test_integration_deliver(sample_pii_md5s):
     api_key = os.getenv("NEOWORLDER_API_KEY")
 
     # Create deliverer with customer info - auto-registers on delivery
+    # Note: customer_email is used as the client identifier
     deliverer = NeoworlderDeliverer(
         api_key=api_key,
         base_url=NeoworlderDeliverer.STAGING_BASE_URL,
-        real_intent_client_id="ri_integration_test",
         customer_name="Integration Test Customer",
         customer_email="integration-test@realintent.co",
         customer_phone="555-123-4567",
