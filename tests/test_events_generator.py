@@ -173,10 +173,7 @@ def test_lawrenceville_ga_events_serp(serp_events_generator):
     assert "Lawrenceville" in response.summary, "Summary should mention Lawrenceville"
 
 
-@pytest.mark.skipif(
-    not os.getenv("PERPLEXITY_API_KEY", "").strip() or not os.getenv("OPENAI_API_KEY", "").strip(),
-    reason="PERPLEXITY_API_KEY and OPENAI_API_KEY required for deep research tests"
-)
+@pytest.mark.skip(reason="Perplexity deep research API no longer in use")
 def test_beverly_hills_events_deep_research(deep_research_events_generator):
     """Test generating events for Beverly Hills (90210) using PerplexityOpenAI Deep Research."""
     try:
@@ -359,10 +356,7 @@ def test_invalid_api_key_perplexity():
         PerplexityEventsGenerator(None)
 
 
-@pytest.mark.skipif(
-    not os.getenv("PERPLEXITY_API_KEY", "").strip() or not os.getenv("OPENAI_API_KEY", "").strip(),
-    reason="PERPLEXITY_API_KEY and OPENAI_API_KEY required for deep research tests"
-)
+@pytest.mark.skip(reason="Perplexity deep research API no longer in use")
 def test_invalid_zip_code_deep_research(deep_research_events_generator):
     """Test generation with invalid zip code for PerplexityOpenAI Deep Research."""
     # Test non-string zip code
