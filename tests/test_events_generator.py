@@ -78,8 +78,8 @@ def serp_events_generator():
 @pytest.fixture
 def deep_research_events_generator():
     """Create a PerplexityOpenAIEventsGenerator instance."""
-    perplexity_api_key = os.getenv("PERPLEXITY_API_KEY")
-    openai_api_key = os.getenv("OPENAI_API_KEY")
+    perplexity_api_key = os.getenv("PERPLEXITY_API_KEY", "").strip()
+    openai_api_key = os.getenv("OPENAI_API_KEY", "").strip()
 
     if not perplexity_api_key or not openai_api_key:
         pytest.skip("Perplexity and OpenAI API keys required")
@@ -174,7 +174,7 @@ def test_lawrenceville_ga_events_serp(serp_events_generator):
 
 
 @pytest.mark.skipif(
-    not os.getenv("PERPLEXITY_API_KEY") or not os.getenv("OPENAI_API_KEY"),
+    not os.getenv("PERPLEXITY_API_KEY", "").strip() or not os.getenv("OPENAI_API_KEY", "").strip(),
     reason="PERPLEXITY_API_KEY and OPENAI_API_KEY required for deep research tests"
 )
 def test_beverly_hills_events_deep_research(deep_research_events_generator):
@@ -360,7 +360,7 @@ def test_invalid_api_key_perplexity():
 
 
 @pytest.mark.skipif(
-    not os.getenv("PERPLEXITY_API_KEY") or not os.getenv("OPENAI_API_KEY"),
+    not os.getenv("PERPLEXITY_API_KEY", "").strip() or not os.getenv("OPENAI_API_KEY", "").strip(),
     reason="PERPLEXITY_API_KEY and OPENAI_API_KEY required for deep research tests"
 )
 def test_invalid_zip_code_deep_research(deep_research_events_generator):
