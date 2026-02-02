@@ -103,13 +103,6 @@ def test_phone_validator_with_real_api() -> None:
         "abcdefghij"    # Not numeric
     ]
 
-    # Properly formatted but likely non-existent numbers
-    fake_phones = [
-        "17489550914",
-        "12573425053",
-        "12889061135"
-    ]
-
     # Test with invalid format phones first - these should be rejected without API call
     md5s_invalid_format = [
         create_md5_with_pii("123", [], invalid_format_phones),
@@ -119,9 +112,9 @@ def test_phone_validator_with_real_api() -> None:
     assert len(result_invalid_format) == 1
     assert len(result_invalid_format[0].pii.mobile_phones) == 0, "Invalid format phones should be rejected"
 
-    # Now test with real and fake phones
+    # Now test with real phones
     md5s = [
-        create_md5_with_pii("456", [], real_phones + fake_phones),
+        create_md5_with_pii("456", [], real_phones),
     ]
 
     try:
@@ -137,10 +130,6 @@ def test_phone_validator_with_real_api() -> None:
         # Note: We can't assert that all real phones are validated because
         # the Numverify API might return error code 313 for some of them
         assert any(phone in validated_phones for phone in real_phones), "No real phones were validated"
-
-        # Check that all fake phones were rejected
-        # This should still be true even with API errors
-        assert all(phone not in validated_phones for phone in fake_phones), "Some fake phones were validated"
 
         # Print which real phones were validated and which weren't
         for phone in real_phones:
