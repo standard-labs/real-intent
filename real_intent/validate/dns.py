@@ -38,12 +38,21 @@ class FilloutDNSValidator(BaseValidator):
             submissions_res.raise_for_status()
             submissions_res_json = submissions_res.json()
 
-            submissions += submissions_res_json["responses"]
+            current_batch = submissions_res_json["responses"]
+            submissions += current_batch
 
             # Use totalResponses from API to know when to stop paginating
-            total_responses: int = submissions_res_json.get("totalResponses", 0)
-            if len(submissions) >= total_responses:
-                break
+            # If totalResponses is missing or invalid, fall back to checking batch size
+            total_responses: int | None = submissions_res_json.get("totalResponses")
+
+            if total_responses is not None and total_responses > 0:
+                # If we have a valid totalResponses, use it to determine when to stop
+                if len(submissions) >= total_responses:
+                    break
+            else:
+                # Fall back to the old behavior: stop if we got fewer responses than requested
+                if len(current_batch) < 150:
+                    break
 
             offset += 150
 
