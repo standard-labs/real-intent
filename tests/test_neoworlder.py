@@ -54,6 +54,44 @@ def test_deliverer_initialization():
     assert deliverer.base_url == TEST_BASE_URL
     assert deliverer.customer_name == TEST_CUSTOMER_NAME
     assert deliverer.customer_email == TEST_CUSTOMER_EMAIL
+    # Default campaign params
+    assert deliverer.campaign_type == "seller"
+    assert deliverer.is_recovery is False
+    assert deliverer.sms_optin is False
+
+
+def test_deliverer_initialization_with_campaign_params():
+    """Test that campaign parameters are stored correctly."""
+    deliverer = NeoworlderDeliverer(
+        api_key=TEST_API_KEY,
+        base_url=TEST_BASE_URL,
+        customer_name=TEST_CUSTOMER_NAME,
+        customer_email=TEST_CUSTOMER_EMAIL,
+        campaign_type="buyer",
+        is_recovery=True,
+        sms_optin=True,
+    )
+
+    assert deliverer.campaign_type == "buyer"
+    assert deliverer.is_recovery is True
+    assert deliverer.sms_optin is True
+
+
+def test_deliverer_invalid_campaign_type():
+    """Test that invalid campaign_type raises ValueError."""
+    with pytest.raises(ValueError, match="Invalid campaign_type"):
+        NeoworlderDeliverer(
+            api_key=TEST_API_KEY,
+            base_url=TEST_BASE_URL,
+            customer_name=TEST_CUSTOMER_NAME,
+            customer_email=TEST_CUSTOMER_EMAIL,
+            campaign_type="invalid",
+        )
+
+
+def test_deliverer_production_url():
+    """Test that the production URL constant is available."""
+    assert NeoworlderDeliverer.PRODUCTION_BASE_URL == "https://public-api.neoworlder.com"
 
 
 def test_deliverer_strips_trailing_slash():
@@ -197,6 +235,120 @@ def test_convert_empty_leads_to_csv(neoworlder_deliverer):
 
     # CSVStringFormatter returns empty string for empty input
     assert csv_content == ""
+
+
+# ---- Campaign Column Tests ----
+
+def test_csv_has_campaign_columns_seller_default(neoworlder_deliverer, sample_pii_md5s):
+    """Test that CSV includes BUYER/RECOVERY/SMS_OPTIN columns with seller defaults."""
+    csv_file = neoworlder_deliverer._convert_leads_to_csv(sample_pii_md5s)
+    csv_content = csv_file.read().decode("utf-8")
+
+    import pandas as pd
+    from io import StringIO
+    df = pd.read_csv(StringIO(csv_content))
+
+    assert "BUYER" in df.columns
+    assert "RECOVERY" in df.columns
+    assert "SMS_OPTIN" in df.columns
+
+    # Default seller campaign: BUYER column should be blank
+    assert all(v == "" for v in df["BUYER"].fillna(""))
+    assert all(v == "" for v in df["RECOVERY"].fillna(""))
+    assert all(v == "" for v in df["SMS_OPTIN"].fillna(""))
+
+
+def test_csv_buyer_campaign(sample_pii_md5s, neoworlder_api_key):
+    """Test that buyer campaign_type sets BUYER column to 'BUYER'."""
+    deliverer = NeoworlderDeliverer(
+        api_key=neoworlder_api_key,
+        base_url=TEST_BASE_URL,
+        customer_name=TEST_CUSTOMER_NAME,
+        customer_email=TEST_CUSTOMER_EMAIL,
+        campaign_type="buyer",
+    )
+
+    csv_file = deliverer._convert_leads_to_csv(sample_pii_md5s)
+    csv_content = csv_file.read().decode("utf-8")
+
+    import pandas as pd
+    from io import StringIO
+    df = pd.read_csv(StringIO(csv_content))
+
+    assert all(df["BUYER"] == "BUYER")
+    assert all(v == "" for v in df["RECOVERY"].fillna(""))
+    assert all(v == "" for v in df["SMS_OPTIN"].fillna(""))
+
+
+def test_csv_recovery_campaign(sample_pii_md5s, neoworlder_api_key):
+    """Test that is_recovery=True sets RECOVERY column to 'YES'."""
+    deliverer = NeoworlderDeliverer(
+        api_key=neoworlder_api_key,
+        base_url=TEST_BASE_URL,
+        customer_name=TEST_CUSTOMER_NAME,
+        customer_email=TEST_CUSTOMER_EMAIL,
+        is_recovery=True,
+    )
+
+    csv_file = deliverer._convert_leads_to_csv(sample_pii_md5s)
+    csv_content = csv_file.read().decode("utf-8")
+
+    import pandas as pd
+    from io import StringIO
+    df = pd.read_csv(StringIO(csv_content))
+
+    assert all(v == "" for v in df["BUYER"].fillna(""))
+    assert all(df["RECOVERY"] == "YES")
+    assert all(v == "" for v in df["SMS_OPTIN"].fillna(""))
+
+
+def test_csv_sms_optin(sample_pii_md5s, neoworlder_api_key):
+    """Test that sms_optin=True sets SMS_OPTIN column to 'YES'."""
+    deliverer = NeoworlderDeliverer(
+        api_key=neoworlder_api_key,
+        base_url=TEST_BASE_URL,
+        customer_name=TEST_CUSTOMER_NAME,
+        customer_email=TEST_CUSTOMER_EMAIL,
+        sms_optin=True,
+    )
+
+    csv_file = deliverer._convert_leads_to_csv(sample_pii_md5s)
+    csv_content = csv_file.read().decode("utf-8")
+
+    import pandas as pd
+    from io import StringIO
+    df = pd.read_csv(StringIO(csv_content))
+
+    assert all(v == "" for v in df["BUYER"].fillna(""))
+    assert all(v == "" for v in df["RECOVERY"].fillna(""))
+    assert all(df["SMS_OPTIN"] == "YES")
+
+
+def test_csv_all_campaign_params(sample_pii_md5s, neoworlder_api_key):
+    """Test all campaign params set simultaneously."""
+    deliverer = NeoworlderDeliverer(
+        api_key=neoworlder_api_key,
+        base_url=TEST_BASE_URL,
+        customer_name=TEST_CUSTOMER_NAME,
+        customer_email=TEST_CUSTOMER_EMAIL,
+        campaign_type="buyer",
+        is_recovery=True,
+        sms_optin=True,
+    )
+
+    csv_file = deliverer._convert_leads_to_csv(sample_pii_md5s)
+    csv_content = csv_file.read().decode("utf-8")
+
+    import pandas as pd
+    from io import StringIO
+    df = pd.read_csv(StringIO(csv_content))
+
+    assert all(df["BUYER"] == "BUYER")
+    assert all(df["RECOVERY"] == "YES")
+    assert all(df["SMS_OPTIN"] == "YES")
+
+    # Verify campaign columns are the last 3 columns
+    assert list(df.columns[-3:]) == ["BUYER", "RECOVERY", "SMS_OPTIN"]
 
 
 # ---- Delivery Tests ----

@@ -1,6 +1,7 @@
 """Deliverer for NeoWorlder AI lead nurturing platform."""
 import io
 import json
+import pandas as pd
 import requests
 from typing import Any
 
@@ -67,7 +68,10 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
 
     # URL constants for reference - no default to force explicit choice
     STAGING_BASE_URL = "https://public-api.staging.neoworlder.com"
-    # PRODUCTION_BASE_URL = "https://public-api.neoworlder.com"  # Update when available
+    PRODUCTION_BASE_URL = "https://public-api.neoworlder.com"
+
+    # Valid campaign types for NeoWorlder persona routing
+    VALID_CAMPAIGN_TYPES = ("seller", "buyer")
 
     def __init__(
         self,
@@ -78,19 +82,30 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         customer_phone: str = "",
         company_name: str = "",
         address: str = "",
+        campaign_type: str = "seller",
+        is_recovery: bool = False,
+        sms_optin: bool = False,
     ):
         """
         Initialize the NeoWorlder deliverer.
 
         Args:
             api_key: NeoWorlder API key (neo-api-access-key).
-            base_url: NeoWorlder API base URL (use STAGING_BASE_URL or production URL).
+            base_url: NeoWorlder API base URL (use STAGING_BASE_URL or PRODUCTION_BASE_URL).
             customer_name: Customer's full name (required).
             customer_email: Customer's email address (required, also used as client identifier).
             customer_phone: Customer's phone number (optional).
             company_name: Company name (optional).
             address: Customer address (optional).
+            campaign_type: Campaign type for NeoWorlder persona routing ("seller" or "buyer").
+            is_recovery: Whether leads are for the lead recovery campaign.
+            sms_optin: Whether SMS opt-in has been obtained for these leads.
         """
+        if campaign_type not in self.VALID_CAMPAIGN_TYPES:
+            raise ValueError(
+                f"Invalid campaign_type '{campaign_type}'. Must be one of: {self.VALID_CAMPAIGN_TYPES}"
+            )
+
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self.customer_name = customer_name
@@ -98,6 +113,9 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         self.customer_phone = customer_phone
         self.company_name = company_name
         self.address = address
+        self.campaign_type = campaign_type
+        self.is_recovery = is_recovery
+        self.sms_optin = sms_optin
         # Use customer email as the unique client identifier
         self.real_intent_client_id = customer_email
 
@@ -195,8 +213,9 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         """
         Convert a list of MD5WithPII leads to a CSV file in memory.
 
-        Uses the standard CSVStringFormatter for consistent output format
-        with all emails, phones, and detailed PII fields.
+        Uses the standard CSVStringFormatter for consistent output format,
+        then appends NeoWorlder campaign columns (BUYER, RECOVERY, SMS_OPTIN)
+        based on the deliverer's campaign configuration.
 
         Args:
             pii_md5s: List of leads with PII data.
@@ -205,6 +224,18 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
             BytesIO: In-memory CSV file ready for upload.
         """
         csv_string = CSVStringFormatter().deliver(pii_md5s)
+
+        if csv_string:
+            df = pd.read_csv(io.StringIO(csv_string))
+
+            df["BUYER"] = "BUYER" if self.campaign_type == "buyer" else ""
+            df["RECOVERY"] = "YES" if self.is_recovery else ""
+            df["SMS_OPTIN"] = "YES" if self.sms_optin else ""
+
+            output = io.StringIO()
+            df.to_csv(output, index=False)
+            csv_string = output.getvalue()
+
         bytes_output = io.BytesIO(csv_string.encode("utf-8"))
         bytes_output.seek(0)
 
