@@ -1,7 +1,7 @@
 """Deliverer for NeoWorlder AI lead nurturing platform."""
+import csv
 import io
 import json
-import pandas as pd
 import requests
 from typing import Any
 
@@ -226,14 +226,21 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         csv_string = CSVStringFormatter().deliver(pii_md5s)
 
         if csv_string:
-            df = pd.read_csv(io.StringIO(csv_string))
+            reader = csv.reader(io.StringIO(csv_string))
+            rows = list(reader)
 
-            df["BUYER"] = "BUYER" if self.campaign_type == "buyer" else ""
-            df["RECOVERY"] = "YES" if self.is_recovery else ""
-            df["SMS_OPTIN"] = "YES" if self.sms_optin else ""
+            # Append campaign columns to header and data rows
+            buyer_val = "BUYER" if self.campaign_type == "buyer" else ""
+            recovery_val = "YES" if self.is_recovery else ""
+            sms_val = "YES" if self.sms_optin else ""
+
+            rows[0].extend(["BUYER", "RECOVERY", "SMS_OPTIN"])
+            for row in rows[1:]:
+                row.extend([buyer_val, recovery_val, sms_val])
 
             output = io.StringIO()
-            df.to_csv(output, index=False)
+            writer = csv.writer(output)
+            writer.writerows(rows)
             csv_string = output.getvalue()
 
         bytes_output = io.BytesIO(csv_string.encode("utf-8"))
