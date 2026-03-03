@@ -30,17 +30,29 @@ class FilloutDNSValidator(BaseValidator):
 
         while True:
             submissions_res = requests.get(
-                f"https://api.fillout.com/v1/api/forms/{self.fillout_form_id}/submissions", 
+                f"https://api.fillout.com/v1/api/forms/{self.fillout_form_id}/submissions",
                 headers=self.fillout_api_headers,
                 params={"limit": 150, "offset": offset}
             )
+
             submissions_res.raise_for_status()
             submissions_res_json = submissions_res.json()
 
-            submissions += submissions_res_json["responses"]
+            current_batch = submissions_res_json["responses"]
+            submissions += current_batch
 
-            if len(submissions_res_json["responses"]) < 150:
-                break
+            # Use totalResponses from API to know when to stop paginating
+            # If totalResponses is missing or invalid, fall back to checking batch size
+            total_responses: int | None = submissions_res_json.get("totalResponses")
+
+            if total_responses is not None and total_responses > 0:
+                # If we have a valid totalResponses, use it to determine when to stop
+                if len(submissions) >= total_responses:
+                    break
+            else:
+                # Fall back to the old behavior: stop if we got fewer responses than requested
+                if len(current_batch) < 150:
+                    break
 
             offset += 150
 
@@ -75,7 +87,7 @@ class FilloutDNSValidator(BaseValidator):
             )
         ]
 
-    
+
 class MongoDNSValidator(BaseValidator):
     """Removes leads with an email on the Do Not Sell (DNS) blacklist."""
 
@@ -84,10 +96,10 @@ class MongoDNSValidator(BaseValidator):
 
     def _check_emails(self, emails: list[str]) -> set[str]:
         """Check which emails are on the Do Not Sell (DNS) blacklist.
-        
+
         Args:
             emails: List of emails to check.
-            
+
         Returns:
             Set of emails that are on the DNS blacklist.
         """
@@ -99,10 +111,10 @@ class MongoDNSValidator(BaseValidator):
         """Remove leads with an email on the Do Not Sell (DNS) blacklist."""
         # Get all unique emails from the MD5s
         all_emails = {email for md5 in md5s for email in md5.pii.emails}
-        
+
         # Check all emails at once
         blacklisted_emails = self._check_emails(list(all_emails))
-        
+
         # Filter MD5s where none of their emails are blacklisted
         return [
             md5 for md5 in md5s if not any(
