@@ -101,7 +101,7 @@ def extract_date_from_range(date_str: str) -> str:
     raise ValueError(f"Could not extract date from: {date_str}")
 
 
-@pytest.mark.skip(reason="Scrapybara not in use anymore")
+@pytest.mark.skip(reason="Scrapybara fully deprecated, pending removal")
 def test_beverly_hills_events_scrapybara(scrapybara_events_generator):
     """Test generating events for Beverly Hills (90210) using Scrapybara."""
     try:
@@ -236,6 +236,7 @@ def dummy_events_response():
     )
 
 
+@pytest.mark.skip(reason="Scrapybara fully deprecated, pending removal")
 def test_pdf_generation(scrapybara_events_generator, dummy_events_response):
     """Test generating PDF from events using Scrapybara."""
     # Generate PDF using dummy data
@@ -246,7 +247,7 @@ def test_pdf_generation(scrapybara_events_generator, dummy_events_response):
     assert len(pdf_buffer.getvalue()) > 1000, "PDF should have meaningful content"
 
 
-@pytest.mark.skip(reason="Scrapybara not in use anymore")
+@pytest.mark.skip(reason="Scrapybara fully deprecated, pending removal")
 def test_invalid_zip_code_scrapybara(scrapybara_events_generator):
     """Test generation with invalid zip code for Scrapybara."""
     # Test non-string zip code
@@ -266,7 +267,7 @@ def test_invalid_zip_code_scrapybara(scrapybara_events_generator):
         scrapybara_events_generator.generate("abcde")
 
 
-@pytest.mark.skip(reason="Scrapybara not in use anymore")
+@pytest.mark.skip(reason="Scrapybara fully deprecated, pending removal")
 def test_invalid_api_key_scrapybara():
     """Test initialization with invalid API key for Scrapybara."""
     # Test non-string API key
