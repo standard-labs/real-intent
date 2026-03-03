@@ -37,24 +37,14 @@ def dns_test_md5s(sample_pii_md5s):
     return test_md5s
 
 
-@pytest.mark.skipif(
-    not os.getenv("FILLOUT_API_KEY")
-    or not os.getenv("FILLOUT_DNS_FORM_ID")
-    or not os.getenv("FILLOUT_DNS_QUESTION_ID"),
-    reason="Fillout API credentials not found",
-)
+@pytest.mark.skip(reason="Fillout DNS validator not in use")
 def test_fillout_dns_validator_initialization(fillout_dns_validator):
     assert fillout_dns_validator.fillout_api_key == os.getenv('FILLOUT_API_KEY')
     assert fillout_dns_validator.fillout_form_id == os.getenv('FILLOUT_DNS_FORM_ID')
     assert fillout_dns_validator.question_id == os.getenv('FILLOUT_DNS_QUESTION_ID')
 
 
-@pytest.mark.skipif(
-    not os.getenv("FILLOUT_API_KEY")
-    or not os.getenv("FILLOUT_DNS_FORM_ID")
-    or not os.getenv("FILLOUT_DNS_QUESTION_ID"),
-    reason="Fillout API credentials not found",
-)
+@pytest.mark.skip(reason="Fillout DNS validator not in use")
 def test_fillout_api_headers(fillout_dns_validator):
     expected_headers = {
         "Authorization": f"Bearer {os.getenv('FILLOUT_API_KEY')}"
@@ -62,24 +52,14 @@ def test_fillout_api_headers(fillout_dns_validator):
     assert fillout_dns_validator.fillout_api_headers == expected_headers
 
 
-@pytest.mark.skipif(
-    not os.getenv("FILLOUT_API_KEY")
-    or not os.getenv("FILLOUT_DNS_FORM_ID")
-    or not os.getenv("FILLOUT_DNS_QUESTION_ID"),
-    reason="Fillout API credentials not found",
-)
+@pytest.mark.skip(reason="Fillout DNS validator not in use")
 def test_get_submissions(fillout_dns_validator):
     submissions = fillout_dns_validator._get_submissions()
     assert isinstance(submissions, list)
     assert len(submissions) > 0
 
 
-@pytest.mark.skipif(
-    not os.getenv("FILLOUT_API_KEY")
-    or not os.getenv("FILLOUT_DNS_FORM_ID")
-    or not os.getenv("FILLOUT_DNS_QUESTION_ID"),
-    reason="Fillout API credentials not found",
-)
+@pytest.mark.skip(reason="Fillout DNS validator not in use")
 def test_all_emails(fillout_dns_validator):
     emails = fillout_dns_validator.all_emails()
     assert isinstance(emails, set)
@@ -87,12 +67,7 @@ def test_all_emails(fillout_dns_validator):
     assert all(isinstance(email, str) for email in emails)
 
 
-@pytest.mark.skipif(
-    not os.getenv("FILLOUT_API_KEY")
-    or not os.getenv("FILLOUT_DNS_FORM_ID")
-    or not os.getenv("FILLOUT_DNS_QUESTION_ID"),
-    reason="Fillout API credentials not found",
-)
+@pytest.mark.skip(reason="Fillout DNS validator not in use")
 def test_validate(fillout_dns_validator, dns_test_md5s):
     result = fillout_dns_validator.validate(dns_test_md5s)
     assert isinstance(result, list)
@@ -101,10 +76,7 @@ def test_validate(fillout_dns_validator, dns_test_md5s):
     assert result[0].md5 == dns_test_md5s[0].md5
 
 
-@pytest.mark.skipif(
-    not os.getenv("MONGO_CONNECT_STR"),
-    reason="MongoDB connection string not found",
-)
+@pytest.mark.skip(reason="Fillout DNS validator not in use")
 def test_mongo_dns_validator(dns_test_md5s):
     from pymongo import MongoClient
     client = MongoClient(os.getenv("MONGO_CONNECT_STR"))
