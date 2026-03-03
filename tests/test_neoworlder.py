@@ -3,8 +3,11 @@ import pytest
 import os
 from dotenv import load_dotenv
 from unittest.mock import patch, MagicMock
+import pandas as pd
+from io import StringIO
 
 from real_intent.deliver.neoworlder import (
+    CampaignType,
     NeoworlderDeliverer,
     NeoworlderAPIError,
     NeoworlderAuthError,
@@ -17,7 +20,7 @@ load_dotenv()
 
 # Test constants
 TEST_API_KEY = "nk_test_dummy_key_for_unit_tests"
-TEST_BASE_URL = NeoworlderDeliverer.STAGING_BASE_URL
+TEST_BASE_URL = "https://public-api.staging.neoworlder.com"
 TEST_CUSTOMER_NAME = "Test Customer"
 TEST_CUSTOMER_EMAIL = "test@example.com"
 
@@ -55,7 +58,7 @@ def test_deliverer_initialization():
     assert deliverer.customer_name == TEST_CUSTOMER_NAME
     assert deliverer.customer_email == TEST_CUSTOMER_EMAIL
     # Default campaign params
-    assert deliverer.campaign_type == "seller"
+    assert deliverer.campaign_type == CampaignType.SELLER
     assert deliverer.is_recovery is False
     assert deliverer.sms_optin is False
 
@@ -72,14 +75,14 @@ def test_deliverer_initialization_with_campaign_params():
         sms_optin=True,
     )
 
-    assert deliverer.campaign_type == "buyer"
+    assert deliverer.campaign_type == CampaignType.BUYER
     assert deliverer.is_recovery is True
     assert deliverer.sms_optin is True
 
 
 def test_deliverer_invalid_campaign_type():
     """Test that invalid campaign_type raises ValueError."""
-    with pytest.raises(ValueError, match="Invalid campaign_type"):
+    with pytest.raises(ValueError):
         NeoworlderDeliverer(
             api_key=TEST_API_KEY,
             base_url=TEST_BASE_URL,
@@ -87,11 +90,6 @@ def test_deliverer_invalid_campaign_type():
             customer_email=TEST_CUSTOMER_EMAIL,
             campaign_type="invalid",
         )
-
-
-def test_deliverer_production_url():
-    """Test that the production URL constant is available."""
-    assert NeoworlderDeliverer.PRODUCTION_BASE_URL == "https://public-api.neoworlder.com"
 
 
 def test_deliverer_strips_trailing_slash():
@@ -244,8 +242,6 @@ def test_csv_has_campaign_columns_seller_default(neoworlder_deliverer, sample_pi
     csv_file = neoworlder_deliverer._convert_leads_to_csv(sample_pii_md5s)
     csv_content = csv_file.read().decode("utf-8")
 
-    import pandas as pd
-    from io import StringIO
     df = pd.read_csv(StringIO(csv_content))
 
     assert "BUYER" in df.columns
@@ -626,7 +622,7 @@ def test_integration_deliver(sample_pii_md5s):
     # Note: customer_email is used as the client identifier
     deliverer = NeoworlderDeliverer(
         api_key=api_key,
-        base_url=NeoworlderDeliverer.STAGING_BASE_URL,
+        base_url=TEST_BASE_URL,
         customer_name="Integration Test Customer",
         customer_email="integration-test@realintent.co",
         customer_phone="555-123-4567",

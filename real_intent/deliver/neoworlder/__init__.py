@@ -3,6 +3,7 @@ import csv
 import io
 import json
 import requests
+from enum import StrEnum
 from typing import Any
 
 from real_intent.deliver.base import BaseOutputDeliverer
@@ -15,6 +16,12 @@ from real_intent.deliver.utils import rate_limited
 # ---- Constants ----
 
 TIMEOUT_SECONDS = 30
+
+
+class CampaignType(StrEnum):
+    """NeoWorlder campaign types for persona routing."""
+    SELLER = "seller"
+    BUYER = "buyer"
 
 
 # ---- Exceptions ----
@@ -55,7 +62,7 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
     Example:
         deliverer = NeoworlderDeliverer(
             api_key="...",
-            base_url=NeoworlderDeliverer.STAGING_BASE_URL,
+            base_url="https://public-api.neoworlder.com",
             customer_name="John Doe",
             customer_email="john@example.com",
         )
@@ -66,13 +73,6 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         accidentally sending data to the wrong environment (staging vs production).
     """
 
-    # URL constants for reference - no default to force explicit choice
-    STAGING_BASE_URL = "https://public-api.staging.neoworlder.com"
-    PRODUCTION_BASE_URL = "https://public-api.neoworlder.com"
-
-    # Valid campaign types for NeoWorlder persona routing
-    VALID_CAMPAIGN_TYPES = ("seller", "buyer")
-
     def __init__(
         self,
         api_key: str,
@@ -82,7 +82,7 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         customer_phone: str = "",
         company_name: str = "",
         address: str = "",
-        campaign_type: str = "seller",
+        campaign_type: CampaignType = CampaignType.SELLER,
         is_recovery: bool = False,
         sms_optin: bool = False,
     ):
@@ -91,21 +91,16 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
 
         Args:
             api_key: NeoWorlder API key (neo-api-access-key).
-            base_url: NeoWorlder API base URL (use STAGING_BASE_URL or PRODUCTION_BASE_URL).
+            base_url: NeoWorlder API base URL (supplied via configuration, not hardcoded).
             customer_name: Customer's full name (required).
             customer_email: Customer's email address (required, also used as client identifier).
             customer_phone: Customer's phone number (optional).
             company_name: Company name (optional).
             address: Customer address (optional).
-            campaign_type: Campaign type for NeoWorlder persona routing ("seller" or "buyer").
+            campaign_type: Campaign type for NeoWorlder persona routing.
             is_recovery: Whether leads are for the lead recovery campaign.
             sms_optin: Whether SMS opt-in has been obtained for these leads.
         """
-        if campaign_type not in self.VALID_CAMPAIGN_TYPES:
-            raise ValueError(
-                f"Invalid campaign_type '{campaign_type}'. Must be one of: {self.VALID_CAMPAIGN_TYPES}"
-            )
-
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self.customer_name = customer_name
@@ -113,10 +108,9 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         self.customer_phone = customer_phone
         self.company_name = company_name
         self.address = address
-        self.campaign_type = campaign_type
+        self.campaign_type = CampaignType(campaign_type)
         self.is_recovery = is_recovery
         self.sms_optin = sms_optin
-        # Use customer email as the unique client identifier
         self.real_intent_client_id = customer_email
 
     @property
@@ -225,23 +219,27 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         """
         csv_string = CSVStringFormatter().deliver(pii_md5s)
 
-        if csv_string:
-            reader = csv.reader(io.StringIO(csv_string))
-            rows = list(reader)
+        if not csv_string:
+            bytes_output = io.BytesIO(b"")
+            bytes_output.seek(0)
+            log("debug", "No CSV content generated (empty lead list)")
+            return bytes_output
 
-            # Append campaign columns to header and data rows
-            buyer_val = "BUYER" if self.campaign_type == "buyer" else ""
-            recovery_val = "YES" if self.is_recovery else ""
-            sms_val = "YES" if self.sms_optin else ""
+        reader = csv.reader(io.StringIO(csv_string))
+        rows = list(reader)
 
-            rows[0].extend(["BUYER", "RECOVERY", "SMS_OPTIN"])
-            for row in rows[1:]:
-                row.extend([buyer_val, recovery_val, sms_val])
+        buyer_val = "BUYER" if self.campaign_type == CampaignType.BUYER else ""
+        recovery_val = "YES" if self.is_recovery else ""
+        sms_val = "YES" if self.sms_optin else ""
 
-            output = io.StringIO()
-            writer = csv.writer(output)
-            writer.writerows(rows)
-            csv_string = output.getvalue()
+        rows[0].extend(["BUYER", "RECOVERY", "SMS_OPTIN"])
+        for row in rows[1:]:
+            row.extend([buyer_val, recovery_val, sms_val])
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerows(rows)
+        csv_string = output.getvalue()
 
         bytes_output = io.BytesIO(csv_string.encode("utf-8"))
         bytes_output.seek(0)
