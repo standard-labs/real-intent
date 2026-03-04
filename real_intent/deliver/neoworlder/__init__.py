@@ -63,7 +63,7 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
     Example:
         deliverer = NeoworlderDeliverer(
             api_key="...",
-            base_url="https://public-api.neoworlder.com",
+            base_url="https://apiurl.com",
             customer_name="John Doe",
             customer_email="john@example.com",
         )
