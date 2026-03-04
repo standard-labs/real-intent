@@ -155,11 +155,9 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         }
 
         log("debug", f"Registering/updating NeoWorlder client: {self.real_intent_client_id}")
-
         response = requests.post(url, json=payload, headers=headers, timeout=TIMEOUT_SECONDS)
 
         log("trace", f"Raw response: {response.text}, status_code: {response.status_code}")
-
         self._handle_response_errors(response, "register_client")
 
         log("info", f"Successfully registered/updated NeoWorlder client: {self.real_intent_client_id}")
@@ -303,7 +301,6 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         )
 
         log("trace", f"Raw response: {response.text}, status_code: {response.status_code}")
-
         self._handle_response_errors(response, "execute_inbound_flow")
 
         log("info", f"Successfully delivered {len(filtered_leads)} leads to NeoWorlder")
