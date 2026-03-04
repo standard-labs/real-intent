@@ -1,8 +1,9 @@
 """Deliverer for NeoWorlder AI lead nurturing platform."""
+import requests
+
 import csv
 import io
 import json
-import requests
 from enum import StrEnum
 from typing import Any
 
