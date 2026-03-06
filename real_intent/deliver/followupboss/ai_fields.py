@@ -277,29 +277,21 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
 
         # Match the custom fields with the PII data
         log("debug", "Sending request to OpenAI for field mapping")
-        response = self.openai_client.chat.completions.create(
-            model="gpt-4.1-nano",
-            messages=[
-                {
-                    "role": "system",
-                    "content": SYSTEM_PROMPT
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"PII data:\n{filtered_pii_data_str}\n\n"
-                        f"Custom fields:\n{custom_fields_str}"
-                    )
-                }
-            ],
+        response = self.openai_client.responses.create(
+            model="gpt-5-mini",
+            instructions=SYSTEM_PROMPT,
+            input=(
+                f"PII data:\n{filtered_pii_data_str}\n\n"
+                f"Custom fields:\n{custom_fields_str}"
+            ),
             top_p=1,
-            response_format={"type": "json_object"}
+            text={"format": {"type": "json_object"}}
         )
 
         # Try to parse
         try:
             ai_suggestions: dict[str, str | int | bool] = json.loads(
-                response.choices[0].message.content
+                response.output_text
             )
             log("debug", f"Received {len(ai_suggestions)} AI suggestions for field mapping")
             
