@@ -64,7 +64,7 @@ class PerplexityOpenAIEventsGenerator(BaseEventsGenerator):
         proper response with OpenAI.
         """
         openai_parse = self.openai_client.responses.parse(
-            model="gpt-4o",
+            model="gpt-5.4",
             input=[
                 {
                     "role": "user",
