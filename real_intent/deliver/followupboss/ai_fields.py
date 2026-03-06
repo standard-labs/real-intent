@@ -282,7 +282,8 @@ class AIFollowUpBossDeliverer(FollowUpBossDeliverer):
             instructions=SYSTEM_PROMPT,
             input=(
                 f"PII data:\n{filtered_pii_data_str}\n\n"
-                f"Custom fields:\n{custom_fields_str}"
+                f"Custom fields:\n{custom_fields_str}\n\n"
+                f"Respond in JSON."
             ),
             top_p=1,
             text={"format": {"type": "json_object"}}
