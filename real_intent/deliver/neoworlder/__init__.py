@@ -1,7 +1,10 @@
 """Deliverer for NeoWorlder AI lead nurturing platform."""
+import requests
+
+import csv
 import io
 import json
-import requests
+from enum import StrEnum
 from typing import Any
 
 from real_intent.deliver.base import BaseOutputDeliverer
@@ -14,6 +17,12 @@ from real_intent.deliver.utils import rate_limited
 # ---- Constants ----
 
 TIMEOUT_SECONDS = 30
+
+
+class CampaignType(StrEnum):
+    """NeoWorlder campaign types for persona routing."""
+    SELLER = "seller"
+    BUYER = "buyer"
 
 
 # ---- Exceptions ----
@@ -54,7 +63,7 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
     Example:
         deliverer = NeoworlderDeliverer(
             api_key="...",
-            base_url=NeoworlderDeliverer.STAGING_BASE_URL,
+            base_url="https://apiurl.com",
             customer_name="John Doe",
             customer_email="john@example.com",
         )
@@ -65,10 +74,6 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         accidentally sending data to the wrong environment (staging vs production).
     """
 
-    # URL constants for reference - no default to force explicit choice
-    STAGING_BASE_URL = "https://public-api.staging.neoworlder.com"
-    # PRODUCTION_BASE_URL = "https://public-api.neoworlder.com"  # Update when available
-
     def __init__(
         self,
         api_key: str,
@@ -78,18 +83,24 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         customer_phone: str = "",
         company_name: str = "",
         address: str = "",
+        campaign_type: CampaignType = CampaignType.SELLER,
+        is_recovery: bool = False,
+        sms_optin: bool = False,
     ):
         """
         Initialize the NeoWorlder deliverer.
 
         Args:
             api_key: NeoWorlder API key (neo-api-access-key).
-            base_url: NeoWorlder API base URL (use STAGING_BASE_URL or production URL).
+            base_url: NeoWorlder API base URL (supplied via configuration, not hardcoded).
             customer_name: Customer's full name (required).
             customer_email: Customer's email address (required, also used as client identifier).
             customer_phone: Customer's phone number (optional).
             company_name: Company name (optional).
             address: Customer address (optional).
+            campaign_type: Campaign type for NeoWorlder persona routing.
+            is_recovery: Whether leads are for the lead recovery campaign.
+            sms_optin: Whether SMS opt-in has been obtained for these leads.
         """
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
@@ -98,7 +109,9 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         self.customer_phone = customer_phone
         self.company_name = company_name
         self.address = address
-        # Use customer email as the unique client identifier
+        self.campaign_type = CampaignType(campaign_type)
+        self.is_recovery = is_recovery
+        self.sms_optin = sms_optin
         self.real_intent_client_id = customer_email
 
     @property
@@ -142,11 +155,9 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         }
 
         log("debug", f"Registering/updating NeoWorlder client: {self.real_intent_client_id}")
-
         response = requests.post(url, json=payload, headers=headers, timeout=TIMEOUT_SECONDS)
 
         log("trace", f"Raw response: {response.text}, status_code: {response.status_code}")
-
         self._handle_response_errors(response, "register_client")
 
         log("info", f"Successfully registered/updated NeoWorlder client: {self.real_intent_client_id}")
@@ -195,8 +206,9 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         """
         Convert a list of MD5WithPII leads to a CSV file in memory.
 
-        Uses the standard CSVStringFormatter for consistent output format
-        with all emails, phones, and detailed PII fields.
+        Uses the standard CSVStringFormatter for consistent output format,
+        then appends NeoWorlder campaign columns (BUYER, RECOVERY, SMS_OPTIN)
+        based on the deliverer's campaign configuration.
 
         Args:
             pii_md5s: List of leads with PII data.
@@ -205,6 +217,29 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
             BytesIO: In-memory CSV file ready for upload.
         """
         csv_string = CSVStringFormatter().deliver(pii_md5s)
+
+        if not csv_string:
+            bytes_output = io.BytesIO(b"")
+            bytes_output.seek(0)
+            log("debug", "No CSV content generated (empty lead list)")
+            return bytes_output
+
+        reader = csv.reader(io.StringIO(csv_string))
+        rows = list(reader)
+
+        buyer_val = "BUYER" if self.campaign_type == CampaignType.BUYER else ""
+        recovery_val = "YES" if self.is_recovery else ""
+        sms_val = "YES" if self.sms_optin else ""
+
+        rows[0].extend(["BUYER", "RECOVERY", "SMS_OPTIN"])
+        for row in rows[1:]:
+            row.extend([buyer_val, recovery_val, sms_val])
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerows(rows)
+        csv_string = output.getvalue()
+
         bytes_output = io.BytesIO(csv_string.encode("utf-8"))
         bytes_output.seek(0)
 
@@ -266,7 +301,6 @@ class NeoworlderDeliverer(BaseOutputDeliverer):
         )
 
         log("trace", f"Raw response: {response.text}, status_code: {response.status_code}")
-
         self._handle_response_errors(response, "execute_inbound_flow")
 
         log("info", f"Successfully delivered {len(filtered_leads)} leads to NeoWorlder")
