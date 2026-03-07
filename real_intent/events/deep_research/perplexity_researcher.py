@@ -1,4 +1,4 @@
-"""Use Perplexity as the initial web researcher, then triage and compile with GPT-4o."""
+"""Use Perplexity as the initial web researcher, then triage and compile with GPT-5.4."""
 import requests
 
 from real_intent.internal_logging import log, log_span, instrument_openai
@@ -10,7 +10,7 @@ from real_intent.events.deep_research.prompts import DEEP_RESEARCHER_PROMPT, TRI
 class PerplexityOpenAIEventsGenerator(BaseEventsGenerator):
     """
     Generate events by using a Perplexity-based deep researcher,
-    then triaging and compiling with GPT-4o + structured outputs.
+    then triaging and compiling with GPT-5.4 + structured outputs.
     """
 
     def __init__(self, perplexity_api_key: str, openai_api_key: str):
@@ -64,7 +64,7 @@ class PerplexityOpenAIEventsGenerator(BaseEventsGenerator):
         proper response with OpenAI.
         """
         openai_parse = self.openai_client.responses.parse(
-            model="gpt-4o",
+            model="gpt-5.4",
             input=[
                 {
                     "role": "user",
