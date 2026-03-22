@@ -1,8 +1,12 @@
 # Use an official Python runtime as a parent image
-FROM python:3.14.0-bookworm
+FROM python:3.14.3-bookworm
 
 # Set the working directory in the container
 WORKDIR /app
+
+# Python venv
+RUN python -m venv .venv
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy just requirements to build dependencies 
 COPY requirements.txt .
