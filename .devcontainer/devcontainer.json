@@ -23,8 +23,7 @@
 				"ms-python.python"
 			],
 			"settings": {
-				"python.defaultInterpreterPath": "/app/.venv/bin/python",
-				"python.venvPath": "/app/.venv"
+				"python.defaultInterpreterPath": "/app/.venv/bin/python"
 			}
 		}
 	},
