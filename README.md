@@ -7,4 +7,4 @@ This package is internal to Standard Labs and serves no purpose externally. It i
 
 ## Releases
 
-Releases are made when code utilizing this package should be updated in order to still work. This means that code dependent on this package should tie specifically to a certain release tag.
+Releases are made when code utilizing this package should be updated in order to still work. This means that code dependent on this package should tie specifically to a certain release tag. Open a pull request bumping `pyproject.toml` before releasing new versions.
