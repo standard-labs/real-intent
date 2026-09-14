@@ -31,7 +31,7 @@ def bigdbm_client() -> BigDBMClient:
     client_secret: str = os.environ.get("CLIENT_SECRET", "")
 
     if not (client_id and client_secret):
-        raise ValueError("Need CLIENT_ID and CLIENT_SECRET variables to run tests.")
+        pytest.skip("BigDBM integration credentials are not configured.")
 
     return BigDBMClient(client_id, client_secret)
 
