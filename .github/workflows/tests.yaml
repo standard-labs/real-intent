@@ -2,6 +2,8 @@ name: tests
 
 on:
   push:
+    branches:
+      - master
     paths-ignore:
       - README.md
       - .devcontainer/**/*.*
@@ -10,17 +12,18 @@ on:
       - pyproject.toml
       - docs/**/*.*
   pull_request:
-    types:  # avoid double runs in open pr
-      - opened
-      - reopened
   workflow_dispatch:
   
 jobs:
   test:
-    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, netcup, real-intent]
     steps:
       - name: Checkout repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Verify Vienna runner policy
+        run: python3 scripts/check_ci_runner_policy.py
 
       - name: Create .env file
         run: |
