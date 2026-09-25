@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject GitHub-hosted compute in repository workflows."""
+"""Every repository workflow job runs on Blacksmith."""
 
 from pathlib import Path
 import re
@@ -16,7 +16,7 @@ for workflow in workflows:
     if not runners:
         raise SystemExit(f"{workflow}: no runs-on declarations found")
     for runner in runners:
-        if not runner.startswith("[self-hosted, netcup,"):
+        if not runner.startswith("blacksmith-"):
             raise SystemExit(f"{workflow}: disallowed runner {runner}")
 
-print(f"validated {len(workflows)} Vienna-only workflow(s)")
+print(f"validated {len(workflows)} Blacksmith-only workflow(s)")

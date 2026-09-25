@@ -17,12 +17,12 @@ on:
 jobs:
   test:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, netcup, real-intent]
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Checkout repository code
         uses: actions/checkout@v5
 
-      - name: Verify Vienna runner policy
+      - name: Verify Blacksmith runner policy
         run: python3 scripts/check_ci_runner_policy.py
 
       - name: Build Docker container
