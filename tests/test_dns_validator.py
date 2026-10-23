@@ -89,3 +89,39 @@ def test_mongo_dns_validator(dns_test_md5s):
     assert len(result) == 1  # Expecting 1 out of 2 to pass validation
     assert all("preritdas@gmail.com" not in md5.pii.emails for md5 in result)
     assert result[0].md5 == dns_test_md5s[0].md5
+
+
+class _Entries:
+    """A stand-in for `donotsell.entries` that, like Mongo, compares case-insensitively only under a strength-2 collation."""
+
+    def __init__(self, emails: list[str]) -> None:
+        self.emails = emails
+        self.collations: list = []
+
+    def find(self, query: dict, projection: dict | None = None, collation=None):
+        self.collations.append(collation)
+        wanted = query["email"]["$in"]
+        caseless = collation is not None and collation.document.get("strength") == 2
+        same = (lambda a, b: a.lower() == b.lower()) if caseless else (lambda a, b: a == b)
+        return [{"email": e} for e in self.emails if any(same(e, w) for w in wanted)]
+
+
+def test_mongo_dns_validator_matches_whatever_the_case(sample_pii_md5s):
+    listed = sample_pii_md5s[0].model_copy(deep=True)
+    listed.md5 = "listed"
+    listed.pii.emails = ["jane.doe@example.com"]
+    entries = _Entries(["Jane.Doe@Example.com"])  # the list keeps what people typed
+
+    result = MongoDNSValidator(entries).validate([sample_pii_md5s[0], listed])
+
+    assert [m.md5 for m in result] == [sample_pii_md5s[0].md5]
+    assert entries.collations[0].document["strength"] == 2
+
+
+def test_mongo_dns_validator_asks_nothing_without_emails(sample_pii_md5s):
+    lead = sample_pii_md5s[0].model_copy(deep=True)
+    lead.pii.emails = []
+    entries = _Entries(["someone@example.com"])
+
+    assert MongoDNSValidator(entries).validate([lead]) == [lead]
+    assert entries.collations == []
