@@ -1,5 +1,6 @@
 """Validation for the Do Not Sell list."""
 import requests
+from pymongo.collation import Collation
 from pymongo.collection import Collection
 
 from real_intent.validate.base import BaseValidator
@@ -88,8 +89,17 @@ class FilloutDNSValidator(BaseValidator):
         ]
 
 
+# The list keeps emails as people typed them (11,311 of 131,488 had capitals in October 2026), so matching ignores
+# case. The entries collection has an index with this collation (`email_caseless`), which keeps the check fast.
+CASELESS = Collation(locale="en", strength=2)
+
+
+def _normalise(email: str) -> str:
+    return email.strip().lower()
+
+
 class MongoDNSValidator(BaseValidator):
-    """Removes leads with an email on the Do Not Sell (DNS) blacklist."""
+    """Removes leads with an email on the Do Not Sell (DNS) blacklist, whatever its case."""
 
     def __init__(self, mongo_collection: Collection) -> None:
         self.mongo_collection: Collection = mongo_collection
@@ -101,11 +111,15 @@ class MongoDNSValidator(BaseValidator):
             emails: List of emails to check.
 
         Returns:
-            Set of emails that are on the DNS blacklist.
+            Set of the blacklisted emails, lowercased.
         """
+        wanted = sorted({_normalise(email) for email in emails if email})
+        if not wanted:
+            return set()
+
         # Use $in operator to check all emails in one query
-        blacklisted = self.mongo_collection.find({"email": {"$in": emails}})
-        return {doc["email"] for doc in blacklisted}
+        blacklisted = self.mongo_collection.find({"email": {"$in": wanted}}, {"email": 1}, collation=CASELESS)
+        return {_normalise(doc["email"]) for doc in blacklisted}
 
     def _validate(self, md5s: list[MD5WithPII]) -> list[MD5WithPII]:
         """Remove leads with an email on the Do Not Sell (DNS) blacklist."""
@@ -118,6 +132,6 @@ class MongoDNSValidator(BaseValidator):
         # Filter MD5s where none of their emails are blacklisted
         return [
             md5 for md5 in md5s if not any(
-                email in blacklisted_emails for email in md5.pii.emails
+                _normalise(email) in blacklisted_emails for email in md5.pii.emails
             )
         ]
